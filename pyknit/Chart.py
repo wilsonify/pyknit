@@ -492,7 +492,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
 
 # Chart and pattern parsing functions
 
-def parse_row(row: str, legend=None) -> List[Stitch]:
+def parse_row(row: str, legend: Dict[str, Stitch] = stitch_legend) -> List[Stitch]:
     # legend=None allows a mutable parameter here - important for japanese legend option
     # I don't think a set is the right return type, order is important here
     """Parse a written set of knitting instructions and print an array of
