@@ -64,7 +64,7 @@ def test_parse_row():
     assert output_array == expected
 
 
-def test_Stitch_unknown_stitch():
+def test_stitch_unknown_stitch():
     """A stitch in the string that is not found in the legend should raise
     a KeyError: 'Stitch not found in legend.'"""
     with pytest.raises(KeyError):
@@ -102,7 +102,7 @@ def test_increase_evenly(starting_count, increase_number, in_the_round, expected
 )
 def test_increase_evenly_error(starting_count, increase_number, in_the_round, expected):
     with pytest.raises(expected):
-        logging.info(f"this should raise a valueError")
+        logging.info("this should raise a valueError")
         pyknit.increase_evenly(starting_count, increase_number, in_the_round)
 
 
@@ -142,5 +142,5 @@ def test_decrease_evenly(starting_count, decrease_number, in_the_round, expected
 )
 def test_decrease_evenly_error(starting_count, decrease_number, in_the_round, expected):
     with pytest.raises(expected):
-        logging.info(f"this should raise a valueError")
+        logging.info("this should raise a valueError")
         pyknit.decrease_evenly(starting_count, decrease_number, in_the_round)
