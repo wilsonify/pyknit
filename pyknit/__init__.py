@@ -29,7 +29,7 @@ VERSION = "pyKnit 0.0.9"
 
 @validate_arguments
 def increase_evenly(
-    starting_count: PositiveInt, increase_number: PositiveInt
+    starting_count: PositiveInt, increase_number: PositiveInt, in_the_round: bool = False
 ) -> str:
     """ A function to figure out even spacing for increases
 
@@ -44,43 +44,42 @@ def increase_evenly(
             f"Error: Increase number ({increase_number}) is bigger than the starting count ({starting_count})")
         raise ValueError
 
-    if not in_the_round:
-        # It's increase+1 so that you don't have increases at either
-        # the start or end of a row
-        increase_spacing = increase_number + 1
-    else:
-        increase_spacing = increase_number
+    # Calculate the spacing based on whether we're knitting in the round
+    increase_spacing = increase_number if in_the_round else increase_number + 1
 
-    interval = math.floor(starting_count / (increase_spacing))
+    interval = math.floor(starting_count / increase_spacing)
     remainder = starting_count % increase_spacing
 
-    # first set of increases
+    # Build the instruction string
     if increase_spacing - remainder > 1:
-        instruction_string = f"[k{interval}, m1] * {increase_spacing-remainder} times"
+        instruction_string = f"[k{interval}, m1] * {increase_spacing - remainder} times"
     else:
         instruction_string = f"k{interval}, m1"
 
-    # second set of increases (if needed)
+    # Add additional sections based on remainder and knitting mode
     if remainder > 0:
-        if not in_the_round:
-            if remainder - 1 > 1:
-                instruction_string += (
-                    f", [k{interval+1}, m1] * {remainder-1} times, k{interval+1}"
-                )
-            else:
-                instruction_string += f", k{interval+1}, m1, k{interval+1}"
-        else:
-            if remainder > 1:
-                instruction_string += f", [k{interval+1}, m1] * {remainder} times"
-            else:
-                instruction_string += f", k{interval+1}, m1"
-
-    # if we still need a selvage, add that
-    else:
-        if not in_the_round:
-            instruction_string += f", k{interval}"
+        instruction_string += _build_remainder_instruction(interval, remainder, in_the_round)
+    elif not in_the_round:
+        # Add selvage for flat knitting
+        instruction_string += f", k{interval}"
 
     return instruction_string
+
+
+def _build_remainder_instruction(interval: int, remainder: int, in_the_round: bool) -> str:
+    """Build instruction string for remainder stitches."""
+    if in_the_round:
+        # In the round: simpler remainder handling
+        if remainder > 1:
+            return f", [k{interval + 1}, m1] * {remainder} times"
+        else:
+            return f", k{interval + 1}, m1"
+    else:
+        # Flat knitting: more complex remainder handling
+        if remainder - 1 > 1:
+            return f", [k{interval + 1}, m1] * {remainder - 1} times, k{interval + 1}"
+        else:
+            return f", k{interval + 1}, m1, k{interval + 1}"
 
 
 def _calculate_spacing(
@@ -118,38 +117,72 @@ def decrease_evenly_round(starting_count: PositiveInt, decrease_number: Positive
     '[k2, k2tog] * 5 times'
     """
     plan = _calculate_spacing(starting_count, decrease_number)
+    
     if len(plan) == 1:
-        interval, times = plan[0]
-        k = interval - 2
-        decrease_pattern = f'[k{k:.0f}, k2tog] * {times:.0f}'
-        if times == 1:
-            decrease_pattern += ' time'
-        else:
-            decrease_pattern += ' times'
+        return _format_single_plan(plan[0])
     else:
-        (small_interval, times), (large_interval, higher_times) = sorted(plan)
-        k = small_interval - 2
-        k_higher = large_interval - 2
-        k_string = 'k2tog' if k == 0 else f'k{k:.0f}, k2tog'
-        k_higher_string = 'k2tog' if k_higher == 0 else f'k{k_higher:.0f}, k2tog'
-        if times % 2 == 0:
-            times = times / 2
-            times_string = k_string if times == 1 else f'[{k_string}] * {times:.0f} times'
-            higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string:.0f}] * {higher_times:.0f} times'
-            decrease_pattern = f'{times_string}, {higher_times_string}, {times_string}'
-        elif higher_times % 2 == 0:
-            higher_times = higher_times / 2
-            times_string = k_string if times == 1 else f'[{k_string:.0f}] * {times:.0f} times'
-            higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times:.0f} times'
-            decrease_pattern = f'{higher_times_string}, {times_string}, {higher_times_string}'
-        else:
-            higher_times = math.ceil(higher_times / 2)
-            times_string = k_string if times == 1 else f'[{k_string:.0f}] {times:.0f} times, '
-            higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string:.0f}] {higher_times:.0f} times'
-            decrease_pattern = f'{higher_times_string:.0f}, {times_string:.0f}'
-            higher_times += -1
-            if higher_times != 0:
-                decrease_pattern += ''
+        return _format_multi_plan(plan)
+
+
+def _format_single_plan(plan_entry: Tuple[int, float]) -> str:
+    """Format a single spacing plan entry as a decrease pattern."""
+    interval, times = plan_entry
+    k = interval - 2
+    decrease_pattern = f'[k{k:.0f}, k2tog] * {times:.0f}'
+    
+    # Add singular/plural form
+    if times == 1:
+        decrease_pattern += ' time'
+    else:
+        decrease_pattern += ' times'
+    
+    return decrease_pattern
+
+
+def _format_multi_plan(plan: List[Tuple[int, float]]) -> str:
+    """Format a multi-part spacing plan as a decrease pattern."""
+    (small_interval, times), (large_interval, higher_times) = sorted(plan)
+    k = small_interval - 2
+    k_higher = large_interval - 2
+    
+    k_string = 'k2tog' if k == 0 else f'k{k:.0f}, k2tog'
+    k_higher_string = 'k2tog' if k_higher == 0 else f'k{k_higher:.0f}, k2tog'
+    
+    if times % 2 == 0:
+        return _handle_even_times(times, times, k_string, higher_times, k_higher_string)
+    elif higher_times % 2 == 0:
+        return _handle_even_higher_times(times, k_string, higher_times, k_higher_string)
+    else:
+        return _handle_odd_times(times, k_string, higher_times, k_higher_string)
+
+
+def _handle_even_times(times: float, original_times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+    """Handle case where times is even."""
+    times = times / 2
+    times_string = k_string if times == 1 else f'[{k_string}] * {times:.0f} times'
+    higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string:.0f}] * {higher_times:.0f} times'
+    return f'{times_string}, {higher_times_string}, {times_string}'
+
+
+def _handle_even_higher_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+    """Handle case where higher_times is even."""
+    higher_times = higher_times / 2
+    times_string = k_string if times == 1 else f'[{k_string:.0f}] * {times:.0f} times'
+    higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times:.0f} times'
+    return f'{higher_times_string}, {times_string}, {higher_times_string}'
+
+
+def _handle_odd_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+    """Handle case where both times and higher_times are odd."""
+    higher_times = math.ceil(higher_times / 2)
+    times_string = k_string if times == 1 else f'[{k_string:.0f}] {times:.0f} times, '
+    higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string:.0f}] {higher_times:.0f} times'
+    
+    decrease_pattern = f'{higher_times_string:.0f}, {times_string:.0f}'
+    higher_times += -1
+    if higher_times != 0:
+        decrease_pattern += ''
+    
     return decrease_pattern
 
 
@@ -163,67 +196,100 @@ def decrease_evenly_flat(starting_count: PositiveInt, decrease_number: PositiveI
 
     plan = _calculate_spacing(starting_count, decrease_number)
     if len(plan) == 1:
-        interval, times = plan[0]
-        k = interval - 2
-        k_first = math.ceil(k / 2)
-        k_second = k - k_first
-        decrease_pattern = ''
-        if k_first != 0:
-            times = times - 1
-            decrease_pattern += f'k{k_first:.0f}, '
-        if k != 0:
-            decrease_pattern += f'[k2tog, k{k:.0f}]'
-        else:
-            decrease_pattern += '[k2tog] '
-        if times > 1:
-            decrease_pattern += f' * {times:.0f} times'
-        if k_second != 0:
-            decrease_pattern += f', k2tog, k{k_second:.0f}'
-
-
+        return _format_flat_single_plan(plan[0])
     else:
-        (small_interval, times), (large_interval, higher_times) = sorted(plan)
-        k = small_interval - 2
-        k_higher = large_interval - 2
-        k_string = f'k2tog, k{k:.0f}' if k != 0 else 'k2tog'
-        k_higher_string = f'k2tog, k{k_higher:.0f}' if k_higher != 0 else 'k2tog'
+        return _format_flat_multi_plan(plan)
 
-        if times % 2 == 0:
-            times = times / 2
-            higher_times = higher_times - 1
-            higher_times_string = ''
-            if higher_times > 0:
-                higher_times_string = f', {k_higher_string}' if higher_times == 1 else f', [{k_higher_string}] * {higher_times} times'
-            times_string = f', {k_string}' if times == 1 else f', [{k_string}] * {times:.0f} times'
-            balanced_str_first = f'k{math.ceil(k_higher / 2):.0f}' if math.ceil(k_higher / 2) != 0 else ''
-            balanced_str_last = f', k2tog k{k_higher - math.ceil(k_higher / 2):.0f}' if (k_higher - math.ceil( k_higher / 2)) != 0 else ''
-            decrease_pattern = f"{balanced_str_first}{times_string}{higher_times_string}{times_string}{balanced_str_last}"
-        elif higher_times % 2 == 0:
-            higher_times = higher_times / 2
-            times = times - 1
-            times_string = ''
-            if times > 0:
-                times_string = k_string if times == 1 else f'[{k_string}] * {times} times'
-            higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times:.0f} times'
-            balanced_str_first = f'k{math.ceil(k / 2)}, ' if math.ceil(k / 2) != 0 else ''
-            balanced_str_last = f', k2tog k{k - math.ceil(k / 2)}' if (k - math.ceil(k / 2)) != 0 else ', k2tog'
-            decrease_pattern = f"{balanced_str_first}{higher_times_string}{times_string}, {higher_times_string}{balanced_str_last}"
 
-        else:
-            higher_times = math.ceil(higher_times / 2)
-            higher_times_string = ''
-            if higher_times > 0:
-                higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times - 1} times, '
-            times_string = k_string if times == 1 else f'[{k_string}] * {times} times, '
-            balanced_str_first = f'k{math.ceil(k_higher / 2)}, ' if math.ceil(k_higher / 2) != 0 else ''
-            balanced_str_last = ', k2tog k{k_higher - math.ceil(k_higher / 2)}' if (k_higher - math.ceil( k_higher / 2)) != 0 else ', k2tog'
-            decrease_pattern = f"{balanced_str_first}{higher_times_string}{times_string}"
-            higher_times += -1
+def _format_flat_single_plan(plan_entry: Tuple[int, float]) -> str:
+    """Format a single spacing plan entry for flat knitting decreases."""
+    interval, times = plan_entry
+    k = interval - 2
+    k_first = math.ceil(k / 2)
+    k_second = k - k_first
+    
+    decrease_pattern = ''
+    if k_first != 0:
+        times = times - 1
+        decrease_pattern += f'k{k_first:.0f}, '
+    
+    if k != 0:
+        decrease_pattern += f'[k2tog, k{k:.0f}]'
+    else:
+        decrease_pattern += '[k2tog] '
+    
+    if times > 1:
+        decrease_pattern += f' * {times:.0f} times'
+    
+    if k_second != 0:
+        decrease_pattern += f', k2tog, k{k_second:.0f}'
+    
+    return decrease_pattern
 
-            if higher_times != 0:
-                higher_times_string = k_higher_string if higher_times == 1 else  f'[{k_higher_string}] * {higher_times} times'
-                decrease_pattern += higher_times_string
-            decrease_pattern += balanced_str_last
+
+def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
+    """Format a multi-part spacing plan for flat knitting decreases."""
+    (small_interval, times), (large_interval, higher_times) = sorted(plan)
+    k = small_interval - 2
+    k_higher = large_interval - 2
+    
+    k_string = f'k2tog, k{k:.0f}' if k != 0 else 'k2tog'
+    k_higher_string = f'k2tog, k{k_higher:.0f}' if k_higher != 0 else 'k2tog'
+    
+    if times % 2 == 0:
+        return _handle_flat_even_times(times, times, k, k_string, higher_times, k_higher, k_higher_string)
+    elif higher_times % 2 == 0:
+        return _handle_flat_even_higher_times(times, k, k_string, higher_times, k_higher, k_higher_string)
+    else:
+        return _handle_flat_odd_times(times, k, k_string, higher_times, k_higher, k_higher_string)
+
+
+def _handle_flat_even_times(times: float, original_times: float, k: int, k_string: str, 
+                            higher_times: float, k_higher: int, k_higher_string: str) -> str:
+    """Handle flat knitting with even times."""
+    times = times / 2
+    higher_times = higher_times - 1
+    higher_times_string = ''
+    if higher_times > 0:
+        higher_times_string = f', {k_higher_string}' if higher_times == 1 else f', [{k_higher_string}] * {higher_times} times'
+    times_string = f', {k_string}' if times == 1 else f', [{k_string}] * {times:.0f} times'
+    balanced_str_first = f'k{math.ceil(k_higher / 2):.0f}' if math.ceil(k_higher / 2) != 0 else ''
+    balanced_str_last = f', k2tog k{k_higher - math.ceil(k_higher / 2):.0f}' if (k_higher - math.ceil(k_higher / 2)) != 0 else ''
+    return f"{balanced_str_first}{times_string}{higher_times_string}{times_string}{balanced_str_last}"
+
+
+def _handle_flat_even_higher_times(times: float, k: int, k_string: str, higher_times: float, 
+                                   k_higher: int, k_higher_string: str) -> str:
+    """Handle flat knitting with even higher_times."""
+    higher_times = higher_times / 2
+    times = times - 1
+    times_string = ''
+    if times > 0:
+        times_string = k_string if times == 1 else f'[{k_string}] * {times} times'
+    higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times:.0f} times'
+    balanced_str_first = f'k{math.ceil(k / 2)}, ' if math.ceil(k / 2) != 0 else ''
+    balanced_str_last = f', k2tog k{k - math.ceil(k / 2)}' if (k - math.ceil(k / 2)) != 0 else ', k2tog'
+    return f"{balanced_str_first}{higher_times_string}{times_string}, {higher_times_string}{balanced_str_last}"
+
+
+def _handle_flat_odd_times(times: float, k: int, k_string: str, higher_times: float, 
+                           k_higher: int, k_higher_string: str) -> str:
+    """Handle flat knitting with odd times."""
+    higher_times = math.ceil(higher_times / 2)
+    higher_times_string = ''
+    if higher_times > 0:
+        higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times - 1} times, '
+    times_string = k_string if times == 1 else f'[{k_string}] * {times} times, '
+    balanced_str_first = f'k{math.ceil(k_higher / 2)}, ' if math.ceil(k_higher / 2) != 0 else ''
+    balanced_str_last = ', k2tog k{k_higher - math.ceil(k_higher / 2)}' if (k_higher - math.ceil(k_higher / 2)) != 0 else ', k2tog'
+    
+    decrease_pattern = f"{balanced_str_first}{higher_times_string}{times_string}"
+    higher_times += -1
+    
+    if higher_times != 0:
+        higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times} times'
+        decrease_pattern += higher_times_string
+    decrease_pattern += balanced_str_last
     return decrease_pattern
 
 
@@ -236,29 +302,37 @@ def decrease_evenly(
     >>> decrease_evenly(20, 5, True)
     '[k2, k2tog] * 5 times'
     """
-    if starting_count < 2:
-        msg = f"You need to have at least 2 stitches; starting_count={starting_count}"
-        logging.error(msg)
-        raise ValueError
-    if decrease_number < 2:
-        msg = f"the amount of decrease needs to be at least 2; decrease_number={decrease_number}."
-        logging.error(msg)
-        raise ValueError
-    if decrease_number > starting_count / 2:
-        msg = f"""the amount of decrease needs to be less than half of starting_count;
-        decrease_number={decrease_number} > starting_count/2={starting_count / 2}"""
-        logging.error(msg)
-        raise ValueError
-    if decrease_number > starting_count:
-        msg = f"Error: Decrease number ({decrease_number}) is bigger than the starting count ({starting_count})"
-        logging.error(msg)
-        raise ValueError
-
+    _validate_decrease_parameters(starting_count, decrease_number)
+    
     if in_the_round:
         result = decrease_evenly_round(starting_count, decrease_number)
     else:
         result = decrease_evenly_flat(starting_count, decrease_number)
     return result
+
+
+def _validate_decrease_parameters(starting_count: int, decrease_number: int) -> None:
+    """Validate parameters for decrease functions."""
+    if starting_count < 2:
+        msg = f"You need to have at least 2 stitches; starting_count={starting_count}"
+        logging.error(msg)
+        raise ValueError(msg)
+    
+    if decrease_number < 2:
+        msg = f"the amount of decrease needs to be at least 2; decrease_number={decrease_number}."
+        logging.error(msg)
+        raise ValueError(msg)
+    
+    if decrease_number > starting_count / 2:
+        msg = f"""the amount of decrease needs to be less than half of starting_count;
+        decrease_number={decrease_number} > starting_count/2={starting_count / 2}"""
+        logging.error(msg)
+        raise ValueError(msg)
+    
+    if decrease_number > starting_count:
+        msg = f"Error: Decrease number ({decrease_number}) is bigger than the starting count ({starting_count})"
+        logging.error(msg)
+        raise ValueError(msg)
 
 
 def sleeve_decreases(
