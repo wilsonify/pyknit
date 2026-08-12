@@ -149,14 +149,14 @@ def _format_multi_plan(plan: List[Tuple[int, float]]) -> str:
     k_higher_string = 'k2tog' if k_higher == 0 else f'k{k_higher:.0f}, k2tog'
     
     if times % 2 == 0:
-        return _handle_even_times(times, times, k_string, higher_times, k_higher_string)
+        return _handle_even_times(times, k_string, higher_times, k_higher_string)
     elif higher_times % 2 == 0:
         return _handle_even_higher_times(times, k_string, higher_times, k_higher_string)
     else:
         return _handle_odd_times(times, k_string, higher_times, k_higher_string)
 
 
-def _handle_even_times(times: float, original_times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+def _handle_even_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
     """Handle case where times is even."""
     times = times / 2
     times_string = k_string if times == 1 else f'[{k_string}] * {times:.0f} times'
@@ -237,14 +237,14 @@ def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
     k_higher_string = f'k2tog, k{k_higher:.0f}' if k_higher != 0 else 'k2tog'
     
     if times % 2 == 0:
-        return _handle_flat_even_times(times, times, k, k_string, higher_times, k_higher, k_higher_string)
+        return _handle_flat_even_times(times, k_string, higher_times, k_higher, k_higher_string)
     elif higher_times % 2 == 0:
         return _handle_flat_even_higher_times(times, k, k_string, higher_times, k_higher, k_higher_string)
     else:
-        return _handle_flat_odd_times(times, k, k_string, higher_times, k_higher, k_higher_string)
+        return _handle_flat_odd_times(times, k_string, higher_times, k_higher, k_higher_string)
 
 
-def _handle_flat_even_times(times: float, original_times: float, k: int, k_string: str, 
+def _handle_flat_even_times(times: float, k_string: str, 
                             higher_times: float, k_higher: int, k_higher_string: str) -> str:
     """Handle flat knitting with even times."""
     times = times / 2
@@ -272,7 +272,7 @@ def _handle_flat_even_higher_times(times: float, k: int, k_string: str, higher_t
     return f"{balanced_str_first}{higher_times_string}{times_string}, {higher_times_string}{balanced_str_last}"
 
 
-def _handle_flat_odd_times(times: float, k: int, k_string: str, higher_times: float, 
+def _handle_flat_odd_times(times: float, k_string: str, higher_times: float, 
                            k_higher: int, k_higher_string: str) -> str:
     """Handle flat knitting with odd times."""
     higher_times = math.ceil(higher_times / 2)
@@ -483,7 +483,7 @@ def raglan_increases(
     if calculated_neck < neck_stitches:
         # you don't need to increase every row in the raglan section
         # We'll put the non-increase rows at the end before the armpit section
-        no_increase_rows = 555  # FIXME
+        no_increase_rows = (neck_stitches - calculated_neck) // increase_per_increase_row
 
     # generate some standard raglan instructions
     # we're assuming the beginning of row is the middle of the back here
