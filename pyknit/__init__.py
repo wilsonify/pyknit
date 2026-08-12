@@ -15,6 +15,7 @@ from pydantic import PositiveInt, validate_arguments
 from .Chart import *
 from .GaugeSwatch import *
 from .Hat import *
+from . import browser
 
 logging_config_dict = {
     "version": 1,
