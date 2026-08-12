@@ -21,7 +21,7 @@ pyKnit has 13 open GitHub issues and 5 code TODOs (documented in `documentation/
 
 ### 1. Core knitting representation
 
-- Repeat expansion in `parse_row`/`parse_chart` (two-pass: expand brackets, then existing regexes) - closes issue #5.
+- Repeat expansion in `parse_row`/`parse_chart` (two-pass: expand brackets, then existing regexes) - **IMPLEMENTED** - closes issue #5.
 - CSV import/export + structured JSON with `schema_version`, typed units, provenance (`pattern_to_csv`, `csv_to_pattern`, `pattern_to_json`, `json_to_pattern`) - closes issue #13.
 - Close remaining symbol-set gaps in default and Japanese legends (spec 01); add stitch metadata (category, direction, consumes/produces) for count validation.
 - SVG renderer `render_chart_svg` matching PIL layout (supports issue #45).
@@ -42,7 +42,7 @@ pyKnit has 13 open GitHub issues and 5 code TODOs (documented in `documentation/
 
 ## Affected Specs
 
-- `02-instruction-parsing.md` - repeat expansion (ADDED)
+- `02-instruction-parsing.md` - repeat expansion (**IMPLEMENTED**)
 - `04-import-export.md` - full implementation (ADDED)
 - `01-stitch-and-symbols.md`, `03-chart-rendering.md` - metadata, SVG (MODIFIED)
 - `06-shaping.md` - spacing core, padding, remainder (MODIFIED)
@@ -97,6 +97,7 @@ Each spec's Testing section is the checklist; the global gates:
 4. **Doctests:** all public docstring examples pass under `pytest --doctest-modules`; CI fails on drift.
 5. **Browser:** PyScript page renders a chart via SVG with the same layout as PIL.
 6. **Backward compat:** full pre-change fixture suite passes unmodified.
-7. **Quality gates:** `pytest`, `black --check`, `flake8`, docs build, and cve scan all green.
+7. **Repeat expansion:** bracketed repeat patterns (e.g., "[k2, p2] * 6 times") correctly parsed and expanded without affecting existing functionality.
+8. **Quality gates:** `pytest`, `black --check`, `flake8`, docs build, and cve scan all green.
 
 **Status:** [DRAFT] - pending review; no code changes made yet.
