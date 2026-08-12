@@ -20,7 +20,7 @@ def test_init():
     gs = GaugeSwatch(row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in")
     assert isinstance(gs, GaugeSwatch)
     assert gs.row_count == 18
-    assert gs.row_measure == 3.25
+    assert gs.row_measure == pytest.approx(3.25)
     assert gs.stitch_count == 24
     assert gs.stitch_measure == 4
     assert gs.units == "in"
