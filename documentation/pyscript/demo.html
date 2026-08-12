@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit browser demo</title>
+  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+  <script type="module" src="https://pyscript.net/latest/pyscript.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 1rem;
+      color: #222;
+    }
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    button {
+      font-size: 1rem;
+      padding: 0.4rem 0.9rem;
+      margin-left: 0.5rem;
+    }
+    .warn { color: #a33; }
+    pre {
+      background: #f4f4f4;
+      padding: 0.6rem;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+    img {
+      border: 1px solid #ccc;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>pyKnit in the browser</h1>
+    <p>
+      A proof-of-concept page running <code>pyknit</code> via PyScript.
+      Chart rendering prefers an SVG backend when available, otherwise Pillow;
+      if neither works the page degrades to a plain-text grid instead of crashing.
+    </p>
+  </header>
+
+  <py-config>
+    packages = ["pyknit"]
+  </py-config>
+
+  <section class="card">
+    <h2>Gauge conversion</h2>
+    <p>
+      Convert a measurement from the pattern gauge (27.5 st / 10 in) to
+      your own gauge (23.5 st / 10 in).
+    </p>
+    <label for="measurement">Measurement (in):</label>
+    <input id="measurement" type="number" value="42" step="0.25" min="1" />
+    <button id="run-calc" py-click="handle_calculation">Run calculation</button>
+    <div id="calc-output"></div>
+  </section>
+
+  <section class="card">
+    <h2>Chart rendering</h2>
+    <p>
+      Parse a tiny lace pattern and render it. Pillow/PNG output is shown as a
+      base64 image; if rendering fails you get the parsed grid as text.
+    </p>
+    <button id="run-chart" py-click="handle_chart">Render chart</button>
+    <div id="backend-hint"></div>
+    <div id="chart-output"></div>
+  </section>
+
+  <footer>
+    <p>
+      Serve this directory with any static file server (e.g.
+      <code>python -m http.server</code>) and open <code>demo.html</code>.
+    </p>
+  </footer>
+
+  <script type="py">
+    import base64
+
+    from pyscript import document
+
+    try:
+        import pyknit
+        from pyknit import browser
+        from pyknit.Chart import parse_chart
+
+        READY = True
+    except Exception as exc:  # package failed to load (e.g. missing dependency)
+        READY = False
+        BOOT_ERROR = f"{exc}"
+
+    def out(selector, html):
+        """Write HTML into a DOM element, never leaving blank output."""
+        document.querySelector(selector).innerHTML = html
+
+    def handle_calculation():
+        if not READY:
+            out(
+                "#calc-output",
+                f"<p class='warn'>pyknit failed to load: {BOOT_ERROR}</p>",
+            )
+            return
+        try:
+            measurement = float(document.querySelector("#measurement").value)
+        except ValueError:
+            measurement = 42.0
+        pattern_gauge = pyknit.GaugeSwatch(
+            stitch_count=27.5, stitch_measure=10, row_count=40,
+            row_measure=4, units="in",
+        )
+        my_gauge = pyknit.GaugeSwatch(
+            stitch_count=23.5, stitch_measure=10, row_count=33,
+            row_measure=4, units="in",
+        )
+        result = pyknit.convert_stitch_measure(
+            measurement, pattern_gauge, my_gauge
+        )
+        out(
+            "#calc-output",
+            f"<p>A {measurement:g} in measurement at pattern gauge becomes "
+            f"<strong>{result:.2f} in</strong> at your gauge.</p>",
+        )
+
+    def handle_chart():
+        if not READY:
+            out(
+                "#chart-output",
+                f"<p class='warn'>pyknit failed to load: {BOOT_ERROR}</p>",
+            )
+            return
+        pattern = parse_chart(
+            "k2 yo k2tog yo k1\np1 k2 yo k2tog p2"
+        )
+        try:
+            fmt, content = browser.render_pattern(pattern)
+        except Exception as exc:
+            # Defensive: render_pattern already degrades, but never crash.
+            out(
+                "#chart-output",
+                "<p class='warn'>Chart rendering failed ({0}); falling back "
+                "to plain text.</p><pre>{1}</pre>".format(
+                    exc, browser.pattern_to_text(pattern)
+                ),
+            )
+            return
+        if fmt == "svg":
+            out(
+                "#chart-output",
+                "<p>Rendered with the SVG backend.</p>" + content,
+            )
+        elif fmt == "png":
+            data_uri = (
+                "data:image/png;base64,"
+                + base64.b64encode(content).decode("ascii")
+            )
+            out(
+                "#chart-output",
+                "<p>Rendered with the Pillow backend.</p>"
+                '<img src="' + data_uri + '" alt="Chart rendered by pyKnit" />',
+            )
+        else:
+            out(
+                "#chart-output",
+                "<p class='warn'>No rendering backend available; showing the "
+                "parsed chart as plain text.</p><pre>{0}</pre>".format(
+                    browser.pattern_to_text(pattern)
+                ),
+            )
+        hint = ", ".join(browser.available_backends())
+        out("#backend-hint", "<p>Backends available: " + hint + "</p>")
+
+    # Run once on load so the page is never blank.
+    handle_calculation()
+    handle_chart()
+  </script>
+</body>
+</html>
