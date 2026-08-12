@@ -84,13 +84,13 @@ def test_measurement_to_stitches_invalid(swatch, measurement):
     ],
 )
 def test_gauge_swatch_invalid_construction_args(invalid_kwargs):
-    valid = dict(
-        row_count=18,
-        row_measure=3.25,
-        stitch_count=24,
-        stitch_measure=4,
-        units="in",
-    )
+    valid = {
+        "row_count": 18,
+        "row_measure": 3.25,
+        "stitch_count": 24,
+        "stitch_measure": 4,
+        "units": "in",
+    }
     valid.update(invalid_kwargs)
     with pytest.raises(pydantic.ValidationError):
         GaugeSwatch(**valid)
