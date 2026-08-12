@@ -10,10 +10,9 @@ pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 """
 
 import math
-from typing import Set
+from typing import Literal, Optional, Set
 
 from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments
-from typing import Literal
 
 
 class GaugeSwatch(BaseModel):
@@ -24,7 +23,10 @@ class GaugeSwatch(BaseModel):
     stitch_count: PositiveFloat
     stitch_measure: PositiveFloat
     units: Literal["cm", "in"]
-    # TODO: add yardage/weight for calculations?
+    # Yarn use per stitch (per design, estimate spec 08). Optional fields used
+    # by estimate_yardage() and estimate_weight().
+    yardage_per_unit: Optional[PositiveFloat] = None
+    weight_per_unit: Optional[PositiveFloat] = None
 
     def row_gauge(self) -> float:
         """return rows per unit (e.g. cm, inch) number"""
@@ -58,6 +60,30 @@ class GaugeSwatch(BaseModel):
     def stitches_to_measurement(self, stitches: PositiveInt) -> float:
         """figure out how wide a number of stitches will be"""
         return stitches / self.stitch_gauge()
+
+    @validate_arguments
+    def estimate_yardage(self, stitch_count: PositiveInt) -> float:
+        """Estimate yarn length needed for stitch_count stitches.
+
+        Scales ``yardage_per_unit`` (yarn length per stitch, e.g. metres per
+        stitch) by the number of stitches. Raises ValueError when
+        ``yardage_per_unit`` has not been set on this swatch.
+        """
+        if self.yardage_per_unit is None:
+            raise ValueError("yardage_per_unit not set on this swatch")
+        return self.yardage_per_unit * stitch_count
+
+    @validate_arguments
+    def estimate_weight(self, stitch_count: PositiveInt) -> float:
+        """Estimate yarn weight needed for stitch_count stitches.
+
+        Scales ``weight_per_unit`` (yarn weight per stitch, e.g. grams per
+        stitch) by the number of stitches. Raises ValueError when
+        ``weight_per_unit`` has not been set on this swatch.
+        """
+        if self.weight_per_unit is None:
+            raise ValueError("weight_per_unit not set on this swatch")
+        return self.weight_per_unit * stitch_count
 
 
 # Gauge and stich count related functions
@@ -99,5 +125,3 @@ def convert_row_measure(
     return newGauge.rows_to_measurement(
         oldGauge.measurement_to_rows(measurement)
     )
-
-
