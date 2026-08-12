@@ -45,7 +45,7 @@ def swatch():
 class TestGaugeSwatch:
 
     def test_row_gauge(self, swatch):
-        assert swatch.row_gauge() == 18 / 3.25
+        assert swatch.row_gauge() == pytest.approx(18 / 3.25)
 
     def test_stitch_gauge(self, swatch):
         assert swatch.stitch_gauge() == 24 / 4
@@ -57,7 +57,7 @@ class TestGaugeSwatch:
         assert swatch.measurement_to_rows(11) == 61
 
     def test_rows_to_measurement(self, swatch):
-        assert swatch.rows_to_measurement(10) == 10 / (18 / 3.25)
+        assert swatch.rows_to_measurement(10) == pytest.approx(10 / (18 / 3.25))
 
     def test_stitches_to_measurement(self, swatch):
         assert swatch.stitches_to_measurement(18) == 3
