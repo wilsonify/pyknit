@@ -278,7 +278,7 @@ def stitch_count(row: "PatternRow") -> int:
 
 @validate_arguments
 def convert_stitch_measure(
-    measurement: PositiveFloat, oldGauge: GaugeSwatch, newGauge: GaugeSwatch
+    measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
 ) -> float:
     """
     Given a masurement in the original gauge, find out what it would
@@ -298,13 +298,13 @@ def convert_stitch_measure(
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement
-    return newGauge.stitches_to_measurement(
-        oldGauge.measurement_to_stitches(measurement)
+    return new_gauge.stitches_to_measurement(
+        old_gauge.measurement_to_stitches(measurement)
     )
 
 @validate_arguments
 def convert_row_measure(
-    measurement: PositiveFloat, oldGauge: GaugeSwatch, newGauge: GaugeSwatch
+    measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
 ) -> float:
     """
     Given a masurement in the original gauge, find out what it would
@@ -324,6 +324,6 @@ def convert_row_measure(
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement
-    return newGauge.rows_to_measurement(
-        oldGauge.measurement_to_rows(measurement)
+    return new_gauge.rows_to_measurement(
+        old_gauge.measurement_to_rows(measurement)
     )
