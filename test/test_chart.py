@@ -54,8 +54,14 @@ class TestParseChart:
     def test_multiline(self):
         pattern = parse_chart("k1 p1\np1 k1")
         assert len(pattern) == 2
-        assert pattern[0] == [Stitch("knit", " ", 1), Stitch("purl", ".", 1)]
-        assert pattern[1] == [Stitch("purl", ".", 1), Stitch("knit", " ", 1)]
+        assert pattern[0] == [
+            Stitch("knit", " ", 1, category="knit"),
+            Stitch("purl", ".", 1, category="purl"),
+        ]
+        assert pattern[1] == [
+            Stitch("purl", ".", 1, category="purl"),
+            Stitch("knit", " ", 1, category="knit"),
+        ]
 
 
 class TestInstructionToPlotOrder:

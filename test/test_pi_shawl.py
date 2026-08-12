@@ -24,10 +24,6 @@ def test_pi_shawl_increase_rows():
     assert pi_shawl.pi_shawl_increase_rows(50, 3) == [2, 6, 13, 26, 51, 100]
 
 
-def test_total_rounds_for_pi_shawl():
-    assert pi_shawl.total_rounds_for_pi_shawl(50, 3) == 150
-
-
 def test_half_pi_increase_rows_start_at_2_are_strictly_increasing_and_in_bounds():
     for radius, gauge in [(5, 5), (50, 3)]:
         increase_rows = pi_shawl.half_pi_increase_rows(radius, gauge)

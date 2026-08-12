@@ -25,8 +25,13 @@ class TestCrownDecreases:
         [
             (0, 10, "Invalid starting parameters"),
             (4, 0, "Invalid starting parameters"),
-            (4, 10, "Error: stitch count does not divide evenly"),
         ],
     )
     def test_invalid_params(self, repeats, stitches, expected):
         assert Hat().crown_decreases(repeats, stitches) == expected
+
+    def test_remainder_schedules_extra_decreases(self):
+        instructions = Hat().crown_decreases(4, 10)
+        assert isinstance(instructions, list)
+        assert "(4 stitches)" in instructions[0]
+        assert instructions[-1].startswith("Cut yarn")
