@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
+# Copyright (C) 2021 Terri Oda
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+import pytest
+
 from pyknit import pi_shawl
+
+
+@pytest.mark.parametrize(
+    ("desired_radius", "round_gauge", "expected"),
+    [
+        (5, 5, 25),
+        (50, 3, 150),
+        (10, 4.5, 45),
+    ],
+)
+def test_total_rounds_for_pi_shawl(desired_radius, round_gauge, expected):
+    assert pi_shawl.total_rounds_for_pi_shawl(desired_radius, round_gauge) == expected
 
 
 def test_pi_shawl_increase_rows():

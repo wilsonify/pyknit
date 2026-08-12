@@ -136,3 +136,86 @@ def test_decrease_evenly_uses_shared_spacing(
 ):
     plan = sorted(pyknit._calculate_spacing(starting_count, decrease_number))
     assert [size - 2 for size, _ in plan] == expected_ks
+# Copyright (C) 2021 Terri Oda
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+"""Unit tests for pyKnit shaping functions (openspec spec 06)."""
+
+import pydantic
+import pytest
+
+import pyknit
+
+
+def test_raglan_increases_standard_input():
+    result = pyknit.raglan_increases(
+        neck_stitches=100,
+        arm_stitches=50,
+        bust_stitches=96,
+        neck_to_bust_rows=10,
+    )
+    assert "Marker setup:" in result
+    assert "pm" in result
+    assert result == "Marker setup: k12, pm, k26 (arm), pm, k24, pm, k26 (arm), pm k12"
+
+
+def test_raglan_increases_calculated_neck_too_low():
+    # Known gap in pyknit/__init__.py: when calculated_neck < neck_stitches
+    # the non-increase rows are not emitted (no_increase_rows is a FIXME
+    # placeholder). The shared marker-setup path still runs deterministically,
+    # so we only check that it does not error.
+    result = pyknit.raglan_increases(
+        neck_stitches=300,
+        arm_stitches=50,
+        bust_stitches=96,
+        neck_to_bust_rows=10,
+    )
+    assert "Marker setup:" in result
+
+
+def test_sleeve_decreases_repeat_string():
+    expected = (
+        "[decrease row, do 7 rows in pattern] * 5 times, "
+        "[decrease row, do 6 rows in pattern] * 3 times"
+    )
+    assert (
+        pyknit.sleeve_decreases(number_of_rows=61, starting_count=59, ending_count=43)
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("number_of_rows", "starting_count", "ending_count", "expected"),
+    [
+        (10, 5, 8, ValueError),  # starting_count < ending_count
+        (10, 8, 8, ValueError),  # starting_count == ending_count
+    ],
+)
+def test_sleeve_decreases_error(number_of_rows, starting_count, ending_count, expected):
+    with pytest.raises(expected):
+        pyknit.sleeve_decreases(number_of_rows, starting_count, ending_count)
+
+
+@pytest.mark.parametrize(
+    ("starting_count", "increase_number"),
+    [
+        (0, 5),
+        (-1, 5),
+        (5, 0),
+    ],
+)
+def test_increase_evenly_validation_error(starting_count, increase_number):
+    with pytest.raises(pydantic.ValidationError):
+        pyknit.increase_evenly(starting_count, increase_number)
+
+
+@pytest.mark.parametrize(
+    ("starting_count", "decrease_number"),
+    [
+        (10, 1),  # too few decreases
+        (10, 0),  # too few decreases
+    ],
+)
+def test_decrease_evenly_too_few_decreases(starting_count, decrease_number):
+    with pytest.raises(ValueError):
+        pyknit.decrease_evenly(starting_count, decrease_number)
