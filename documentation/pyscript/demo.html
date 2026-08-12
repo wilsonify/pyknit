@@ -7,211 +7,605 @@
   <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
   <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
   <style>
+    :root {
+      --primary: #007bff;
+      --primary-dark: #0056b3;
+      --success: #28a745;
+      --error: #dc3545;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --light: #f4f4f4;
+      --dark: #222;
+      --border: #ccc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      max-width: 56rem;
+      max-width: 60rem;
       margin: 0 auto;
       padding: 1rem;
-      color: #222;
+      color: var(--dark);
+      background: white;
+      line-height: 1.6;
     }
-    .card {
-      border: 1px solid #ccc;
-      border-radius: 8px;
+
+    header {
+      border-bottom: 2px solid var(--light);
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid var(--light);
+      padding-bottom: 0.3rem;
+    }
+
+    .status-banner {
+      border: 1px solid var(--light);
+      border-radius: 4px;
       padding: 1rem;
-      margin: 1rem 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
     }
+
+    .status-banner.loading {
+      background: #e7f3ff;
+      border-color: var(--info);
+    }
+
+    .status-banner.ready {
+      background: #e8f5e9;
+      border-color: var(--success);
+    }
+
+    .status-banner.error {
+      background: #ffebee;
+      border-color: var(--error);
+    }
+
+    .status-icon {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .status-banner.loading .status-icon::before {
+      content: "⏳";
+    }
+
+    .status-banner.ready .status-icon::before {
+      content: "✓";
+      color: var(--success);
+    }
+
+    .status-banner.error .status-icon::before {
+      content: "✕";
+      color: var(--error);
+    }
+
+    .status-text {
+      flex: 1;
+    }
+
+    .status-text p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin: 1.5rem 0;
+      background: #fafafa;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      resize: vertical;
+    }
+
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    textarea {
+      min-height: 100px;
+      font-family: monospace;
+      white-space: pre;
+    }
+
     button {
-      font-size: 1rem;
-      padding: 0.4rem 0.9rem;
-      margin-left: 0.5rem;
-      cursor: pointer;
-      background: #007bff;
-      color: white;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.95rem;
       border: none;
       border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
     }
-    button:hover {
-      background: #0056b3;
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
-    button:active {
-      transform: scale(0.98);
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
     }
-    .warn { color: #a33; }
-    pre {
-      background: #f4f4f4;
-      padding: 0.6rem;
-      font-size: 1rem;
-      line-height: 1.3;
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      color: var(--error);
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      border-radius: 4px;
+      padding: 0.7rem;
+      margin: 0.8rem 0;
+      font-size: 0.9rem;
+    }
+
+    .success-message {
+      color: var(--success);
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 4px;
+      padding: 0.7rem;
+      margin: 0.8rem 0;
+      font-size: 0.9rem;
+    }
+
+    .info-message {
+      color: #004d99;
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      border-radius: 4px;
+      padding: 0.7rem;
+      margin: 0.8rem 0;
+      font-size: 0.9rem;
+    }
+
+    .output-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.8rem;
+      margin: 1rem 0;
+      min-height: 100px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
       overflow-x: auto;
     }
-    img {
-      border: 1px solid #ccc;
+
+    .output-box svg {
       max-width: 100%;
+      height: auto;
+      background: white;
+      border: 1px solid var(--light);
+      border-radius: 4px;
     }
-    .loading {
-      color: #999;
-      font-style: italic;
+
+    .output-box img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .backend-info {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--light);
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .inline-code {
+      background: var(--light);
+      border-radius: 3px;
+      padding: 0.2rem 0.4rem;
+      font-family: monospace;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>pyKnit in the browser</h1>
+    <h1>pyKnit in the Browser</h1>
     <p>
-      A proof-of-concept page running <code>pyknit</code> via PyScript.
-      Chart rendering prefers an SVG backend when available, otherwise Pillow;
-      if neither works the page degrades to a plain-text grid instead of crashing.
+      A proof-of-concept interactive demo running <code class="inline-code">pyknit</code> via PyScript.
+      Perform gauge conversions, parse knitting patterns, and render charts—all in your browser.
     </p>
   </header>
 
+  <!-- Status Banner -->
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading PyScript runtime and pyknit...</p>
+      <p id="status-detail" style="font-size: 0.85rem; color: #666;"></p>
+    </div>
+  </div>
+
   <py-config>
-    packages = ["pydantic", "pyknit"]
+    packages = ["pydantic", "pillow", "pyknit"]
+    terminal = false
   </py-config>
 
+  <!-- Gauge Conversion Section -->
   <section class="card">
-    <h2>Gauge conversion</h2>
-    <p>
-      Convert a measurement from the pattern gauge (27.5 st / 10 in) to
-      your own gauge (23.5 st / 10 in).
-    </p>
-    <label for="measurement">Measurement (in):</label>
-    <input id="measurement" type="number" value="42" step="0.25" min="1" />
-    <button id="run-calc">Run calculation</button>
+    <h2>Gauge Conversion</h2>
+    <p>Convert a measurement between different knitting gauges.</p>
+
+    <div class="form-group">
+      <label for="pattern-stitch-count">Pattern gauge (stitches):</label>
+      <input
+        id="pattern-stitch-count"
+        type="number"
+        value="27.5"
+        step="0.5"
+        min="0"
+        disabled
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="pattern-stitch-measure">Pattern gauge (per X inches):</label>
+      <input
+        id="pattern-stitch-measure"
+        type="number"
+        value="10"
+        step="1"
+        min="1"
+        disabled
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="my-stitch-count">Your gauge (stitches):</label>
+      <input
+        id="my-stitch-count"
+        type="number"
+        value="23.5"
+        step="0.5"
+        min="0"
+        disabled
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="my-stitch-measure">Your gauge (per X inches):</label>
+      <input
+        id="my-stitch-measure"
+        type="number"
+        value="10"
+        step="1"
+        min="1"
+        disabled
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="measurement">Measurement to convert (inches):</label>
+      <input id="measurement" type="number" value="42" step="0.25" min="0" />
+    </div>
+
+    <button id="run-calc" class="btn-primary" disabled>Convert</button>
+
+    <div id="calc-error" class="error-message" style="display: none;"></div>
     <div id="calc-output"></div>
   </section>
 
+  <!-- Chart Rendering Section -->
   <section class="card">
-    <h2>Chart rendering</h2>
-    <p>
-      Parse a tiny lace pattern and render it. Pillow/PNG output is shown as a
-      base64 image; if rendering fails you get the parsed grid as text.
-    </p>
-    <button id="run-chart">Render chart</button>
-    <div id="backend-hint"></div>
-    <div id="chart-output"></div>
+    <h2>Chart Rendering</h2>
+    <p>Parse knitting instructions and render them as a chart.</p>
+
+    <div class="form-group">
+      <label for="pattern-input">Knitting pattern (instructions):</label>
+      <textarea id="pattern-input" placeholder="e.g., k2 yo k2tog yo k1">k2 yo k2tog yo k1
+p1 k2 yo k2tog p2</textarea>
+    </div>
+
+    <button id="run-chart" class="btn-primary" disabled>Render Chart</button>
+
+    <div id="chart-error" class="error-message" style="display: none;"></div>
+    <div id="backend-info" class="backend-info" style="display: none;"></div>
+    <div id="chart-output" class="output-box" style="display: none;"></div>
   </section>
 
   <footer>
     <p>
-      Serve this directory with any static file server (e.g.
-      <code>python -m http.server</code>) and open <code>demo.html</code>.
+      Serve this directory with any static HTTP server and open
+      <span class="inline-code">demo.html</span> in a modern web browser.
+    </p>
+    <p>
+      First visit may take 30-60 seconds while PyScript initializes and packages download from PyPI.
     </p>
   </footer>
 
   <script type="py">
     import base64
+    import sys
     from pyscript import document
     
+    # Global state
+    READY = False
+    BOOT_ERROR = None
+    pyknit = None
+    browser = None
+    parse_chart = None
+    
+    def set_status(state, message, detail=""):
+        """Update the status banner."""
+        banner = document.querySelector("#status-banner")
+        if not banner:
+            return
+        
+        # Remove all state classes
+        banner.classList.remove("loading", "ready", "error")
+        
+        # Add new state class
+        if state in ("loading", "ready", "error"):
+            banner.classList.add(state)
+        
+        # Update text
+        msg_elem = document.querySelector("#status-message")
+        detail_elem = document.querySelector("#status-detail")
+        if msg_elem:
+            msg_elem.textContent = message
+        if detail_elem:
+            detail_elem.textContent = detail
+    
+    def show_error(element_id, message):
+        """Show an error message in a specific element."""
+        error_elem = document.querySelector(f"#{element_id}")
+        if error_elem:
+            error_elem.textContent = f"Error: {message}"
+            error_elem.style.display = "block"
+    
+    def hide_error(element_id):
+        """Hide an error message."""
+        error_elem = document.querySelector(f"#{element_id}")
+        if error_elem:
+            error_elem.style.display = "none"
+    
+    def set_buttons_enabled(enabled):
+        """Enable or disable all buttons."""
+        buttons = document.querySelectorAll("button")
+        for btn in buttons:
+            btn.disabled = not enabled
+    
+    # Try to import pyknit
     try:
+        print("Attempting to import pyknit...", file=sys.stderr)
         import pyknit
         from pyknit import browser
         from pyknit.Chart import parse_chart
+        from pyknit import GaugeSwatch, convert_stitch_measure
         
         READY = True
-        BOOT_ERROR = None
+        set_status("ready", "✓ pyknit loaded successfully!", "Ready to use")
+        set_buttons_enabled(True)
+        print("pyknit imported successfully", file=sys.stderr)
+        
     except Exception as exc:
         READY = False
         BOOT_ERROR = str(exc)
+        error_msg = f"Failed to load pyknit: {exc}"
+        set_status("error", error_msg)
+        set_buttons_enabled(False)
+        print(f"ERROR: {error_msg}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
     
-    def out(selector, html):
-        """Write HTML into a DOM element, never leaving blank output."""
-        element = document.querySelector(selector)
+    def out(element_id, html_content, display="block"):
+        """Write HTML into a DOM element."""
+        element = document.querySelector(f"#{element_id}")
         if element:
-            element.innerHTML = html
+            element.innerHTML = html_content
+            if display:
+                element.style.display = display
     
     def handle_calculation(event=None):
+        """Handle gauge conversion calculation."""
         if not READY:
-            out(
-                "#calc-output",
-                f"<p class='warn'>pyknit failed to load: {BOOT_ERROR}</p>",
-            )
+            show_error("calc-error", "pyknit is not loaded")
             return
+        
+        hide_error("calc-error")
+        
         try:
+            # Get input values
+            pattern_st = float(document.querySelector("#pattern-stitch-count").value)
+            pattern_meas = float(document.querySelector("#pattern-stitch-measure").value)
+            my_st = float(document.querySelector("#my-stitch-count").value)
+            my_meas = float(document.querySelector("#my-stitch-measure").value)
             measurement = float(document.querySelector("#measurement").value)
-        except (ValueError, TypeError):
-            measurement = 42.0
-        
-        try:
-            pattern_gauge = pyknit.GaugeSwatch(
-                stitch_count=27.5, stitch_measure=10, row_count=40,
-                row_measure=4, units="in",
-            )
-            my_gauge = pyknit.GaugeSwatch(
-                stitch_count=23.5, stitch_measure=10, row_count=33,
-                row_measure=4, units="in",
-            )
-            result = pyknit.convert_stitch_measure(
-                measurement, pattern_gauge, my_gauge
-            )
-            out(
-                "#calc-output",
-                f"<p>A {measurement:g} in measurement at pattern gauge becomes "
-                f"<strong>{result:.2f} in</strong> at your gauge.</p>",
-            )
-        except Exception as exc:
-            out(
-                "#calc-output",
-                f"<p class='warn'>Error: {exc}</p>",
-            )
-    
-    def handle_chart(event=None):
-        if not READY:
-            out(
-                "#chart-output",
-                f"<p class='warn'>pyknit failed to load: {BOOT_ERROR}</p>",
-            )
-            return
-        
-        try:
-            pattern = parse_chart(
-                "k2 yo k2tog yo k1\np1 k2 yo k2tog p2"
-            )
-            try:
-                fmt, content = browser.render_pattern(pattern)
-            except Exception as exc:
-                # Defensive: render_pattern already degrades, but never crash.
-                out(
-                    "#chart-output",
-                    "<p class='warn'>Chart rendering failed ({0}); falling back "
-                    "to plain text.</p><pre>{1}</pre>".format(
-                        exc, browser.pattern_to_text(pattern)
-                    ),
-                )
+            
+            # Validate inputs
+            if measurement <= 0:
+                show_error("calc-error", "Measurement must be positive (greater than 0)")
+                out("calc-output", "", "none")
                 return
             
+            if pattern_st <= 0 or pattern_meas <= 0 or my_st <= 0 or my_meas <= 0:
+                show_error("calc-error", "Gauge values must be positive")
+                out("calc-output", "", "none")
+                return
+            
+            # Create gauge swatches
+            pattern_gauge = GaugeSwatch(
+                stitch_count=pattern_st,
+                stitch_measure=pattern_meas,
+                row_count=40,
+                row_measure=4,
+                units="in"
+            )
+            my_gauge = GaugeSwatch(
+                stitch_count=my_st,
+                stitch_measure=my_meas,
+                row_count=33,
+                row_measure=4,
+                units="in"
+            )
+            
+            # Calculate conversion
+            result = convert_stitch_measure(measurement, pattern_gauge, my_gauge)
+            
+            # Display result
+            html = f"""<div class='success-message'>
+              <strong>{measurement:g} in</strong> at the pattern gauge 
+              ({pattern_st} stitches / {pattern_meas} in)
+              becomes <strong>{result:.2f} in</strong> at your gauge 
+              ({my_st} stitches / {my_meas} in).
+            </div>"""
+            out("calc-output", html)
+            
+        except ValueError as e:
+            show_error("calc-error", f"Invalid input: {e}")
+            out("calc-output", "", "none")
+        except Exception as e:
+            show_error("calc-error", str(e))
+            out("calc-output", "", "none")
+    
+    def handle_chart(event=None):
+        """Handle chart rendering."""
+        if not READY:
+            show_error("chart-error", "pyknit is not loaded")
+            return
+        
+        hide_error("chart-error")
+        
+        try:
+            # Get pattern from textarea
+            pattern_text = document.querySelector("#pattern-input").value
+            
+            if not pattern_text.strip():
+                show_error("chart-error", "Pattern cannot be empty")
+                out("chart-output", "", "none")
+                out("backend-info", "", "none")
+                return
+            
+            # Parse the pattern
+            try:
+                pattern = parse_chart(pattern_text)
+            except Exception as parse_error:
+                show_error("chart-error", f"Parse error: {parse_error}")
+                out("chart-output", "", "none")
+                out("backend-info", "", "none")
+                return
+            
+            # Try to render the pattern
+            try:
+                fmt, content = browser.render_pattern(pattern)
+            except Exception as render_error:
+                # Fallback to text rendering
+                text_output = browser.pattern_to_text(pattern)
+                out(
+                    "chart-output",
+                    f"<div class='info-message'>Rendering with text fallback.</div><pre>{text_output}</pre>"
+                )
+                backends = ", ".join(browser.available_backends())
+                out(
+                    "backend-info",
+                    f"Available backends: {backends}"
+                )
+                out("backend-info", "", "block")
+                return
+            
+            # Handle different output formats
             if fmt == "svg":
-                out(
-                    "#chart-output",
-                    "<p>Rendered with the SVG backend.</p>" + content,
-                )
+                out("chart-output", f"<div class='info-message'>Rendered with SVG backend.</div>{content}")
             elif fmt == "png":
-                data_uri = (
-                    "data:image/png;base64,"
-                    + base64.b64encode(content).decode("ascii")
-                )
+                data_uri = "data:image/png;base64," + base64.b64encode(content).decode("ascii")
                 out(
-                    "#chart-output",
-                    "<p>Rendered with the Pillow backend.</p>"
-                    '<img src="' + data_uri + '" alt="Chart rendered by pyKnit" />',
+                    "chart-output",
+                    f"<div class='info-message'>Rendered with Pillow/PNG backend.</div><img src='{data_uri}' alt='Chart' />"
+                )
+            elif fmt == "text":
+                out(
+                    "chart-output",
+                    f"<div class='info-message'>Rendered with text backend.</div><pre>{content}</pre>"
                 )
             else:
+                # Unknown format, fall back to text
+                text_output = browser.pattern_to_text(pattern)
                 out(
-                    "#chart-output",
-                    "<p class='warn'>No rendering backend available; showing the "
-                    "parsed chart as plain text.</p><pre>{0}</pre>".format(
-                        browser.pattern_to_text(pattern)
-                    ),
+                    "chart-output",
+                    f"<pre>{text_output}</pre>"
                 )
             
-            hint = ", ".join(browser.available_backends())
-            out("#backend-hint", "<p>Backends available: " + hint + "</p>")
-        except Exception as exc:
+            # Show available backends
+            backends = ", ".join(browser.available_backends())
             out(
-                "#chart-output",
-                f"<p class='warn'>Error: {exc}</p>",
+                "backend-info",
+                f"Available backends: {backends}"
             )
+            out("backend-info", "", "block")
+            out("chart-output", "", "block")
+            
+        except Exception as e:
+            show_error("chart-error", str(e))
+            out("chart-output", "", "none")
+            out("backend-info", "", "none")
     
-    # Attach click handlers
+    # Attach event handlers
     calc_btn = document.querySelector("#run-calc")
     if calc_btn:
         calc_btn.addEventListener("click", handle_calculation)
@@ -220,9 +614,21 @@
     if chart_btn:
         chart_btn.addEventListener("click", handle_chart)
     
-    # Run once on load so the page is never blank
-    handle_calculation()
-    handle_chart()
+    # Enable input fields
+    for field_id in [
+        "pattern-stitch-count", "pattern-stitch-measure",
+        "my-stitch-count", "my-stitch-measure", "measurement",
+        "pattern-input"
+    ]:
+        field = document.querySelector(f"#{field_id}")
+        if field:
+            field.disabled = False
+    
+    # Run default demo if ready
+    if READY:
+        print("Running default calculations...", file=sys.stderr)
+        handle_calculation()
+        handle_chart()
   </script>
 </body>
 </html>
