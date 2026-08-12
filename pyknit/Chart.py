@@ -9,9 +9,11 @@ patterns and more
 pyKnit.Chart: chart and pattern parsing functions
 """
 
+import base64
 import os.path
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
+from xml.sax.saxutils import escape as _xml_escape
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -39,6 +41,10 @@ class Stitch:
 Legend = Dict[str, Stitch]
 PatternRow = List[Stitch]
 Pattern = List[PatternRow]
+
+# chart cell size in pixels, shared by plot_chart and render_chart_svg
+cell_height = 50
+cell_width = 50
 
 symbol_dir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -377,3 +383,166 @@ def plot_chart(
         col_y = col_y + cell_height * (1 if tb_direction == "tb" else -1)
 
     return chart_image
+
+
+def _symbol_to_data_uri(symbol: str) -> Optional[str]:
+    """Return *symbol* as a base64 data URI, or None if the file is unreadable."""
+    mime_by_extension = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+    }
+    try:
+        with open(symbol, "rb") as image_file:
+            payload = base64.b64encode(image_file.read()).decode("ascii")
+    except (IOError, OSError):
+        return None
+    mime = mime_by_extension.get(
+        os.path.splitext(symbol)[1].lower(), "image/png"
+    )
+    return f"data:{mime};base64,{payload}"
+
+
+def render_chart_svg(
+    stitch_array: Pattern, lr_direction: str = "lr", tb_direction: str = "tb"
+) -> str:
+    """Render a chart as an SVG string.
+
+    Produces the same layout as :func:`plot_chart` (spec 03) using only the
+    standard library so charts render where Pillow is unavailable. A single
+    :class:`PatternRow` is normalized into a one-row pattern, and the returned
+    string is a standalone SVG document with the same canvas dimensions as
+    ``plot_chart``.
+
+    >>> from xml.etree.ElementTree import fromstring
+    >>> svg = render_chart_svg(parse_chart("k p"))
+    >>> svg.startswith("<?xml")
+    True
+    >>> root = fromstring(svg)
+    >>> root.tag
+    '{http://www.w3.org/2000/svg}svg'
+    >>> root.attrib["width"]
+    '150'
+    >>> root.attrib["height"]
+    '100'
+    """
+    num_rows = len(stitch_array)
+    if num_rows <= 0:
+        raise ValueError("There must be at least one row in the pattern")
+    if isinstance(stitch_array[0], Stitch):
+        # a single row arrives as a flat list of Stitches; wrap it so the
+        # 2D loop below always iterates over rows
+        stitch_array = [stitch_array]
+        num_rows = 1
+
+    longest_row_len = max(sum(st.width for st in row) for row in stitch_array)
+
+    pattern_to_plot = instruction_to_plot_order(
+        stitch_array, tb_direction, lr_direction
+    )
+
+    canvas_width = cell_width * (longest_row_len + 1)
+    canvas_height = cell_height * (num_rows + 1)
+
+    color_st_pattern = re.compile(r"#[0-9a-fA-F]{6}")
+    elements = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{canvas_width}" height="{canvas_height}" '
+        f'viewBox="0 0 {canvas_width} {canvas_height}">',
+    ]
+
+    # Numbers live in a leading stripe (top or bottom for rows, left or right
+    # for columns), so the data area is inset by one cell there.
+    top = 0 if tb_direction == "bt" else cell_height
+    left = 0 if lr_direction == "rl" else cell_width
+    bottom = top + cell_height * num_rows
+    right = left + cell_width * longest_row_len
+
+    for x in range(left, right + 1, cell_width):
+        elements.append(
+            f'<line x1="{x}" y1="{top}" x2="{x}" y2="{bottom}" '
+            f'stroke="black" stroke-width="1"/>'
+        )
+    for y in range(top, bottom + 1, cell_height):
+        elements.append(
+            f'<line x1="{left}" y1="{y}" x2="{right}" y2="{y}" '
+            f'stroke="black" stroke-width="1"/>'
+        )
+
+    for row_index, row in enumerate(pattern_to_plot):
+        cur_y = (row_index + (1 if tb_direction == "tb" else 0)) * cell_height
+        cur_x = 0 if lr_direction == "rl" else cell_width
+        for stitch in row:
+            span = stitch.width * cell_width
+            center_x = cur_x + span / 2
+            center_y = cur_y + cell_height / 2
+            if stitch.symbol.endswith(".png"):
+                data_uri = _symbol_to_data_uri(stitch.symbol)
+                if data_uri is not None:
+                    elements.append(
+                        f'<image href="{data_uri}" x="{cur_x}" y="{cur_y}" '
+                        f'width="{span}" height="{cell_height}"/>'
+                    )
+                else:
+                    label = os.path.basename(stitch.symbol)
+                    elements.append(
+                        f'<text x="{center_x}" y="{center_y}" '
+                        f'text-anchor="middle" dominant-baseline="central" '
+                        f'font-size="14">{_xml_escape(label)}</text>'
+                    )
+            else:
+                colored = color_st_pattern.match(stitch.symbol)
+                fill = stitch.symbol if colored else "white"
+                elements.append(
+                    f'<rect x="{cur_x}" y="{cur_y}" width="{span}" '
+                    f'height="{cell_height}" fill="{fill}" stroke="black"/>'
+                )
+                if not colored:
+                    elements.append(
+                        f'<text x="{center_x}" y="{center_y}" '
+                        f'text-anchor="middle" dominant-baseline="central" '
+                        f'font-size="20" fill="blue">'
+                        f'{_xml_escape(stitch.symbol)}</text>'
+                    )
+            cur_x += span
+
+    row_x = (
+        3 * cell_width // 2
+        if lr_direction == "lr"
+        else canvas_width - 3 * cell_width // 2
+    )
+    row_y = (
+        cell_height // 2
+        if tb_direction == "tb"
+        else canvas_height - cell_height // 2
+    )
+    for column_number in range(1, longest_row_len + 1):
+        elements.append(
+            f'<text x="{row_x}" y="{row_y}" text-anchor="middle" '
+            f'dominant-baseline="central" font-size="14">'
+            f'{column_number}</text>'
+        )
+        row_x += cell_width * (1 if lr_direction == "lr" else -1)
+
+    column_x = (
+        cell_width // 2
+        if lr_direction == "lr"
+        else canvas_width - cell_width // 2
+    )
+    column_y = (
+        3 * cell_height // 2
+        if tb_direction == "tb"
+        else canvas_height - 3 * cell_height // 2
+    )
+    for pattern_row_number in range(1, num_rows + 1):
+        elements.append(
+            f'<text x="{column_x}" y="{column_y}" text-anchor="middle" '
+            f'dominant-baseline="central" font-size="14">'
+            f'{pattern_row_number}</text>'
+        )
+        column_y += cell_height * (1 if tb_direction == "tb" else -1)
+
+    elements.append("</svg>")
+    return "\n".join(elements)
