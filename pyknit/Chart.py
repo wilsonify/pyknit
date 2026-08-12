@@ -586,14 +586,13 @@ def print_row(stitch_array: PatternRow) -> Image:
 
 
 def instruction_to_plot_order(
-        input_array: Pattern, vertical_order: str = "bt", horizontal_order: str = "rl"
+    input_array: Pattern, vertical_order: str = "bt", horizontal_order: str = "rl"
 ) -> Pattern:
     """Reorder a pattern for plotting, bottom-to-top and right-to-left by default.
 
     >>> instruction_to_plot_order(parse_chart("k4\\np4"))
     [['.', '.', '.', '.'], [' ', ' ', ' ', ' ']]
     """
-    # input_array = [list(row) for row in pattern.lstrip().rstrip().split("\n")]
     vertical_ordered = (
         list(reversed(input_array)) if vertical_order == "bt" else input_array
     )
