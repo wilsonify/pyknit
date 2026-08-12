@@ -239,7 +239,7 @@ def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
     if times % 2 == 0:
         return _handle_flat_even_times(times, k_string, higher_times, k_higher, k_higher_string)
     elif higher_times % 2 == 0:
-        return _handle_flat_even_higher_times(times, k, k_string, higher_times, k_higher, k_higher_string)
+        return _handle_flat_even_higher_times(times, k, k_string, higher_times, k_higher_string)
     else:
         return _handle_flat_odd_times(times, k_string, higher_times, k_higher, k_higher_string)
 
@@ -259,7 +259,7 @@ def _handle_flat_even_times(times: float, k_string: str,
 
 
 def _handle_flat_even_higher_times(times: float, k: int, k_string: str, higher_times: float, 
-                                   k_higher: int, k_higher_string: str) -> str:
+                                   k_higher_string: str) -> str:
     """Handle flat knitting with even higher_times."""
     higher_times = higher_times / 2
     times = times - 1
@@ -398,40 +398,7 @@ def sleeve_decreases(
     padding_rows = number_of_rows - number_of_decrease_rows
     plan = _calculate_spacing(padding_rows, number_of_decrease_rows, padding_mode)
 
-    if padding_mode == "none":
-        instruction_string = ", ".join(["decrease row"] * number_of_decrease_rows)
-    elif padding_mode == "before":
-        instruction_string = ", ".join(
-            f"[do {interval} rows in pattern, decrease row] * {groups} times"
-            for interval, groups in plan
-        )
-    elif padding_mode == "both":
-        segments = []
-        for interval, groups in plan:
-            before = interval // 2
-            after = interval - before
-            if before > 0 and after > 0:
-                segment = (
-                    f"[do {before} rows in pattern, decrease row, "
-                    f"do {after} rows in pattern] * {groups} times"
-                )
-            elif after > 0:
-                segment = (
-                    f"[decrease row, do {after} rows in pattern] * {groups} times"
-                )
-            elif before > 0:
-                segment = (
-                    f"[do {before} rows in pattern, decrease row] * {groups} times"
-                )
-            else:
-                segment = f"[decrease row] * {groups} times"
-            segments.append(segment)
-        instruction_string = ", ".join(segments)
-    else:
-        instruction_string = ", ".join(
-            f"[decrease row, do {interval} rows in pattern] * {groups} times"
-            for interval, groups in plan
-        )
+    instruction_string = _format_padding_mode(padding_mode, plan, number_of_decrease_rows)
 
     if remainder > 0:
         instruction_string += (
@@ -440,6 +407,45 @@ def sleeve_decreases(
         )
 
     return instruction_string
+
+
+def _format_padding_mode(padding_mode: str, plan, number_of_decrease_rows: int) -> str:
+    """Format instruction string based on padding mode."""
+    if padding_mode == "none":
+        return ", ".join(["decrease row"] * number_of_decrease_rows)
+    elif padding_mode == "before":
+        return ", ".join(
+            f"[do {interval} rows in pattern, decrease row] * {groups} times"
+            for interval, groups in plan
+        )
+    elif padding_mode == "both":
+        segments = []
+        for interval, groups in plan:
+            segments.append(_format_both_mode_segment(interval, groups))
+        return ", ".join(segments)
+    else:  # padding_mode == "after"
+        return ", ".join(
+            f"[decrease row, do {interval} rows in pattern] * {groups} times"
+            for interval, groups in plan
+        )
+
+
+def _format_both_mode_segment(interval: int, groups: int) -> str:
+    """Format a segment for 'both' padding mode."""
+    before = interval // 2
+    after = interval - before
+    
+    if before > 0 and after > 0:
+        return (
+            f"[do {before} rows in pattern, decrease row, "
+            f"do {after} rows in pattern] * {groups} times"
+        )
+    elif after > 0:
+        return f"[decrease row, do {after} rows in pattern] * {groups} times"
+    elif before > 0:
+        return f"[do {before} rows in pattern, decrease row] * {groups} times"
+    else:
+        return f"[decrease row] * {groups} times"
 
 
 def raglan_increases(
