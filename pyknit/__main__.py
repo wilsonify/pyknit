@@ -6,6 +6,55 @@ import logging
 
 from pyknit import VERSION, GaugeSwatch
 
+_CENTIMETERS_PER_INCH = 2.54
+
+
+def _convert_measurement_units(
+    measurement: float, from_unit: str, to_unit: str
+) -> float:
+    """Convert a measurement between inches and centimetres (1 in = 2.54 cm)."""
+    if from_unit == to_unit:
+        return measurement
+    if from_unit == "cm" and to_unit == "in":
+        return measurement / _CENTIMETERS_PER_INCH
+    if from_unit == "in" and to_unit == "cm":
+        return measurement * _CENTIMETERS_PER_INCH
+    raise ValueError(f"Unsupported unit conversion: {from_unit} -> {to_unit}")
+
+
+def convert_row_gauge(
+    original_gauge: GaugeSwatch,
+    new_gauge: GaugeSwatch,
+    original_measurement: float,
+    original_unit: str,
+) -> float:
+    """Convert a measurement in rows from the original gauge to the new gauge.
+
+    The measurement is counted at the original gauge (rows in the original
+    unit), measured at the new gauge (rows -> new unit), and the final
+    measurement is reported back in the original unit.
+    """
+    rows = original_gauge.measurement_to_rows(original_measurement)
+    new_measurement = new_gauge.rows_to_measurement(rows)
+    return _convert_measurement_units(new_measurement, new_gauge.units, original_unit)
+
+
+def convert_stitch_gauge(
+    original_gauge: GaugeSwatch,
+    new_gauge: GaugeSwatch,
+    original_measurement: float,
+    original_unit: str,
+) -> float:
+    """Convert a measurement in stitches at the original gauge to the new gauge.
+
+    The measurement is counted at the original gauge (stitches in the original
+    unit), measured at the new gauge (stitches -> new unit), and the final
+    measurement is reported back in the original unit.
+    """
+    stitches = original_gauge.measurement_to_stitches(original_measurement)
+    new_measurement = new_gauge.stitches_to_measurement(stitches)
+    return _convert_measurement_units(new_measurement, new_gauge.units, original_unit)
+
 
 def main():
     # set up the logger
@@ -156,24 +205,29 @@ def main():
             f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}"
         )
 
-        # We only need the row info so we're setting the rest to 1 for convenience.
-        # FIXME: Need to add something to convert cm/in if the gagues are different
+        # We only need the row info so we're setting the rest to 1 for
+        # convenience.  Construct the gauges in their own units and let
+        # convert_row_gauge() handle any cm/in differences.
         original_gauge = GaugeSwatch(
             row_count=original_gauge_row,
             stitch_count=1,
-            row_measure=1,
+            row_measure=args.original_gauge_measurement,
             stitch_measure=1,
             units=args.original_gauge_unit,
         )
         new_gauge = GaugeSwatch(
             row_count=new_gauge_row,
             stitch_count=1,
-            row_measure=1,
+            row_measure=args.new_gauge_measurement,
             stitch_measure=1,
             units=args.new_gauge_unit,
         )
-        original_gauge_rows = original_gauge.measurement_to_rows(original_measurement)
-        new_measurement = new_gauge.rows_to_measurement(original_gauge_rows)
+        new_measurement = convert_row_gauge(
+            original_gauge,
+            new_gauge,
+            original_measurement,
+            args.original_gauge_unit,
+        )
         logger.info(
             f"My calculated measurement: {new_measurement} {args.original_gauge_unit}"
         )
@@ -215,26 +269,29 @@ def main():
             f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}"
         )
 
-        # We only need the stitch info so we're setting the rest to 1 for convenience.
-        # FIXME: Need to add something to convert cm/in if the gagues are different
+        # We only need the stitch info so we're setting the rest to 1 for
+        # convenience.  Construct the gauges in their own units and let
+        # convert_stitch_gauge() handle any cm/in differences.
         original_gauge = GaugeSwatch(
             stitch_count=original_gauge_stitch,
             row_count=1,
             row_measure=1,
-            stitch_measure=1,
+            stitch_measure=args.original_gauge_measurement,
             units=args.original_gauge_unit,
         )
         new_gauge = GaugeSwatch(
             stitch_count=new_gauge_stitch,
             row_count=1,
             row_measure=1,
-            stitch_measure=1,
+            stitch_measure=args.new_gauge_measurement,
             units=args.new_gauge_unit,
         )
-        original_gauge_stitches = original_gauge.measurement_to_stitches(
-            original_measurement
+        new_measurement = convert_stitch_gauge(
+            original_gauge,
+            new_gauge,
+            original_measurement,
+            args.original_gauge_unit,
         )
-        new_measurement = new_gauge.stitches_to_measurement(original_gauge_stitches)
         logger.info(
             f"My calculated measurement: {new_measurement} {args.original_gauge_unit}"
         )
