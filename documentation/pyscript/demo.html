@@ -433,15 +433,20 @@ p1 k2 yo k2tog p2</textarea>
             cell_height = 20
             
             rows = len(pattern)
+            if rows == 0:
+                return ("text", "")
+            
             cols = max((len(row) for row in pattern), default=0)
+            if cols == 0:
+                return ("text", "")
             
             width = cols * cell_width + 20
             height = rows * cell_height + 20
             
             # Create SVG
             svg_lines = [
-                f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">',
-                '<style>text { font-family: monospace; font-size: 14px; text-anchor: middle; } rect { stroke: #ccc; stroke-width: 1; fill: white; }</style>'
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" style="border: 1px solid #ccc;">',
+                '<style>text {{ font-family: monospace; font-size: 14px; text-anchor: middle; }} rect {{ stroke: #ccc; stroke-width: 1; fill: white; }}</style>'
             ]
             
             for y, row in enumerate(pattern):
@@ -451,14 +456,20 @@ p1 k2 yo k2tog p2</textarea>
                     svg_lines.append(
                         f'<rect x="{rect_x}" y="{rect_y}" width="{cell_width}" height="{cell_height}" />'
                     )
+                    # Escape special characters in cell content
+                    cell_str = str(cell).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
                     svg_lines.append(
-                        f'<text x="{rect_x + cell_width // 2}" y="{rect_y + cell_height // 2 + 5}">{cell}</text>'
+                        f'<text x="{rect_x + cell_width // 2}" y="{rect_y + cell_height // 2 + 5}">{cell_str}</text>'
                     )
             
             svg_lines.append('</svg>')
-            return ("svg", "\n".join(svg_lines))
-        except Exception:
-            pass
+            svg_content = "\n".join(svg_lines)
+            print(f"SVG generated: {len(svg_content)} bytes", file=sys.stderr)
+            return ("svg", svg_content)
+        except Exception as e:
+            print(f"SVG rendering failed: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
         
         # Try Pillow
         try:
@@ -481,7 +492,7 @@ p1 k2 yo k2tog p2</textarea>
                     y_pos = 10 + y * cell_size
                     
                     # Draw cell border
-                    draw.rectangle([x_pos, y_pos, x_pos + cell_size, y_pos + cell_size], outline='#ccc')
+                    draw.rectangle([x_pos, y_pos, x_pos + cell_size, y_pos + cell_size], outline='#cccccc')
                     
                     # Draw character
                     draw.text((x_pos + 5, y_pos + 2), str(cell), fill='black')
@@ -490,12 +501,17 @@ p1 k2 yo k2tog p2</textarea>
             import io
             png_buffer = io.BytesIO()
             img.save(png_buffer, format='PNG')
-            return ("png", png_buffer.getvalue())
-        except Exception:
-            pass
+            png_bytes = png_buffer.getvalue()
+            print(f"PNG generated: {len(png_bytes)} bytes", file=sys.stderr)
+            return ("png", png_bytes)
+        except Exception as e:
+            print(f"Pillow rendering failed: {e}", file=sys.stderr)
         
         # Fallback to text
-        return ("text", pattern_to_text(pattern))
+        print("Using text rendering fallback", file=sys.stderr)
+        text = pattern_to_text(pattern)
+        print(f"Text generated: {len(text)} chars", file=sys.stderr)
+        return ("text", text)
     
     def set_status(state, message, detail=""):
         """Update the status banner."""
@@ -698,12 +714,14 @@ p1 k2 yo k2tog p2</textarea>
             
             # Show available backends
             backends = ", ".join(available_backends())
-            out(
-                "backend-info",
-                f"Available backends: {backends}"
-            )
-            out("backend-info", "", "block")
-            out("chart-output", "", "block")
+            backend_elem = document.querySelector("#backend-info")
+            if backend_elem:
+                backend_elem.textContent = f"Available backends: {backends}"
+                backend_elem.style.display = "block"
+            
+            chart_elem = document.querySelector("#chart-output")
+            if chart_elem:
+                chart_elem.style.display = "block"
             
         except Exception as e:
             show_error("chart-error", str(e))
