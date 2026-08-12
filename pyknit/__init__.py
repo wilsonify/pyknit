@@ -29,7 +29,7 @@ VERSION = "pyKnit 0.0.9"
 
 @validate_arguments
 def increase_evenly(
-    starting_count: PositiveInt, increase_number: PositiveInt, in_the_round: bool = False
+    starting_count: PositiveInt, increase_number: PositiveInt
 ) -> str:
     """ A function to figure out even spacing for increases
 
