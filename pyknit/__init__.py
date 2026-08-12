@@ -8,7 +8,7 @@ patterns and more
 import logging
 import math
 from logging.config import dictConfig
-from typing import Set
+from typing import List, Set, Tuple
 
 from pydantic import PositiveInt, validate_arguments
 
@@ -77,24 +77,50 @@ def increase_evenly(
     return instruction_string
 
 
+def _calculate_spacing(
+    total: int, count: int, padding_mode: str = "after"
+) -> List[Tuple[int, int]]:
+    """Return a balanced spacing plan splitting ``total`` items into ``count`` groups.
+
+    The plan is a list of ``(interval_size, number_of_groups)`` pairs whose
+    order is the emission order.  The remainder ``total % count`` is spread
+    one item at a time over groups of the next-larger interval.
+
+    ``padding_mode`` chooses where the larger groups sit in the plan:
+
+    * "after" (default): larger interval groups come first
+    * "before": larger interval groups come last
+    * "both" / "none": same layout as "after" (layout is a caller concern)
+
+    Zero-count groups are omitted.
+    """
+    if count <= 0:
+        raise ValueError("count must be a positive integer")
+    interval = total // count
+    remainder = total % count
+    entries = [(interval + 1, remainder), (interval, count - remainder)]
+    if padding_mode == "before":
+        entries.reverse()
+    return [(size, groups) for size, groups in entries if groups > 0]
+
+
 def decrease_evenly_round(starting_count: PositiveInt, decrease_number: PositiveInt) -> str:
     """
     A function to figure out spacing for decreases across a circular round
     """
-    left_over = starting_count % decrease_number
-    if left_over == 0:
-        k = (starting_count / decrease_number) - 2
-        times = decrease_number
+    plan = _calculate_spacing(starting_count, decrease_number)
+    if len(plan) == 1:
+        interval, times = plan[0]
+        k = interval - 2
         decrease_pattern = f'[k{k:.0f}, k2tog] * {times:.0f}'
         if times == 1:
             decrease_pattern += ' time'
         else:
             decrease_pattern += ' times'
     else:
-        k = math.floor(starting_count / decrease_number) - 2
-        k_higher = k + 1
-        higher_times = starting_count % decrease_number
-        times = decrease_number - higher_times
+        (small_interval, times), (large_interval, higher_times) = sorted(plan)
+        k = small_interval - 2
+        k_higher = large_interval - 2
         k_string = 'k2tog' if k == 0 else f'k{k:.0f}, k2tog'
         k_higher_string = 'k2tog' if k_higher == 0 else f'k{k_higher:.0f}, k2tog'
         if times % 2 == 0:
@@ -123,12 +149,12 @@ def decrease_evenly_flat(starting_count: PositiveInt, decrease_number: PositiveI
     A function to figure out spacing for decreases across a flat row
     """
 
-    left_over = starting_count % decrease_number
-    if left_over == 0:
-        k = (starting_count / decrease_number) - 2
+    plan = _calculate_spacing(starting_count, decrease_number)
+    if len(plan) == 1:
+        interval, times = plan[0]
+        k = interval - 2
         k_first = math.ceil(k / 2)
         k_second = k - k_first
-        times = decrease_number
         decrease_pattern = ''
         if k_first != 0:
             times = times - 1
@@ -144,11 +170,9 @@ def decrease_evenly_flat(starting_count: PositiveInt, decrease_number: PositiveI
 
 
     else:
-        k = math.floor(starting_count / decrease_number) - 2
-        k_higher = k + 1
-        higher_times = starting_count % decrease_number
-        times = decrease_number - higher_times
-        left_over = starting_count - (k + 2) * times - (k_higher + 2) * higher_times
+        (small_interval, times), (large_interval, higher_times) = sorted(plan)
+        k = small_interval - 2
+        k_higher = large_interval - 2
         k_string = f'k2tog, k{k:.0f}' if k != 0 else 'k2tog'
         k_higher_string = f'k2tog, k{k_higher:.0f}' if k_higher != 0 else 'k2tog'
 
@@ -227,11 +251,31 @@ def sleeve_decreases(
     starting_count: PositiveInt,
     ending_count: PositiveInt,
     decrease_per_row: PositiveInt = 2,
+    padding_mode: str = "after",
 ) -> str:
-    """ A function to figure out a nice even sleeve decrease. """
+    """A function to figure out a nice even sleeve decrease.
 
-    # TODO: This function is going to be pretty similar to the decrease_evenly()
-    # function.  We may want to combine them later.
+    ``padding_mode`` controls where the plain non-decrease rows are placed
+    relative to each decrease row:
+
+    * "after" (default): plain rows follow each decrease row (the historical
+      behaviour, kept for backwards compatibility)
+    * "before": plain rows precede each decrease row
+    * "both": each run of plain rows is split evenly around its decrease row
+    * "none": only the decrease rows are listed, back to back
+
+    When ``starting_count - ending_count`` is not a multiple of
+    ``decrease_per_row`` the leftover stitches are scheduled as extra single
+    decreases (k2tog) on the last row, so the sleeve finishes at exactly
+    ``ending_count`` stitches instead of a "closest alternative".
+    """
+    if padding_mode not in ("before", "after", "both", "none"):
+        msg = (
+            f"padding_mode must be one of 'before', 'after', 'both' or 'none';"
+            f" got '{padding_mode}'"
+        )
+        logging.error(msg)
+        raise ValueError(msg)
 
     if starting_count < ending_count:
         logging.error(
@@ -240,39 +284,66 @@ def sleeve_decreases(
         raise ValueError
     elif starting_count == ending_count:
         logging.error(
-            f"Error: No decreases needed, the starting count is the same as the ending count"
+            "Error: No decreases needed, the starting count is the same as the ending count"
         )
         raise ValueError
 
-    # How many times are we doing the decrease row?
-    number_of_decrease_rows = math.floor(
-        (starting_count - ending_count) / decrease_per_row
-    )
-    if ((starting_count - ending_count) % decrease_per_row) > 0:
-        # TODO: we could probably do this math for people if we wanted
-        logging.warning(
-            f"Warning: desired decrease doesn't work exactly with a {decrease_per_row} decrease"
+    total_decrease = starting_count - ending_count
+    number_of_decrease_rows = total_decrease // decrease_per_row
+    remainder = total_decrease % decrease_per_row
+
+    if number_of_decrease_rows < 1:
+        msg = (
+            f"Error: cannot schedule any decrease rows: decreasing "
+            f"{starting_count} to {ending_count} needs {total_decrease} "
+            f"decreases but each decrease row only removes {decrease_per_row}"
         )
-        logging.warning(
-            "Printing the closest alternative but you'll need to add decreases at the end"
+        logging.error(msg)
+        raise ValueError(msg)
+
+    padding_rows = number_of_rows - number_of_decrease_rows
+    plan = _calculate_spacing(padding_rows, number_of_decrease_rows, padding_mode)
+
+    if padding_mode == "none":
+        instruction_string = ", ".join(["decrease row"] * number_of_decrease_rows)
+    elif padding_mode == "before":
+        instruction_string = ", ".join(
+            f"[do {interval} rows in pattern, decrease row] * {groups} times"
+            for interval, groups in plan
+        )
+    elif padding_mode == "both":
+        segments = []
+        for interval, groups in plan:
+            before = interval // 2
+            after = interval - before
+            if before > 0 and after > 0:
+                segment = (
+                    f"[do {before} rows in pattern, decrease row, "
+                    f"do {after} rows in pattern] * {groups} times"
+                )
+            elif after > 0:
+                segment = (
+                    f"[decrease row, do {after} rows in pattern] * {groups} times"
+                )
+            elif before > 0:
+                segment = (
+                    f"[do {before} rows in pattern, decrease row] * {groups} times"
+                )
+            else:
+                segment = f"[decrease row] * {groups} times"
+            segments.append(segment)
+        instruction_string = ", ".join(segments)
+    else:
+        instruction_string = ", ".join(
+            f"[decrease row, do {interval} rows in pattern] * {groups} times"
+            for interval, groups in plan
         )
 
-    # divide up the number of rows.
-    # This gives you a decrease on the first row but padding after the last
-    # TODO: make an option for padding both sides, padding neither?
-
-    interval = math.floor(
-        (number_of_rows - number_of_decrease_rows) / number_of_decrease_rows
-    )
-    remainder = (number_of_rows - number_of_decrease_rows) % number_of_decrease_rows
-
-    # If we had any remainder, pad out the early decreases
-    instruction_string = ""
     if remainder > 0:
         instruction_string += (
-            f"[decrease row, do {interval+1} rows in pattern] * {remainder} times, "
+            f"\nextra decrease: work {remainder} k2tog at the end of the "
+            f"last row so the final count is {ending_count} stitches"
         )
-    instruction_string += f"[decrease row, do {interval} rows in pattern] * {number_of_decrease_rows - remainder} times"
 
     return instruction_string
 
