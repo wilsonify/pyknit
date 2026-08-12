@@ -34,7 +34,7 @@ class Hat:
 
             instructions.append(f"{line} ({current_stitches} stitches)")
 
-            instructions.append(f"Knit 1 round")
+            instructions.append("Knit 1 round")
             count_per_repeat = count_per_repeat - 1
         instructions.append("Cut yarn leaving 4 inch tail, thread through remaining stitches and pull closed")
         return instructions
