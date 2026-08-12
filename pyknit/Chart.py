@@ -497,7 +497,11 @@ def parse_row(row: str, legend=None) -> List[Stitch]:
     # I don't think a set is the right return type, order is important here
     """Parse a written set of knitting instructions and print an array of
     stitches using a legend.  This is a stand in for eventually printing a
-    chart."""
+    chart.
+
+    >>> parse_row("k4 p4")
+    [' ', ' ', ' ', ' ', '.', '.', '.', '.']
+    """
 
     if legend is None:
         legend = stitch_legend
@@ -526,6 +530,13 @@ def parse_row(row: str, legend=None) -> List[Stitch]:
 
 
 def parse_chart(chart_instructions: str, legend=None) -> Pattern:
+    """Parse multi-line knitting instructions into a chart.
+
+    Each line is parsed with :func:`parse_row`.
+
+    >>> parse_chart("k4\\np4")
+    [[' ', ' ', ' ', ' '], ['.', '.', '.', '.']]
+    """
     if legend is None:
         legend = stitch_legend
     return [parse_row(row, legend) for row in chart_instructions.split("\n")]
@@ -567,6 +578,11 @@ def print_row(stitch_array: PatternRow) -> Image:
 def instruction_to_plot_order(
         input_array: Pattern, vertical_order: str = "bt", horizontal_order: str = "rl"
 ) -> Pattern:
+    """Reorder a pattern for plotting, bottom-to-top and right-to-left by default.
+
+    >>> instruction_to_plot_order(parse_chart("k4\\np4"))
+    [['.', '.', '.', '.'], [' ', ' ', ' ', ' ']]
+    """
     # input_array = [list(row) for row in pattern.lstrip().rstrip().split("\n")]
     vertical_ordered = (
         list(reversed(input_array)) if vertical_order == "bt" else input_array

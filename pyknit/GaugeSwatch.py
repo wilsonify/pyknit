@@ -16,7 +16,15 @@ from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments
 
 
 class GaugeSwatch(BaseModel):
-    """Information from a gauge swatch"""
+    """Information from a gauge swatch
+
+    >>> swatch = GaugeSwatch(
+    ...     row_count=18, row_measure=3.25, stitch_count=24,
+    ...     stitch_measure=4, units="in",
+    ... )
+    >>> swatch.stitch_gauge()
+    6.0
+    """
 
     row_count: PositiveFloat
     row_measure: PositiveFloat
@@ -29,11 +37,27 @@ class GaugeSwatch(BaseModel):
     weight_per_unit: Optional[PositiveFloat] = None
 
     def row_gauge(self) -> float:
-        """return rows per unit (e.g. cm, inch) number"""
+        """return rows per unit (e.g. cm, inch) number
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.row_gauge()
+        5.538461538461538
+        """
         return self.row_count / self.row_measure
 
     def stitch_gauge(self) -> float:
-        """return stitches per unit (e.g. cm, inch) number"""
+        """return stitches per unit (e.g. cm, inch) number
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.stitch_gauge()
+        6.0
+        """
         return self.stitch_count / self.stitch_measure
 
     @validate_arguments
@@ -41,6 +65,13 @@ class GaugeSwatch(BaseModel):
         """
         Given a measurement, how many stiches would we need?
         Round to closest stitch.
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.measurement_to_stitches(5)
+        30
         """
         return round(measurement * self.stitch_gauge())
 
@@ -48,17 +79,41 @@ class GaugeSwatch(BaseModel):
     def measurement_to_rows(self, measurement: PositiveFloat) -> int:
         """
         Given a measurement, how many rows would we need?
-        Round to closest number of rows."""
+        Round to closest number of rows.
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.measurement_to_rows(11)
+        61
+        """
         return round(measurement * self.row_gauge())
 
     @validate_arguments
     def rows_to_measurement(self, rows: PositiveInt) -> float:
-        """figure out how long a number of rows will be"""
+        """figure out how long a number of rows will be
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.rows_to_measurement(10)
+        1.8055555555555556
+        """
         return rows / self.row_gauge()
 
     @validate_arguments
     def stitches_to_measurement(self, stitches: PositiveInt) -> float:
-        """figure out how wide a number of stitches will be"""
+        """figure out how wide a number of stitches will be
+
+        >>> swatch = GaugeSwatch(
+        ...     row_count=18, row_measure=3.25, stitch_count=24,
+        ...     stitch_measure=4, units="in",
+        ... )
+        >>> swatch.stitches_to_measurement(18)
+        3.0
+        """
         return stitches / self.stitch_gauge()
 
     @validate_arguments
@@ -104,6 +159,17 @@ def convert_stitch_measure(
     Given a masurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
+
+    >>> pattern_gauge = GaugeSwatch(
+    ...     row_count=22, row_measure=3.75, stitch_count=18,
+    ...     stitch_measure=4, units="in",
+    ... )
+    >>> my_gauge = GaugeSwatch(
+    ...     row_count=18, row_measure=3.25, stitch_count=24,
+    ...     stitch_measure=4, units="in",
+    ... )
+    >>> convert_stitch_measure(40, pattern_gauge, my_gauge)
+    30.0
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement
@@ -119,6 +185,17 @@ def convert_row_measure(
     Given a masurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
+
+    >>> pattern_gauge = GaugeSwatch(
+    ...     row_count=22, row_measure=3.75, stitch_count=18,
+    ...     stitch_measure=4, units="in",
+    ... )
+    >>> my_gauge = GaugeSwatch(
+    ...     row_count=18, row_measure=3.25, stitch_count=24,
+    ...     stitch_measure=4, units="in",
+    ... )
+    >>> convert_row_measure(40, pattern_gauge, my_gauge)
+    42.43055555555556
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement

@@ -30,6 +30,11 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+    # doctests keep docstring examples honest (spec 10), run separately to
+    # avoid slowing down the default local pytest run.
+    - name: Test doctests
+      run: |
+        python -m pytest --doctest-modules pyknit
 
   docs:
     name: Documentation

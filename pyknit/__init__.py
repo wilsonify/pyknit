@@ -31,7 +31,13 @@ VERSION = "pyKnit 0.0.9"
 def increase_evenly(
     starting_count: PositiveInt, increase_number: PositiveInt, in_the_round: bool = False
 ) -> str:
-    """ A function to figure out even spacing for increases """
+    """ A function to figure out even spacing for increases
+
+    >>> increase_evenly(11, 3, False)
+    'k2, m1, [k3, m1] * 2 times, k3'
+    >>> increase_evenly(20, 5, True)
+    '[k4, m1] * 5 times'
+    """
 
     if increase_number > starting_count:
         logging.error(
@@ -107,6 +113,9 @@ def _calculate_spacing(
 def decrease_evenly_round(starting_count: PositiveInt, decrease_number: PositiveInt) -> str:
     """
     A function to figure out spacing for decreases across a circular round
+
+    >>> decrease_evenly_round(20, 5)
+    '[k2, k2tog] * 5 times'
     """
     plan = _calculate_spacing(starting_count, decrease_number)
     if len(plan) == 1:
@@ -147,6 +156,9 @@ def decrease_evenly_round(starting_count: PositiveInt, decrease_number: Positive
 def decrease_evenly_flat(starting_count: PositiveInt, decrease_number: PositiveInt) -> str:
     """
     A function to figure out spacing for decreases across a flat row
+
+    >>> decrease_evenly_flat(20, 5)
+    'k1, [k2tog, k2] * 4 times, k2tog, k1'
     """
 
     plan = _calculate_spacing(starting_count, decrease_number)
@@ -220,6 +232,9 @@ def decrease_evenly(
 ) -> str:
     """
     A function to figure out spacing for decreases
+
+    >>> decrease_evenly(20, 5, True)
+    '[k2, k2tog] * 5 times'
     """
     if starting_count < 2:
         msg = f"You need to have at least 2 stitches; starting_count={starting_count}"
@@ -254,6 +269,11 @@ def sleeve_decreases(
     padding_mode: str = "after",
 ) -> str:
     """A function to figure out a nice even sleeve decrease.
+
+    >>> sleeve_decreases(61, 59, 43, 2)  # doctest: +ELLIPSIS
+    '[decrease row, do 7 rows in pattern] * 5 times,...'
+
+    ``padding_mode`` controls where the plain non-decrease rows are placed
 
     ``padding_mode`` controls where the plain non-decrease rows are placed
     relative to each decrease row:
@@ -362,7 +382,11 @@ def raglan_increases(
     and back of the shoulders.  Each line has an increase on either side.
 
     Tutorial for a well-documented raglan here:
-    https://blog.tincanknits.com/2013/10/25/lets-knit-a-sweater/"""
+    https://blog.tincanknits.com/2013/10/25/lets-knit-a-sweater/
+
+    >>> raglan_increases(80, 30, 100, 8)
+    'Marker setup: k15, pm, k10 (arm), pm, k30, pm, k10 (arm), pm k15'
+    """
 
     # Adjusting from collar to start of raglan
     instruction_string = ""
