@@ -35,20 +35,20 @@ def swatch_with_yarn():
 
 
 def test_gauge_swatch_with_yarn_fields(swatch_with_yarn):
-    assert swatch_with_yarn.yardage_per_unit == 0.5
-    assert swatch_with_yarn.weight_per_unit == 0.3
+    assert swatch_with_yarn.yardage_per_unit == pytest.approx(0.5)
+    assert swatch_with_yarn.weight_per_unit == pytest.approx(0.3)
 
 
 def test_estimate_yardage_scales_linearly(swatch_with_yarn):
-    assert swatch_with_yarn.estimate_yardage(10) == 5.0
-    assert swatch_with_yarn.estimate_yardage(20) == 10.0
-    assert swatch_with_yarn.estimate_yardage(30) == 15.0
+    assert swatch_with_yarn.estimate_yardage(10) == pytest.approx(5.0)
+    assert swatch_with_yarn.estimate_yardage(20) == pytest.approx(10.0)
+    assert swatch_with_yarn.estimate_yardage(30) == pytest.approx(15.0)
 
 
 def test_estimate_weight_scales_linearly(swatch_with_yarn):
-    assert swatch_with_yarn.estimate_weight(10) == 3.0
-    assert swatch_with_yarn.estimate_weight(20) == 6.0
-    assert swatch_with_yarn.estimate_weight(30) == 9.0
+    assert swatch_with_yarn.estimate_weight(10) == pytest.approx(3.0)
+    assert swatch_with_yarn.estimate_weight(20) == pytest.approx(6.0)
+    assert swatch_with_yarn.estimate_weight(30) == pytest.approx(9.0)
 
 
 def test_estimate_yardage_with_6_st_per_inch_swatch():
@@ -60,8 +60,8 @@ def test_estimate_yardage_with_6_st_per_inch_swatch():
         units="in",
         yardage_per_unit=0.5,
     )
-    assert gs.stitch_gauge() == 6
-    assert gs.estimate_yardage(30) == 0.5 * 30
+    assert gs.stitch_gauge() == pytest.approx(6)
+    assert gs.estimate_yardage(30) == pytest.approx(0.5 * 30)
 
 
 def test_estimate_yardage_unset_raises():
