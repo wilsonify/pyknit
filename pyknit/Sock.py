@@ -47,6 +47,7 @@ class Sock:
 
         self.get_cast_on_stitches()
         self.get_ankle_stitches()
+        self.get_number_of_decrease_rows()
         self.get_length_of_heel_flap()
         self.get_length_from_sock_top_to_heel_flap()
         self.get_number_of_heel_flap_stitches()
@@ -92,7 +93,7 @@ class Sock:
 
     def get_number_of_decrease_rows(self):
         x = (self.cast_on_stitches - self.ankle_stitches)/2
-        self.number_of_decrease_rows = round_up_even(x)
+        self.number_of_decrease_rows = self.round_up_even(x)
 
 
     def get_number_of_heel_flap_stitches(self):
@@ -106,5 +107,5 @@ class Sock:
 
 
     def get_length_from_heel_to_beginning_of_toe_decrease(self):
-        x = self.length_from_heel_to_toe_end - self.length_of_toe_decrease
+        x = self.length_from_heel_to_toe - self.length_of_toe_decrease
         self.length_from_heel_to_beginning_of_toe_decrease = round(x,2)
