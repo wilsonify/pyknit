@@ -6,8 +6,6 @@ def box(fname, cell_width, cell_height, stitch_width):
         "RGB", (cell_width*stitch_width, cell_height), "#ffffff"
     )
 
-    # draw some gridlines
-    draw = ImageDraw.Draw(chart_image)
     chart_image.save(fname+".png")
 
 def cable(fname, cell_width, cell_height, front_sts, back_sts, purl=False):
