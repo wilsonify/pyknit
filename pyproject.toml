@@ -6,8 +6,12 @@ authors = [
 ]
 description = "A set of math and charting tools for knitters."
 readme = "README.md"
-license = { file="LICENSE" }
+license = { text = "GPL-2.0-or-later" }
 requires-python = ">=3.9"
+dependencies = [
+  "pydantic>=1.0",
+  "Pillow>=7.0",
+]
 classifiers = [
     "Development Status :: 1 - Planning",
     "Programming Language :: Python :: 3",
@@ -25,3 +29,6 @@ my-script = "pyknit.pyknit:main"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pyknit"]
