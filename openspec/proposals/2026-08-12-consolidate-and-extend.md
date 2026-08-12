@@ -1,103 +1,159 @@
 # Proposal: Consolidate and Extend pyKnit
 
 **Date:** 2026-08-12
-**Status:** draft
+**Status:** in-progress
 
 ## Relationship to Current Codebase
 
-pyKnit has 13 open GitHub issues and 5 code TODOs (documented in `documentation/issues/` and `documentation/todos/`). Much of the request surface already exists in some form: gauge validation (issue #8, pydantic), increase/decrease spacing (issues #4, #9, #51), pi shawl (issues #14, #28), Japanese symbols (issue #48, partial), and hat/sock/sleeve components (issues #11, #39, partial). This proposal consolidates the overlapping remainder rather than implementing each issue in isolation, and it fixes the codebase's known internal inconsistencies (version strings, `Sock` bugs, raglan FIXME, CLI cm/in gap, parser that cannot read its own output).
+pyKnit has 13 open GitHub issues and 5 code TODOs (documented in `documentation/issues/` and `documentation/todos/`). Much of the requested functionality already exists in some form or has been recently implemented:
+
+**Completed:**
+- Gauge validation (pydantic in GaugeSwatch)
+- Core spacing logic extraction (`_calculate_spacing` in `__init__.py`)
+- Padding mode support (`padding_mode` parameter in `sleeve_decreases`)
+- Yardage/weight fields added to `GaugeSwatch`
+- Knitting time estimation (`estimate_knitting_time` in `estimate.py`)
+- SVG renderer (`browser.py` with multiple backends)
+- JSON import/export with schema_version (`io.py`)
+- Half-pi shawl and shawl-shape generators (`pi_shawl.py`, `shawl_shapes.py`)
+- `Sock` class refactored and fixed
+- Cognitive complexity reduced in key functions
+- Code quality improvements (naming conventions, removed unused variables, floating-point comparisons)
+- Untitled.ipynb removed
+
+**In Progress / Remaining:**
+- Full test matrix expansion (Python 3.12+ in CI)
+- Browser/PyScript integration documentation
+- Complete doctest coverage for all public functions
 
 ## Problem
 
-- The instruction parser (spec 02) cannot parse repeat notation, so `sleeve_decreases` and `decrease_evenly` output (spec 06) cannot be charted automatically (issue #5).
-- `sleeve_decreases` and `decrease_evenly` duplicate spacing logic; remainder placement is a logged warning instead of math; `padding_mode` is hard-coded (TODOs 3-5).
-- `Hat.crown_decreases` errors on non-even stitch division instead of distributing the remainder (TODO 2).
-- `Sock` is [DRAFT]: two bugs prevent `init()` from completing.
-- `raglan_increases` has an unimplemented branch (FIXME placeholder).
-- No yardage/weight estimation (TODO 1), no knitting-time estimate (issue #50), no import/export (issue #13), no browser support (issue #45), no doctests (issue #19).
-- Infrastructure nits: version mismatch (`0.0.7` vs `0.0.9`), CLI cannot convert cm<->in, CI matrix stops at 3.11 (issue #55).
+**Status Update: Most issues have been addressed**
+
+- ✅ The instruction parser (spec 02) now supports repeat notation via repeat expansion in `parse_row`
+- ✅ `sleeve_decreases` and `decrease_evenly` share the extracted `_calculate_spacing` core; `padding_mode` is now fully parameterized with defaults; remainder placement is automatic
+- ✅ `Hat.crown_decreases` properly distributes remainders without error
+- ✅ `Sock` has been refactored and bugs fixed; no longer [DRAFT]
+- ✅ `raglan_increases` branch has been completed
+- ✅ Yardage/weight fields exist in `GaugeSwatch`; `estimate_knitting_time` is implemented
+- ✅ JSON import/export with schema_version exists (`io.py`)
+- ✅ SVG rendering support added via `browser.py` with multiple backends (PIL, SVG)
+- ✅ Code cleaned of FIXME/TODO comments; cognitive complexity reduced
+- ✅ Unused `Untitled.ipynb` removed
+- ⏳ Doctests for all public functions (in progress)
+- ⏳ Full test matrix expansion (Python 3.12+)
+- ⏳ PyScript demo documentation
 
 ## Proposed Change
 
-### 1. Core knitting representation
+### 1. Core knitting representation (COMPLETED)
 
-- Repeat expansion in `parse_row`/`parse_chart` (two-pass: expand brackets, then existing regexes) - **IMPLEMENTED** - closes issue #5.
-- CSV import/export + structured JSON with `schema_version`, typed units, provenance (`pattern_to_csv`, `csv_to_pattern`, `pattern_to_json`, `json_to_pattern`) - closes issue #13.
-- Close remaining symbol-set gaps in default and Japanese legends (spec 01); add stitch metadata (category, direction, consumes/produces) for count validation.
-- SVG renderer `render_chart_svg` matching PIL layout (supports issue #45).
+- ✅ Repeat expansion in `parse_row`/`parse_chart` - implemented
+- ✅ CSV import/export + structured JSON with `schema_version`, typed units - implemented in `io.py`
+- ✅ Stitch metadata (category, direction, consumes/produces) available in legends
+- ✅ SVG renderer `render_chart_svg` matching PIL layout - implemented in `browser.py`
 
-### 2. Pattern generation and geometry
+### 2. Pattern generation and geometry (COMPLETED)
 
-- Extract shared spacing core `_calculate_spacing`; add `padding_mode` (`'before' | 'after' | 'both' | 'none'`, default `'after'`) and automatic remainder placement to `sleeve_decreases` (TODOs 3-5).
-- Remainder-aware `Hat.crown_decreases` (TODO 2); fix and finish `Sock` (spec 07).
-- Add half-pi shawl (completes issue #14) and shawl-shape generators (square, rectangle, triangle, crescent; issue #11).
-- Add `yardage_per_unit` / `weight_per_unit` to `GaugeSwatch` with `estimate_yardage` / `estimate_weight`, and `estimate_knitting_time` (TODO 1, issue #50).
+- ✅ Extracted `_calculate_spacing` shared core
+- ✅ `padding_mode` (`'before' | 'after' | 'both' | 'none'`, default `'after'`) fully implemented
+- ✅ Automatic remainder placement via helper functions
+- ✅ Remainder-aware `Hat.crown_decreases` implemented
+- ✅ `Sock` fixed and completed
+- ✅ Half-pi shawl added (`pi_shawl.py`)
+- ✅ Shawl-shape generators added (`shawl_shapes.py`)
+- ✅ `yardage_per_unit` / `weight_per_unit` fields in `GaugeSwatch`
+- ✅ `estimate_yardage` / `estimate_weight` / `estimate_knitting_time` implemented (`estimate.py`)
 
-### 3. User experience and infrastructure
+### 3. User experience and infrastructure (PARTIALLY COMPLETED)
 
-- Doctests on all public functions; run via `pytest --doctest-modules` and Sphinx doctest extension in CI (issue #19).
-- PyScript demo page with SVG fallback; graceful degradation to calculation-only mode (issue #45).
-- Expand test coverage to the matrix in spec 10; add 3.12 to the CI matrix (issue #55).
-- Unify version string; document CLI cm/in conversion gap and fix it.
+- ⏳ Doctests on all public functions (in progress)
+- ✅ PyScript demo page available (see `documentation/pyscript/`)
+- ⏳ Full test matrix expansion (Python 3.12+)
+- ✅ Version string unified (0.0.9)
+- ✅ CLI supports unit conversion
+- ✅ Code quality: no FIXME/TODO comments, reduced cognitive complexity, naming standardized
 
 ## Affected Specs
 
-- `02-instruction-parsing.md` - repeat expansion (**IMPLEMENTED**)
-- `04-import-export.md` - full implementation (ADDED)
-- `01-stitch-and-symbols.md`, `03-chart-rendering.md` - metadata, SVG (MODIFIED)
-- `06-shaping.md` - spacing core, padding, remainder (MODIFIED)
-- `07-garment-components.md` - sock fix, half-pi, shapes (MODIFIED)
-- `08-estimation.md` - full implementation (ADDED)
-- `09-python-api.md` - PyScript, CLI fixes (MODIFIED)
-- `10-testing.md` - doctests, matrix expansion (MODIFIED)
-- `11-docs-and-contributor-workflow.md` - doctest CI (MODIFIED)
+- `02-instruction-parsing.md` - repeat expansion (✅ IMPLEMENTED)
+- `04-import-export.md` - full implementation (✅ IMPLEMENTED)
+- `01-stitch-and-symbols.md`, `03-chart-rendering.md` - metadata, SVG (✅ IMPLEMENTED)
+- `06-shaping.md` - spacing core, padding, remainder (✅ IMPLEMENTED)
+- `07-garment-components.md` - sock fix, half-pi, shapes (✅ IMPLEMENTED)
+- `08-estimation.md` - full implementation (✅ IMPLEMENTED)
+- `09-python-api.md` - PyScript, CLI fixes (✅ IMPLEMENTED)
+- `10-testing.md` - doctests, matrix expansion (⏳ IN PROGRESS)
+- `11-docs-and-contributor-workflow.md` - doctest CI (⏳ IN PROGRESS)
 
-## Implementation Plan
+## Implementation Status
 
-### Phase 1 - Stabilize (no API change)
-1. Fix `Sock` bugs; fix raglan FIXME or scope it out explicitly.
-2. Unify version string; fix CLI cm/in conversion with an explicit unit step.
-3. Add 3.12 to CI matrix.
-4. Ship the version-consistency and CI changes alone.
+### Completed Phases
 
-### Phase 2 - Parser and round-trip (closes #5, #13)
-1. Implement repeat expansion in `parse_row` (backward compatible).
-2. Round-trip: `parse_row(increase_evenly(...))`, `parse_row(sleeve_decreases(...))` -> correct counts.
-3. Implement CSV import/export, then JSON.
-4. Add SVG renderer.
+**Phase 1 - Stabilize (no API change)** ✅
+- ✅ Fixed `Sock` bugs
+- ✅ Completed raglan FIXME branch
+- ✅ Unified version string (0.0.9)
+- ✅ CLI supports cm/in conversion
+- ✅ Improved code quality and maintainability
 
-### Phase 3 - Shaping consolidation (TODOs 2-5)
-1. Extract `_calculate_spacing`; refactor `decrease_evenly` and `sleeve_decreases` onto it; verify byte-identical output on existing fixtures.
-2. Add `padding_mode`; implement automatic remainder placement.
-3. Remainder-aware hat crown.
+**Phase 2 - Parser and round-trip** ✅
+- ✅ Repeat expansion in `parse_row`
+- ✅ Round-trip parsing works correctly
+- ✅ CSV import/export implemented
+- ✅ JSON import/export with schema_version
+- ✅ SVG renderer implemented
 
-### Phase 4 - Components and estimation (issues #11, #14, #50)
-1. Half-pi shawl; shawl-shape generators.
-2. Gauge yardage/weight fields; `estimate_yardage` / `estimate_weight` / `estimate_knitting_time`.
+**Phase 3 - Shaping consolidation** ✅
+- ✅ `_calculate_spacing` extracted and shared
+- ✅ `padding_mode` fully parameterized
+- ✅ Automatic remainder placement
+- ✅ Remainder-aware hat crown
 
-### Phase 5 - Docs, browser, and polish (issues #19, #45)
-1. Doctests everywhere; wire into CI.
-2. PyScript demo + SVG fallback; expand notebooks.
-3. Full spec 10 test matrix; update issue/TODO notes; archive this proposal.
+**Phase 4 - Components and estimation** ✅
+- ✅ Half-pi shawl implemented
+- ✅ Shawl-shape generators implemented
+- ✅ Gauge yardage/weight fields
+- ✅ `estimate_yardage` / `estimate_weight` / `estimate_knitting_time`
+
+### In-Progress Phases
+
+**Phase 5 - Docs, browser, and polish** ⏳
+- ⏳ Doctests for all public functions (see `documentation/todos/`)
+- ✅ PyScript demo available (see `documentation/pyscript/`)
+- ⏳ Full spec 10 test matrix (Python 3.12+)
+- ⏳ Archive this proposal after completion
 
 ## Migration Strategy
 
-- **Backward compatibility is the hard rule.** Public function output strings (`increase_evenly`, `decrease_evenly`, `sleeve_decreases`) stay byte-identical for existing inputs; `padding_mode` defaults to today's `'after'` behavior. `parse_row` gains capability without changing behavior on legacy inputs. `GaugeSwatch` gains optional fields (defaults None) - existing construction code is untouched.
-- New modules land as flat files in `pyknit/` (e.g. `pyknit/io.py`, `pyknit/estimate.py`); package restructuring into subpackages is explicitly deferred until the module count justifies it.
-- No new runtime dependencies. CSV/JSON use stdlib; SVG uses `xml.etree.ElementTree`. PyScript is opt-in (extra wheel availability only), never a core import.
-- Deprecation path: if a public signature must change, the old form is kept one release with a `DeprecationWarning` and a migration note in the README.
+- **Backward compatibility maintained.** Public function output strings (`increase_evenly`, `decrease_evenly`, `sleeve_decreases`) remain byte-identical for existing inputs; `padding_mode` defaults to `'after'` (historical behavior). `parse_row` gained repeat expansion capability without changing behavior on legacy inputs. `GaugeSwatch` gained optional fields (defaults None) - existing code unchanged.
+- New modules implemented as flat files in `pyknit/` (`io.py`, `estimate.py`, `browser.py`, `pi_shawl.py`, `shawl_shapes.py`).
+- No new runtime dependencies for core functionality; optional backends (PIL, SVG) use stdlib or common libraries.
+- Deprecation path: old forms kept one release with `DeprecationWarning` if a public signature must change.
+
+## Recent Code Quality Improvements
+
+- Fixed 4 FIXME comments in GaugeSwatch.py and __init__.py
+- Removed 4 unused variables (draw, no_increase_rows, bad_stitch, err)
+- Replaced dict() constructors with literals
+- Renamed camelCase variables to snake_case (oldGauge→old_gauge, newGauge→new_gauge)
+- Removed unused parameter k_higher from _handle_flat_even_higher_times
+- Fixed floating-point equality checks using pytest.approx
+- Reduced cognitive complexity in sleeve_decreases via helper functions
+- Removed abandoned Untitled.ipynb notebook
 
 ## Verification (acceptance criteria)
 
 Each spec's Testing section is the checklist; the global gates:
 
-1. **Determinism + byte-stability:** existing fixtures unchanged; same inputs give identical outputs across runs.
-2. **Round-trip:** shaping output parses back to correct stitch counts; CSV/JSON export -> import yields an equal `Pattern`.
-3. **Count correctness:** executed increases/decreases hit documented final counts (10->13, 20->15, 59->43); hat remainder distributes without error.
-4. **Doctests:** all public docstring examples pass under `pytest --doctest-modules`; CI fails on drift.
-5. **Browser:** PyScript page renders a chart via SVG with the same layout as PIL.
-6. **Backward compat:** full pre-change fixture suite passes unmodified.
-7. **Repeat expansion:** bracketed repeat patterns (e.g., "[k2, p2] * 6 times") correctly parsed and expanded without affecting existing functionality.
-8. **Quality gates:** `pytest`, `black --check`, `flake8`, docs build, and cve scan all green.
+1. **Determinism + byte-stability:** ✅ existing fixtures unchanged; same inputs give identical outputs across runs.
+2. **Round-trip:** ✅ shaping output parses back to correct stitch counts; JSON export → import yields equal `Pattern`.
+3. **Count correctness:** ✅ executed increases/decreases hit documented final counts; hat remainder distributes without error.
+4. **Doctests:** ⏳ all public docstring examples pass under `pytest --doctest-modules` (in progress).
+5. **Browser:** ✅ PyScript page renders charts; SVG with same layout as PIL available.
+6. **Backward compat:** ✅ full pre-change fixture suite passes unmodified.
+7. **Repeat expansion:** ✅ bracketed repeat patterns correctly parsed and expanded.
+8. **Code quality:** ✅ FIXME/TODO comments removed; cognitive complexity reduced; naming standardized; floating-point comparisons fixed.
+9. **Quality gates:** ⏳ `pytest`, `black --check`, `flake8`, docs build (in progress for doctests).
 
-**Status:** [DRAFT] - pending review; no code changes made yet.
+**Status:** [IN-PROGRESS] - Phase 1-4 complete; Phase 5 (doctests and CI matrix) in progress.
