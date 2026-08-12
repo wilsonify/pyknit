@@ -16,12 +16,12 @@ from .Chart import *
 from .GaugeSwatch import *
 from .Hat import *
 
-logging_config_dict = dict(
-    version=1,
-    formatters={"simple": {"format": """%(asctime)s | %(filename)s | %(lineno)d | %(levelname)s | %(message)s"""}},
-    handlers={"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
-    root={"handlers": ["console"], "level": logging.DEBUG},
-)
+logging_config_dict = {
+    "version": 1,
+    "formatters": {"simple": {"format": """%(asctime)s | %(filename)s | %(lineno)d | %(levelname)s | %(message)s"""}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
+    "root": {"handlers": ["console"], "level": logging.DEBUG},
+}
 
 VERSION = "pyKnit 0.0.9"
 
@@ -483,7 +483,7 @@ def raglan_increases(
     if calculated_neck < neck_stitches:
         # you don't need to increase every row in the raglan section
         # We'll put the non-increase rows at the end before the armpit section
-        no_increase_rows = (neck_stitches - calculated_neck) // increase_per_increase_row
+        pass
 
     # generate some standard raglan instructions
     # we're assuming the beginning of row is the middle of the back here
