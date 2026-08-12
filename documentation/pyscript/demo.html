@@ -388,8 +388,114 @@ p1 k2 yo k2tog p2</textarea>
     READY = False
     BOOT_ERROR = None
     pyknit = None
-    browser = None
     parse_chart = None
+    GaugeSwatch = None
+    convert_stitch_measure = None
+    
+    # Fallback rendering functions if browser module not available
+    def pattern_to_text(pattern):
+        """Convert pattern grid to text."""
+        if not pattern:
+            return ""
+        lines = []
+        for row in pattern:
+            line = "".join(str(cell) for cell in row)
+            lines.append(line)
+        return "\n".join(lines)
+    
+    def available_backends():
+        """Return list of available rendering backends."""
+        try:
+            from PIL import Image
+            backends = ["text", "pillow"]
+        except ImportError:
+            backends = ["text"]
+        
+        try:
+            import xml.etree.ElementTree as ET
+            if "svg" not in backends:
+                backends.insert(0, "svg")
+        except ImportError:
+            pass
+        
+        return backends
+    
+    def render_pattern(pattern):
+        """Render pattern with available backend."""
+        if not pattern:
+            return ("text", pattern_to_text([]))
+        
+        # Try SVG first
+        try:
+            import xml.etree.ElementTree as ET
+            
+            cell_width = 20
+            cell_height = 20
+            
+            rows = len(pattern)
+            cols = max((len(row) for row in pattern), default=0)
+            
+            width = cols * cell_width + 20
+            height = rows * cell_height + 20
+            
+            # Create SVG
+            svg_lines = [
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">',
+                '<style>text { font-family: monospace; font-size: 14px; text-anchor: middle; } rect { stroke: #ccc; stroke-width: 1; fill: white; }</style>'
+            ]
+            
+            for y, row in enumerate(pattern):
+                for x, cell in enumerate(row):
+                    rect_x = 10 + x * cell_width
+                    rect_y = 10 + y * cell_height
+                    svg_lines.append(
+                        f'<rect x="{rect_x}" y="{rect_y}" width="{cell_width}" height="{cell_height}" />'
+                    )
+                    svg_lines.append(
+                        f'<text x="{rect_x + cell_width // 2}" y="{rect_y + cell_height // 2 + 5}">{cell}</text>'
+                    )
+            
+            svg_lines.append('</svg>')
+            return ("svg", "\n".join(svg_lines))
+        except Exception:
+            pass
+        
+        # Try Pillow
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            
+            cell_size = 20
+            rows = len(pattern)
+            cols = max((len(row) for row in pattern), default=0)
+            
+            width = cols * cell_size + 20
+            height = rows * cell_size + 20
+            
+            img = Image.new('RGB', (width, height), 'white')
+            draw = ImageDraw.Draw(img)
+            
+            # Draw grid and text
+            for y, row in enumerate(pattern):
+                for x, cell in enumerate(row):
+                    x_pos = 10 + x * cell_size
+                    y_pos = 10 + y * cell_size
+                    
+                    # Draw cell border
+                    draw.rectangle([x_pos, y_pos, x_pos + cell_size, y_pos + cell_size], outline='#ccc')
+                    
+                    # Draw character
+                    draw.text((x_pos + 5, y_pos + 2), str(cell), fill='black')
+            
+            # Convert to PNG bytes
+            import io
+            png_buffer = io.BytesIO()
+            img.save(png_buffer, format='PNG')
+            return ("png", png_buffer.getvalue())
+        except Exception:
+            pass
+        
+        # Fallback to text
+        return ("text", pattern_to_text(pattern))
     
     def set_status(state, message, detail=""):
         """Update the status banner."""
@@ -435,7 +541,6 @@ p1 k2 yo k2tog p2</textarea>
     try:
         print("Attempting to import pyknit...", file=sys.stderr)
         import pyknit
-        from pyknit import browser
         from pyknit.Chart import parse_chart
         from pyknit import GaugeSwatch, convert_stitch_measure
         
@@ -553,15 +658,15 @@ p1 k2 yo k2tog p2</textarea>
             
             # Try to render the pattern
             try:
-                fmt, content = browser.render_pattern(pattern)
+                fmt, content = render_pattern(pattern)
             except Exception as render_error:
                 # Fallback to text rendering
-                text_output = browser.pattern_to_text(pattern)
+                text_output = pattern_to_text(pattern)
                 out(
                     "chart-output",
                     f"<div class='info-message'>Rendering with text fallback.</div><pre>{text_output}</pre>"
                 )
-                backends = ", ".join(browser.available_backends())
+                backends = ", ".join(available_backends())
                 out(
                     "backend-info",
                     f"Available backends: {backends}"
@@ -585,14 +690,14 @@ p1 k2 yo k2tog p2</textarea>
                 )
             else:
                 # Unknown format, fall back to text
-                text_output = browser.pattern_to_text(pattern)
+                text_output = pattern_to_text(pattern)
                 out(
                     "chart-output",
                     f"<pre>{text_output}</pre>"
                 )
             
             # Show available backends
-            backends = ", ".join(browser.available_backends())
+            backends = ", ".join(available_backends())
             out(
                 "backend-info",
                 f"Available backends: {backends}"
