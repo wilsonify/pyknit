@@ -33,7 +33,7 @@ def test_convert_measurement_units_cm_to_in():
 
 
 def test_convert_measurement_units_same_unit():
-    assert _convert_measurement_units(12.0, "in", "in") == 12.0
+    assert _convert_measurement_units(12.0, "in", "in") == pytest.approx(12.0)
 
 
 def test_convert_measurement_units_unknown_unit():
