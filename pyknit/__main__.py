@@ -25,8 +25,6 @@ def _convert_measurement_units(
 def convert_row_gauge(
     original_gauge: GaugeSwatch,
     new_gauge: GaugeSwatch,
-    original_measurement: float,
-    original_unit: str,
 ) -> float:
     """Convert a measurement in rows from the original gauge to the new gauge.
 
