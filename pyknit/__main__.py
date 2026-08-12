@@ -279,17 +279,6 @@ def _handle_stitch_conversion(args, logger):
     logger.info(f"My calculated measurement: {new_measurement} {args.original_gauge_unit}")
     logger.info("")
 
-    # legend = {
-    #    "k": "k",
-    #    "p": "p",
-    #    "kfb": "kfb",
-    #    "ssk": "ssk",
-    #    "k2tog": "k2tog",
-    #    "p2tog": "p2tog",
-    # }
-
-    # print(parse_written(args.instruction_row, legend))
-
 
 if __name__ == "__main__":
     main()
