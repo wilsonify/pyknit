@@ -12,7 +12,7 @@ pyKnit.Chart: chart and pattern parsing functions
 import base64
 import os.path
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from xml.sax.saxutils import escape as _xml_escape
 
 from PIL import Image, ImageDraw, ImageFont
@@ -505,28 +505,38 @@ def parse_row(row: str, legend: Dict[str, Stitch] = stitch_legend) -> List[Stitc
 
     if legend is None:
         legend = stitch_legend
+    
     stitch_array = []
     for section in row.split(" "):
-
-        patterns = [
-            r"(C\d-\dP?[F|B|L|R])([0-9]*)",  # cables
-            r"([A-Za-z]+[0-9]+[A-Za-z]+)([0-9]*)",  # things like k2tog or m1l
-            r"([A-Za-z]+)([0-9]*)",  # things like p4
-        ]
-        matched_stitch = False
-        for pat in patterns:
-            result = re.match(pat, section)
-            if result and not matched_stitch:
-                # only match one pattern per stitch so k2tog doesn't
-                # get parsed as k2
-                matched_stitch = True
-                stitch = result.group(1)
-                # set the number or if no number, assume you repeat once
-                number = int(result.group(2)) if result.group(2) else 1
-                for i in range(0, number):
-                    stitch_array.append(legend[stitch])
-
+        stitch_info = _match_stitch_pattern(section)
+        if stitch_info:
+            stitch, number = stitch_info
+            for _ in range(number):
+                stitch_array.append(legend[stitch])
+    
     return stitch_array
+
+
+def _match_stitch_pattern(section: str) -> Tuple[str, int] | None:
+    """Match a stitch pattern and return (stitch_name, count) or None.
+    
+    Tries patterns in order: cables, multi-letter stitches, simple stitches.
+    Only matches one pattern per section to avoid ambiguity (e.g., k2tog as k2).
+    """
+    patterns = [
+        r"(C\d-\dP?[F|B|L|R])([0-9]*)",  # cables
+        r"([A-Za-z]+[0-9]+[A-Za-z]+)([0-9]*)",  # things like k2tog or m1l
+        r"([A-Za-z]+)([0-9]*)",  # things like p4
+    ]
+    
+    for pat in patterns:
+        result = re.match(pat, section)
+        if result:
+            stitch = result.group(1)
+            number = int(result.group(2)) if result.group(2) else 1
+            return (stitch, number)
+    
+    return None
 
 
 def parse_chart(chart_instructions: str, legend=None) -> Pattern:
@@ -599,7 +609,6 @@ def plot_chart(
 ) -> Image:
     """Print a chart from a stitch array"""
 
-    # Set up the image
     cell_height = 50
     cell_width = 50
 
@@ -607,9 +616,7 @@ def plot_chart(
     if num_rows <= 0:
         raise ValueError("There must be at least one row in the pattern")
     elif num_rows == 1:
-        stitch_array = [
-            stitch_array
-        ]  # put a single row into a containing list to make the 2D loop work
+        stitch_array = [stitch_array]
 
     longest_row_len = max([sum(st.width for st in row) for row in stitch_array])
 
@@ -632,44 +639,66 @@ def plot_chart(
     fnt = ImageFont.truetype("Inkfree.ttf", 35)
     color_st_pattern = r"#[0-9a-fA-F]{6}"
 
+    _draw_stitches(draw, pattern_to_plot, chart_image, lr_direction, tb_direction, 
+                   cell_width, cell_height, color_st_pattern, fnt)
+    
+    _draw_row_numbers(draw, longest_row_len, lr_direction, tb_direction, cell_width, 
+                      cell_height, chart_image, fnt)
+    
+    _draw_column_numbers(draw, num_rows, lr_direction, tb_direction, cell_width, 
+                         cell_height, chart_image, fnt)
+
+    return chart_image
+
+
+def _draw_stitches(draw, pattern_to_plot, chart_image, lr_direction, tb_direction, 
+                   cell_width, cell_height, color_st_pattern, fnt):
+    """Draw the stitches onto the chart."""
     for st_y, row in enumerate(pattern_to_plot):
         cur_y = (st_y + (1 if tb_direction == "tb" else 0)) * cell_height
         cur_x = 0 if lr_direction == "rl" else cell_width
-        for st_x, stitch in enumerate(row):
-            # for i in range(1, len(stitch_array)):
-            stitch_coloured = re.match(color_st_pattern, stitch.symbol)
-            stitch_graphic = stitch.symbol.endswith(".png")
-
-            if (
-                    stitch_graphic
-            ):  # this is really ugly, fix path to symbols as part of the symbol name?
-                with Image.open(stitch.symbol) as sym:
-                    chart_image.paste(sym, (cur_x, cur_y))
-
-            else:
-                stitch_color = stitch.symbol if stitch_coloured else "white"
-                draw.rectangle(
-                    (
-                        (cur_x, cur_y),
-                        (cur_x + stitch.width * cell_width, cur_y + cell_height),
-                    ),
-                    fill=stitch_color,
-                    outline="black",
-                )
-                if not stitch_coloured:
-                    draw.text(
-                        (
-                            cur_x + (stitch.width * cell_width) / 2,
-                            cur_y + cell_height / 2,
-                        ),
-                        stitch.symbol,
-                        font=fnt,
-                        fill="blue",
-                        align="center",
-                        anchor="mm",
-                    )
+        for stitch in row:
+            _draw_single_stitch(draw, stitch, chart_image, cur_x, cur_y, 
+                              cell_width, cell_height, color_st_pattern, fnt)
             cur_x += stitch.width * cell_width
-    # Row and column numbers
+
+
+def _draw_single_stitch(draw, stitch, chart_image, cur_x, cur_y, cell_width, 
+                       cell_height, color_st_pattern, fnt):
+    """Draw a single stitch cell."""
+    stitch_coloured = re.match(color_st_pattern, stitch.symbol)
+    stitch_graphic = stitch.symbol.endswith(".png")
+
+    if stitch_graphic:
+        with Image.open(stitch.symbol) as sym:
+            chart_image.paste(sym, (cur_x, cur_y))
+    else:
+        stitch_color = stitch.symbol if stitch_coloured else "white"
+        draw.rectangle(
+            (
+                (cur_x, cur_y),
+                (cur_x + stitch.width * cell_width, cur_y + cell_height),
+            ),
+            fill=stitch_color,
+            outline="black",
+        )
+        if not stitch_coloured:
+            draw.text(
+                (
+                    cur_x + (stitch.width * cell_width) / 2,
+                    cur_y + cell_height / 2,
+                ),
+                stitch.symbol,
+                font=fnt,
+                fill="blue",
+                align="center",
+                anchor="mm",
+            )
+
+
+def _draw_row_numbers(draw, longest_row_len, lr_direction, tb_direction, cell_width, 
+                      cell_height, chart_image, fnt):
+    """Draw column number labels (rows in knitting terminology)."""
     row_x = (
         3 * cell_width // 2
         if lr_direction == "lr"
@@ -691,6 +720,10 @@ def plot_chart(
         )
         row_x = row_x + cell_width * (1 if lr_direction == "lr" else -1)
 
+
+def _draw_column_numbers(draw, num_rows, lr_direction, tb_direction, cell_width, 
+                         cell_height, chart_image, fnt):
+    """Draw row number labels (columns in knitting terminology)."""
     col_x = (
         cell_width // 2 if lr_direction == "lr" else chart_image.width - cell_width // 2
     )
@@ -709,8 +742,6 @@ def plot_chart(
             anchor="mm",
         )
         col_y = col_y + cell_height * (1 if tb_direction == "tb" else -1)
-
-    return chart_image
 
 
 def _symbol_to_data_uri(symbol: str) -> Optional[str]:
@@ -770,24 +801,50 @@ def render_chart_svg(
         stitch_array, tb_direction, lr_direction
     )
 
+    cell_width = 50
+    cell_height = 50
     canvas_width = cell_width * (longest_row_len + 1)
     canvas_height = cell_height * (num_rows + 1)
 
     color_st_pattern = re.compile(r"#[0-9a-fA-F]{6}")
-    elements = [
+    elements = _create_svg_header(canvas_width, canvas_height)
+    
+    # Calculate grid positions
+    top = 0 if tb_direction == "bt" else cell_height
+    left = 0 if lr_direction == "rl" else cell_width
+    bottom = top + cell_height * num_rows
+    right = left + cell_width * longest_row_len
+    
+    # Draw grid
+    _add_svg_gridlines(elements, top, bottom, left, right, cell_width, cell_height)
+    
+    # Draw stitches
+    _add_svg_stitches(elements, pattern_to_plot, cell_width, cell_height, 
+                     lr_direction, tb_direction, color_st_pattern)
+    
+    # Draw numbers
+    _add_svg_row_numbers(elements, longest_row_len, lr_direction, tb_direction, 
+                        cell_width, cell_height, canvas_width, canvas_height)
+    _add_svg_column_numbers(elements, num_rows, lr_direction, tb_direction, 
+                           cell_width, cell_height, canvas_width, canvas_height)
+    
+    elements.append("</svg>")
+    return "\n".join(elements)
+
+
+def _create_svg_header(canvas_width: int, canvas_height: int) -> List[str]:
+    """Create SVG document header."""
+    return [
         '<?xml version="1.0" encoding="UTF-8"?>',
         f'<svg xmlns="http://www.w3.org/2000/svg" '
         f'width="{canvas_width}" height="{canvas_height}" '
         f'viewBox="0 0 {canvas_width} {canvas_height}">',
     ]
 
-    # Numbers live in a leading stripe (top or bottom for rows, left or right
-    # for columns), so the data area is inset by one cell there.
-    top = 0 if tb_direction == "bt" else cell_height
-    left = 0 if lr_direction == "rl" else cell_width
-    bottom = top + cell_height * num_rows
-    right = left + cell_width * longest_row_len
 
+def _add_svg_gridlines(elements: List[str], top: int, bottom: int, left: int, right: int,
+                       cell_width: int, cell_height: int) -> None:
+    """Add gridline elements to SVG."""
     for x in range(left, right + 1, cell_width):
         elements.append(
             f'<line x1="{x}" y1="{top}" x2="{x}" y2="{bottom}" '
@@ -799,43 +856,74 @@ def render_chart_svg(
             f'stroke="black" stroke-width="1"/>'
         )
 
+
+def _add_svg_stitches(elements: List[str], pattern_to_plot, cell_width: int, cell_height: int,
+                     lr_direction: str, tb_direction: str, color_st_pattern) -> None:
+    """Add stitch elements to SVG."""
     for row_index, row in enumerate(pattern_to_plot):
         cur_y = (row_index + (1 if tb_direction == "tb" else 0)) * cell_height
         cur_x = 0 if lr_direction == "rl" else cell_width
         for stitch in row:
-            span = stitch.width * cell_width
-            center_x = cur_x + span / 2
-            center_y = cur_y + cell_height / 2
-            if stitch.symbol.endswith(".png"):
-                data_uri = _symbol_to_data_uri(stitch.symbol)
-                if data_uri is not None:
-                    elements.append(
-                        f'<image href="{data_uri}" x="{cur_x}" y="{cur_y}" '
-                        f'width="{span}" height="{cell_height}"/>'
-                    )
-                else:
-                    label = os.path.basename(stitch.symbol)
-                    elements.append(
-                        f'<text x="{center_x}" y="{center_y}" '
-                        f'text-anchor="middle" dominant-baseline="central" '
-                        f'font-size="14">{_xml_escape(label)}</text>'
-                    )
-            else:
-                colored = color_st_pattern.match(stitch.symbol)
-                fill = stitch.symbol if colored else "white"
-                elements.append(
-                    f'<rect x="{cur_x}" y="{cur_y}" width="{span}" '
-                    f'height="{cell_height}" fill="{fill}" stroke="black"/>'
-                )
-                if not colored:
-                    elements.append(
-                        f'<text x="{center_x}" y="{center_y}" '
-                        f'text-anchor="middle" dominant-baseline="central" '
-                        f'font-size="20" fill="blue">'
-                        f'{_xml_escape(stitch.symbol)}</text>'
-                    )
-            cur_x += span
+            _add_svg_stitch_cell(elements, stitch, cur_x, cur_y, cell_width, 
+                               cell_height, color_st_pattern)
+            cur_x += stitch.width * cell_width
 
+
+def _add_svg_stitch_cell(elements: List[str], stitch, cur_x: int, cur_y: int, 
+                        cell_width: int, cell_height: int, color_st_pattern) -> None:
+    """Add a single stitch cell to SVG."""
+    span = stitch.width * cell_width
+    center_x = cur_x + span / 2
+    center_y = cur_y + cell_height / 2
+    
+    if stitch.symbol.endswith(".png"):
+        _add_svg_image_stitch(elements, stitch, cur_x, cur_y, span, cell_height)
+    else:
+        _add_svg_colored_stitch(elements, stitch, cur_x, cur_y, span, 
+                              center_x, center_y, cell_height, color_st_pattern)
+
+
+def _add_svg_image_stitch(elements: List[str], stitch, cur_x: int, cur_y: int, 
+                         span: int, cell_height: int) -> None:
+    """Add a PNG image stitch to SVG."""
+    data_uri = _symbol_to_data_uri(stitch.symbol)
+    if data_uri is not None:
+        elements.append(
+            f'<image href="{data_uri}" x="{cur_x}" y="{cur_y}" '
+            f'width="{span}" height="{cell_height}"/>'
+        )
+    else:
+        label = os.path.basename(stitch.symbol)
+        elements.append(
+            f'<text x="{cur_x + span / 2}" y="{cur_y + cell_height / 2}" '
+            f'text-anchor="middle" dominant-baseline="central" '
+            f'font-size="14">{_xml_escape(label)}</text>'
+        )
+
+
+def _add_svg_colored_stitch(elements: List[str], stitch, cur_x: int, cur_y: int, 
+                           span: int, center_x: float, center_y: float, 
+                           cell_height: int, color_st_pattern) -> None:
+    """Add a colored rectangle stitch to SVG."""
+    colored = color_st_pattern.match(stitch.symbol)
+    fill = stitch.symbol if colored else "white"
+    elements.append(
+        f'<rect x="{cur_x}" y="{cur_y}" width="{span}" '
+        f'height="{cell_height}" fill="{fill}" stroke="black"/>'
+    )
+    if not colored:
+        elements.append(
+            f'<text x="{center_x}" y="{center_y}" '
+            f'text-anchor="middle" dominant-baseline="central" '
+            f'font-size="20" fill="blue">'
+            f'{_xml_escape(stitch.symbol)}</text>'
+        )
+
+
+def _add_svg_row_numbers(elements: List[str], longest_row_len: int, lr_direction: str,
+                        tb_direction: str, cell_width: int, cell_height: int,
+                        canvas_width: int, canvas_height: int) -> None:
+    """Add column number labels to SVG."""
     row_x = (
         3 * cell_width // 2
         if lr_direction == "lr"
@@ -854,6 +942,11 @@ def render_chart_svg(
         )
         row_x += cell_width * (1 if lr_direction == "lr" else -1)
 
+
+def _add_svg_column_numbers(elements: List[str], num_rows: int, lr_direction: str,
+                           tb_direction: str, cell_width: int, cell_height: int,
+                           canvas_width: int, canvas_height: int) -> None:
+    """Add row number labels to SVG."""
     column_x = (
         cell_width // 2
         if lr_direction == "lr"
@@ -871,6 +964,3 @@ def render_chart_svg(
             f'{pattern_row_number}</text>'
         )
         column_y += cell_height * (1 if tb_direction == "tb" else -1)
-
-    elements.append("</svg>")
-    return "\n".join(elements)
