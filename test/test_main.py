@@ -29,7 +29,7 @@ def test_main_convert_row(capsys, caplog, monkeypatch):
         ],
     )
     __main__.main()
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     # 10in at 5 rows/in -> 50 rows -> 50 / (4 rows/in) = 12.5in
     assert "Converting row gauge..." in caplog.text
     assert "My calculated measurement: 12.5 in" in caplog.text
@@ -53,7 +53,7 @@ def test_main_convert_stitch(capsys, caplog, monkeypatch):
         ],
     )
     __main__.main()
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     # 42in at 27.5 sts/in -> 1155 sts -> 1155 / (23.5 sts/in) = 49.1489...in
     assert "Converting stitch gauge..." in caplog.text
     assert f"My calculated measurement: {round(42 * 27.5) / 23.5} in" in caplog.text
@@ -64,7 +64,7 @@ def test_main_without_convert_prints_usage_exits(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["pyknit"])
     with pytest.raises(SystemExit):
         __main__.main()
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "usage:" in out
     assert VERSION in out
 
