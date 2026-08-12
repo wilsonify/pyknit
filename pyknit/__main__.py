@@ -25,6 +25,8 @@ def _convert_measurement_units(
 def convert_row_gauge(
     original_gauge: GaugeSwatch,
     new_gauge: GaugeSwatch,
+    original_measurement: float,
+    original_unit: str,
 ) -> float:
     """Convert a measurement in rows from the original gauge to the new gauge.
 
@@ -66,17 +68,25 @@ def main():
     Use --convert to convert from one gauge to another.
     """
     logger.warning(desc)
+    parser = _create_argument_parser(desc)
+    
+    args = parser.parse_args()
+
+    if not args.convert:
+        parser.print_usage()
+        exit()
+
+    if args.convert == "row":
+        _handle_row_conversion(args, logger)
+    elif args.convert == "stitch":
+        _handle_stitch_conversion(args, logger)
+
+
+def _create_argument_parser(desc: str) -> argparse.ArgumentParser:
+    """Create and return the argument parser."""
     parser = argparse.ArgumentParser(prog="pyknit", description=desc)
 
-    # Goal: measurement conversions from one gauge to another
-    # e.g.
-    #  - pattern gauge was 8 stitches / inch.
-    #  - my actual gauge was 7.5 stitches / inch
-    #  - Therefore, a 18 inch sleeve in the pattern will now be 19.2 inches
-
-    conversion_options_group = parser.add_argument_group(
-        "Conversion Options",
-    )
+    conversion_options_group = parser.add_argument_group("Conversion Options")
     conversion_options_group.add_argument(
         "--convert",
         help="Convert from one gauge to another. Specify row or stitch to indicate which direction of measurement you need to convert.",
@@ -162,138 +172,112 @@ def main():
         type=float,
     )
 
-    args = parser.parse_args()
+    return parser
 
-    if not args.convert:
-        parser.print_usage()
-        exit()
 
-    if args.convert == "row":
-        # If we're converting for rows, we only neeed row-related measurements
-        # Make sure we have what we need or request it as input.
-        logger.info("Converting row gauge...")
-        if not args.original_gauge_row:
-            original_gauge_row = input(
-                f"Please enter a valid original gauge (row/{args.original_gauge_unit}): "
-            )
-        else:
-            original_gauge_row = args.original_gauge_row
+def _get_or_input(value: float, prompt: str) -> float:
+    """Get a value from args or prompt user for input."""
+    if not value:
+        return float(input(prompt))
+    return value
 
-        if not args.new_gauge_row:
-            new_gauge_row = input(
-                f"Please enter a valid new gauge (row/{args.new_gauge_unit}): "
-            )
-        else:
-            new_gauge_row = args.new_gauge_row
 
-        if not args.original_measurement:
-            original_measurement = input(
-                f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
-            )
-        else:
-            original_measurement = args.original_measurement
+def _handle_row_conversion(args, logger):
+    """Handle row gauge conversion."""
+    logger.info("Converting row gauge...")
+    
+    original_gauge_row = _get_or_input(
+        args.original_gauge_row,
+        f"Please enter a valid original gauge (row/{args.original_gauge_unit}): "
+    )
+    new_gauge_row = _get_or_input(
+        args.new_gauge_row,
+        f"Please enter a valid new gauge (row/{args.new_gauge_unit}): "
+    )
+    original_measurement = _get_or_input(
+        args.original_measurement,
+        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
+    )
 
-        # Show what numbers we're using
-        logger.info("")
-        logger.info(
-            f"Original gauge: {original_gauge_row} rows/{args.original_gauge_unit}"
-        )
-        logger.info(f"New gauge: {new_gauge_row} rows/{args.new_gauge_unit}")
-        logger.info(
-            f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}"
-        )
+    # Show what numbers we're using
+    logger.info("")
+    logger.info(f"Original gauge: {original_gauge_row} rows/{args.original_gauge_unit}")
+    logger.info(f"New gauge: {new_gauge_row} rows/{args.new_gauge_unit}")
+    logger.info(f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}")
 
-        # We only need the row info so we're setting the rest to 1 for
-        # convenience.  Construct the gauges in their own units and let
-        # convert_row_gauge() handle any cm/in differences.
-        original_gauge = GaugeSwatch(
-            row_count=original_gauge_row,
-            stitch_count=1,
-            row_measure=args.original_gauge_measurement,
-            stitch_measure=1,
-            units=args.original_gauge_unit,
-        )
-        new_gauge = GaugeSwatch(
-            row_count=new_gauge_row,
-            stitch_count=1,
-            row_measure=args.new_gauge_measurement,
-            stitch_measure=1,
-            units=args.new_gauge_unit,
-        )
-        new_measurement = convert_row_gauge(
-            original_gauge,
-            new_gauge,
-            original_measurement,
-            args.original_gauge_unit,
-        )
-        logger.info(
-            f"My calculated measurement: {new_measurement} {args.original_gauge_unit}"
-        )
-        logger.info("")
+    # Construct the gauges in their own units
+    original_gauge = GaugeSwatch(
+        row_count=original_gauge_row,
+        stitch_count=1,
+        row_measure=args.original_gauge_measurement,
+        stitch_measure=1,
+        units=args.original_gauge_unit,
+    )
+    new_gauge = GaugeSwatch(
+        row_count=new_gauge_row,
+        stitch_count=1,
+        row_measure=args.new_gauge_measurement,
+        stitch_measure=1,
+        units=args.new_gauge_unit,
+    )
+    
+    new_measurement = convert_row_gauge(
+        original_gauge,
+        new_gauge,
+        original_measurement,
+        args.original_gauge_unit,
+    )
+    logger.info(f"My calculated measurement: {new_measurement} {args.original_gauge_unit}")
+    logger.info("")
 
-    elif args.convert == "stitch":
-        # If we're converting for rows, we only neeed stitch-related measurements
-        # Make sure we have what we need or request it as input.
 
-        logger.info("Converting stitch gauge...")
-        if not args.original_gauge_stitch:
-            original_gauge_stitch = input(
-                f"Please enter a valid original gauge (stitch/{args.original_gauge_unit}): "
-            )
-        else:
-            original_gauge_stitch = args.original_gauge_stitch
+def _handle_stitch_conversion(args, logger):
+    """Handle stitch gauge conversion."""
+    logger.info("Converting stitch gauge...")
+    
+    original_gauge_stitch = _get_or_input(
+        args.original_gauge_stitch,
+        f"Please enter a valid original gauge (stitch/{args.original_gauge_unit}): "
+    )
+    new_gauge_stitch = _get_or_input(
+        args.new_gauge_stitch,
+        f"Please enter a valid new gauge (stitch/{args.new_gauge_unit}): "
+    )
+    original_measurement = _get_or_input(
+        args.original_measurement,
+        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
+    )
 
-        if not args.new_gauge_stitch:
-            new_gauge_stitch = input(
-                f"Please enter a valid new gauge (stitch/{args.new_gauge_unit}): "
-            )
-        else:
-            new_gauge_stitch = args.new_gauge_stitch
+    # Show what numbers we're using
+    logger.info("")
+    logger.info(f"Original gauge: {original_gauge_stitch} stitchs/{args.original_gauge_unit}")
+    logger.info(f"New gauge: {new_gauge_stitch} stitchs/{args.new_gauge_unit}")
+    logger.info(f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}")
 
-        if not args.original_measurement:
-            original_measurement = input(
-                f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
-            )
-        else:
-            original_measurement = args.original_measurement
-
-        # Show what numbers we're using
-        logger.info("")
-        logger.info(
-            f"Original gauge: {original_gauge_stitch} stitchs/{args.original_gauge_unit}"
-        )
-        logger.info(f"New gauge: {new_gauge_stitch} stitchs/{args.new_gauge_unit}")
-        logger.info(
-            f"Original pattern measurement: {original_measurement} {args.original_gauge_unit}"
-        )
-
-        # We only need the stitch info so we're setting the rest to 1 for
-        # convenience.  Construct the gauges in their own units and let
-        # convert_stitch_gauge() handle any cm/in differences.
-        original_gauge = GaugeSwatch(
-            stitch_count=original_gauge_stitch,
-            row_count=1,
-            row_measure=1,
-            stitch_measure=args.original_gauge_measurement,
-            units=args.original_gauge_unit,
-        )
-        new_gauge = GaugeSwatch(
-            stitch_count=new_gauge_stitch,
-            row_count=1,
-            row_measure=1,
-            stitch_measure=args.new_gauge_measurement,
-            units=args.new_gauge_unit,
-        )
-        new_measurement = convert_stitch_gauge(
-            original_gauge,
-            new_gauge,
-            original_measurement,
-            args.original_gauge_unit,
-        )
-        logger.info(
-            f"My calculated measurement: {new_measurement} {args.original_gauge_unit}"
-        )
-        logger.info("")
+    # Construct the gauges in their own units
+    original_gauge = GaugeSwatch(
+        stitch_count=original_gauge_stitch,
+        row_count=1,
+        row_measure=1,
+        stitch_measure=args.original_gauge_measurement,
+        units=args.original_gauge_unit,
+    )
+    new_gauge = GaugeSwatch(
+        stitch_count=new_gauge_stitch,
+        row_count=1,
+        row_measure=1,
+        stitch_measure=args.new_gauge_measurement,
+        units=args.new_gauge_unit,
+    )
+    
+    new_measurement = convert_stitch_gauge(
+        original_gauge,
+        new_gauge,
+        original_measurement,
+        args.original_gauge_unit,
+    )
+    logger.info(f"My calculated measurement: {new_measurement} {args.original_gauge_unit}")
+    logger.info("")
 
     # legend = {
     #    "k": "k",
