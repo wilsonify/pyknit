@@ -68,7 +68,7 @@ def test_stitch_unknown_stitch():
     """A stitch in the string that is not found in the legend should raise
     a KeyError: 'Stitch not found in legend.'"""
     with pytest.raises(KeyError):
-        bad_stitch = pyknit.Chart.stitch_legend["r"]
+        pyknit.Chart.stitch_legend["r"]
 
 
 @pytest.mark.parametrize(
