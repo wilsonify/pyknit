@@ -283,7 +283,7 @@
   </div>
 
   <py-config>
-    packages = ["pydantic", "pillow", "pyknit"]
+    packages = ["pydantic", "pillow", "/_wheel/pyknit-0.1.0-py3-none-any.whl"]
     terminal = false
   </py-config>
 
@@ -728,14 +728,17 @@ p1 k2 yo k2tog p2</textarea>
             out("chart-output", "", "none")
             out("backend-info", "", "none")
     
-    # Attach event handlers
+    # Attach event handlers (create_proxy keeps the Python callbacks alive;
+    # passing them to addEventListener directly would destroy the proxies).
+    from pyodide.ffi import create_proxy
+
     calc_btn = document.querySelector("#run-calc")
     if calc_btn:
-        calc_btn.addEventListener("click", handle_calculation)
-    
+        calc_btn.addEventListener("click", create_proxy(handle_calculation))
+
     chart_btn = document.querySelector("#run-chart")
     if chart_btn:
-        chart_btn.addEventListener("click", handle_chart)
+        chart_btn.addEventListener("click", create_proxy(handle_chart))
     
     # Enable input fields
     for field_id in [
