@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Interactive Demos</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <link rel="stylesheet" href="_assets/common.css" />
+  <style>
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .demo-card {
+      border: 1px solid var(--border, #ddd);
+      border-radius: 10px;
+      padding: 1.25rem;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .demo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+    .demo-card h3 {
+      margin: 0 0 0.4rem;
+      color: #5a2a75;
+    }
+    .demo-card p {
+      margin: 0 0 1rem;
+      color: #555;
+      font-size: 0.92rem;
+    }
+    .demo-card a {
+      display: inline-block;
+      color: #7b3fa0;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .demo-card a:hover {
+      text-decoration: underline;
+    }
+    .demo-header {
+      border-bottom: 2px solid #f0e9f5;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+    }
+    .eyebrow {
+      color: #7b3fa0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    footer {
+      margin-top: 2.5rem;
+      color: #888;
+      font-size: 0.85rem;
+      border-top: 1px solid #eee;
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript</div>
+    <h1>Interactive Knitting Demos</h1>
+    <p>
+      pyKnit running entirely in your browser via PyScript — no server, no build step.
+      Pick a demo, tweak the numbers, and click the button. First visit downloads the
+      runtime (~30-60 s), later visits are fast.
+    </p>
+  </header>
+
+  <section class="demo-grid">
+    <div class="demo-card">
+      <h3>Gauge Conversion</h3>
+      <p>Convert stitch and row counts between different gauges.</p>
+      <a href="gauge-conversion/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Chart Renderer</h3>
+      <p>Type instructions and render a stitch chart as SVG.</p>
+      <a href="chart-renderer/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Even Shaping</h3>
+      <p>Space increases or decreases evenly across a round or row.</p>
+      <a href="even-shaping/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Hat Crown Planner</h3>
+      <p>Plan the decrease rounds for a hat crown.</p>
+      <a href="hat-crown/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Pi Shawl Planner</h3>
+      <p>Find the doubling rounds for a pi shawl.</p>
+      <a href="pi-shawl/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Pattern I/O</h3>
+      <p>Export a pattern to CSV/JSON and round-trip it back.</p>
+      <a href="pattern-io/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Raglan Sweater</h3>
+      <p>Calculate marker setup for a top-down raglan.</p>
+      <a href="raglan-sweater/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Shawl Shapes</h3>
+      <p>Generate instructions for crescent, triangle, square &amp; rectangle shawls.</p>
+      <a href="shawl-shapes/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Sleeve Decreases</h3>
+      <p>Plan evenly-spaced decrease rows for a tapered sleeve.</p>
+      <a href="sleeve-decreases/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Sock Calculator</h3>
+      <p>Made-to-measure sock from your gauge and foot size.</p>
+      <a href="sock-calculator/demo.html">Open demo →</a>
+    </div>
+    <div class="demo-card">
+      <h3>Yarn &amp; Time Estimator</h3>
+      <p>Estimate yarn and knitting time for a project.</p>
+      <a href="yarn-estimator/demo.html">Open demo →</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Powered by <a href="https://github.com/terriko/pyknit">pyknit</a> ·
+      <a href="https://pyscript.com">PyScript</a>. Open the browser console (F12) for
+      tracebacks if something breaks.
+    </p>
+  </footer>
+</body>
+</html>
