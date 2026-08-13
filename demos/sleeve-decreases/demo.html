@@ -27,7 +27,7 @@
   </div>
 
   <py-config>
-    packages = ["pydantic", "pillow", "/_wheel/pyknit-0.1.0-py3-none-any.whl"]
+    packages = ["pydantic", "pillow", "../_wheel/pyknit-0.1.0-py3-none-any.whl"]
     terminal = false
   </py-config>
 
@@ -69,8 +69,8 @@
     <p>Powered by <code>pyknit.sleeve_decreases</code>.</p>
   </footer>
 
-  <script type="py" src="../_assets/shared.py"></script>
-  <script type="py" src="../_demos/sleeve_decreases.py"></script>
+  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
+  <script type="py" src="../../pyknit/pyscript/_demos/sleeve_decreases.py"></script>
   <script type="py">
     set_status("ready", "✔ pyknit loaded", "ready to plan")
     bind_click("run", wire_demo(DEMO))

@@ -3,4 +3,4 @@
 ## Browser (PyScript) demo
 
 A static browser demo of pyKnit (Pillow chart rendering with graceful fallback
-to a plain-text grid) lives in [pyscript/demo.html](pyscript/demo.html).
+to a plain-text grid) lives in [demos/index.html](../demos/index.html).
