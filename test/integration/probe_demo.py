@@ -15,7 +15,7 @@ with sync_playwright() as p:
     page.on("console", lambda m: events.append(("[console " + m.type + "] " + m.text[:200])))
     page.on("pageerror", lambda e: events.append(("[pageerror] " + str(e)[:300])))
 
-    page.goto(f"{BASE}/chart-renderer/demo.html", wait_until="domcontentloaded")
+    page.goto(f"{BASE}/demos/chart-renderer/demo.html", wait_until="domcontentloaded")
     for _ in range(150):
         cls = page.eval_on_selector("#status-banner", "el => el.className")
         if "ready" in cls or "error" in cls:

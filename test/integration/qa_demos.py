@@ -152,7 +152,7 @@ def run_demo(browser, spec):
 
     t0 = time.time()
     try:
-        page.goto(f"{BASE}/{name}/demo.html", wait_until="domcontentloaded", timeout=120_000)
+        page.goto(f"{BASE}/demos/{name}/demo.html", wait_until="domcontentloaded", timeout=120_000)
     except Exception as exc:
         report.fail("navigation failed", str(exc)[:200])
         page.close()
@@ -433,7 +433,7 @@ def check_index(browser):
     page = browser.new_page()
     problems = []
     try:
-        resp = page.goto(f"{BASE}/index.html", wait_until="domcontentloaded", timeout=30000)
+        resp = page.goto(f"{BASE}/demos/index.html", wait_until="domcontentloaded", timeout=30000)
         if resp is None or resp.status != 200:
             problems.append(f"index.html status {resp.status if resp else 'None'}")
             page.close()
@@ -442,7 +442,7 @@ def check_index(browser):
             "a[href$='.html']", "els => els.map(e => e.getAttribute('href'))"
         )
         for href in links:
-            full = href if href.startswith("http") else f"{BASE}/{href.lstrip('/')}"
+            full = href if href.startswith("http") else f"{BASE}/demos/{href.lstrip('/')}"
             try:
                 r = page.request.get(full)
                 if r.status != 200:

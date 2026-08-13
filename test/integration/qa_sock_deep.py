@@ -13,7 +13,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8877/sock-calculator/demo.html"
+BASE = "http://127.0.0.1:8877/demos/sock-calculator/demo.html"
 
 EXTRA = (
     "Attempting to import", "pyknit imported", "Running default",
