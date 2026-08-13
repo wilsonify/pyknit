@@ -11,6 +11,21 @@ The suite lives in `pyknit/pyscript/` and is organised as:
 - `_assets/common.css` — shared styling
 - `_demos/<name>.py` — plain logic modules exposing a `DEMO` dict (`TITLE`, `DEFAULT_INPUTS`, `compute`, `to_html`)
 - `<demo-name>/demo.html` — one page per demo
+- `_wheel/` — the local `pyknit` wheel served to the browser
+
+> **Important:** does the demo page still point at the local wheel? Each demo's
+> `py-config` installs `/_wheel/pyknit-<version>-py3-none-any.whl`. If you
+> bump the package version, rebuild the wheel and update every
+> `py-config` block:
+
+```bash
+python -m build --wheel -o pyknit/pyscript/_wheel
+```
+
+The browser demos *must* load the locally-built wheel: the version on PyPI
+(0.0.9) predates several modules the demos use (`pyknit.io`, `pyknit.estimate`,
+`pyknit.shawl_shapes`, `pyknit.browser`, the `GaugeSwatch` accounting
+functions), so pointing at PyPI would produce import errors in every demo.
 
 | Demo | Functionality |
 |------|---------------|
@@ -103,8 +118,9 @@ This is the hub page — every demo has its own link (e.g. `hat-crown/demo.html`
 2. **Package Installation**: `py-config` automatically downloads:
    - `pydantic` (data validation, required by pyknit)
    - `pillow` (image processing, required by pyknit for PNG rendering)
-   - `pyknit` (the main package from PyPI)
+   - `pyknit` from the **local wheel** in `_wheel/` (never from PyPI — see above)
 3. **Event Handling**: JavaScript event listeners trigger Python functions
+   (wrapped in Pyodide `create_proxy` so the callbacks survive)
 4. **DOM Access**: Python code directly manipulates the HTML DOM
 5. **Rendering**:
    - SVG backend renders as inline SVG
