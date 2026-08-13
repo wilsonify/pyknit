@@ -66,6 +66,9 @@ def compute(inputs):
     }
 
 
+DECREASE_ROW = "decrease row"
+
+
 def _parse_schedule(text):
     """Return the 0-indexed row numbers on which decrease rows occur.
 
@@ -79,43 +82,55 @@ def _parse_schedule(text):
 
     schedule = []
     position = 0
-
     tokens = re.split(r",\s*(?![^\[]*\])", str(text))
     for token in tokens:
-        token = token.strip()
-        match = re.match(r"\[([^\]]*)\]\s*\*\s*(\d+)\s*times", token)
-        if match:
-            body, times = match.group(1), int(match.group(2))
-            pattern = body.split("decrease row")[0]
-            pattern = pattern.split("]")[0]
-            plain_rows = re.findall(r"do (\d+) rows?", pattern)
-            plain = int(plain_rows[0]) if plain_rows else 0
-            before_decr = "decrease row" in body.split(",")[0]
-            segment = []
-            for _ in range(times):
-                if before_decr:
-                    position += plain
-                    segment.append(position)
-                    position += 1
-                else:
-                    segment.append(position)
-                    position += 1
-                    position += plain
-            schedule.extend(segment)
-            continue
-
-        if "decrease row" in token:
-            count = int(token.split("decrease row")[0].strip() or "1") or 1
-            for _ in range(count):
-                schedule.append(position)
-                position += 1
-            continue
-
-        # plain non-decrease group
-        plain_rows = re.findall(r"do (\d+) rows?", token)
-        if plain_rows:
-            position += int(plain_rows[0])
+        position, added = _parse_item(token, position)
+        schedule.extend(added)
     return schedule
+
+
+def _parse_item(token, position):
+    """Handle a single comma-split instruction token."""
+    import re
+
+    token = token.strip()
+    match = re.match(r"\[([^\]]*)\]\s*\*\s*(\d+)\s*times", token)
+    if match:
+        return _parse_repeated(match, position)
+    if DECREASE_ROW in token:
+        return _parse_decrease(token, position)
+    plain_rows = re.findall(r"do (\d+) rows?", token)
+    if plain_rows:
+        return position + int(plain_rows[0]), []
+    return position, []
+
+
+def _parse_repeated(match, position):
+    """Parse a ``[body] * N times`` bracket group."""
+    import re
+
+    body, times = match.group(1), int(match.group(2))
+    pattern = body.split(DECREASE_ROW)[0].split("]")[0]
+    plain_rows = re.findall(r"do (\d+) rows?", pattern)
+    plain = int(plain_rows[0]) if plain_rows else 0
+    before_decr = DECREASE_ROW in body.split(",")[0]
+    added = []
+    for _ in range(times):
+        if before_decr:
+            position += plain
+            added.append(position)
+            position += 1
+        else:
+            added.append(position)
+            position += 1
+            position += plain
+    return position, added
+
+
+def _parse_decrease(token, position):
+    """Parse a bare ``decrease row`` item (possibly counted)."""
+    count = int(token.split(DECREASE_ROW)[0].strip() or "1") or 1
+    return position + count, [position + i for i in range(count)]
 
 
 def _staircase_svg(schedule, rows, starting, ending):
