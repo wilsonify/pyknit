@@ -236,9 +236,9 @@ def chart_svg(
 
 def render_html(
     pattern, lr_direction: str = "lr", tb_direction: str = "tb"
-) -> str:
-    """Render a pattern to an HTML string (SVG preferred, PNG bytes base64 as
-    a fallback), plus the list of backends actually used."""
+) -> Tuple[str, List[str]]:
+    """Render a pattern to HTML (SVG preferred, PNG bytes base64 as a
+    fallback), returned with the list of backends actually used."""
     backends = available_backends()
     svg = chart_svg(pattern, lr_direction, tb_direction)
     if svg:
