@@ -25,12 +25,55 @@ SKIP = (
     "GetUserMedia", "Offline", "deprecated", "Source map",
 )
 
+OUT_SEL = "#demo-output"
+INNER_HTML = "el => el.innerHTML"
+KNIT_ALONG = "Knit along"
+PLAN_MARKERS = (
+    "How this sock is built", "Your numbers at a glance",
+    KNIT_ALONG, "1. Cast on and get started",
+    "3. Work the heel flap", "4. Turn the heel",
+    "5. Shape the gusset", "7. Knit the toe",
+)
+
+SPI = "#stitches_per_inch"
+RPI = "#rows_per_inch"
+CIRC_TOP = "#circumference_at_top"
+CIRC_ANKLE = "#circumference_of_ankle"
+LEN_LEG = "#length_from_sock_top_to_heel_bottom"
+LEN_FOOT = "#length_from_heel_to_toe"
+
+DEFAULT_INPUTS = {
+    SPI: 9,
+    RPI: 11,
+    CIRC_TOP: 10,
+    CIRC_ANKLE: 9.5,
+    LEN_LEG: 7.75,
+    LEN_FOOT: 10.5,
+}
+
+EDGE_VALUES = {
+    SPI: (5, 6, 12, 16),
+    RPI: (6, 9, 14, 18),
+    CIRC_TOP: (8, 10.75, 14),
+    CIRC_ANKLE: (7.5, 9.25, 11.5),
+    LEN_LEG: (5.5, 8.25, 12),
+    LEN_FOOT: (7, 9.75, 13),
+}
+
+CHANGE_VALUES = {
+    SPI: 7,
+    RPI: 13,
+    CIRC_TOP: 11,
+    CIRC_ANKLE: 8.5,
+    LEN_LEG: 9,
+    LEN_FOOT: 12,
+}
+
+failures = []
+
 
 def is_noise(text):
     return any(t in text for t in SKIP) or any(t in text for t in EXTRA)
-
-
-failures = []
 
 
 def check(name, ok, detail=""):
@@ -60,7 +103,7 @@ def run_click(page):
 
 
 def out_text(page):
-    el = page.query_selector("#demo-output")
+    el = page.query_selector(OUT_SEL)
     return re.sub(r"<[^>]+>", " ", el.inner_html() or "").strip()
 
 
@@ -76,22 +119,108 @@ def fill(page, sel, val):
     page.evaluate("document.querySelector(%s).blur()" % ("'%s'" % sel))
 
 
+def _console_sink(errors):
+    def on_console(msg):
+        t = msg.text
+        if msg.type == "error" and not is_noise(t):
+            errors.append((time.monotonic(), t[:300]))
+    return on_console
+
+
+def _pageerror_sink(errors):
+    def on_pageerror(exc):
+        errors.append(str(exc)[:300])
+    return on_pageerror
+
+
+def _check_default_plan(page):
+    run_click(page)
+    html = page.eval_on_selector(OUT_SEL, INNER_HTML) or ""
+    check("default click produced svg", "<svg" in html)
+    for marker in PLAN_MARKERS:
+        check("plan has '%s'" % marker, marker in html)
+    return html
+
+
+def _check_svg_geometry(html):
+    svg = re.search(r"<svg.*?</svg>", html, re.S).group(0)
+    bad = [a for a in re.findall(r'(width|height|x|y)="(-?\d*\.?\d+)"', svg)
+           if float(a[1]) < 0]
+    check("svg has no negative geometry", not bad, str(bad[:5]))
+    check("svg mentions cast-on stitches", "cast on" in svg)
+
+
+def _probe_edge_values(page):
+    for sel, values in EDGE_VALUES.items():
+        for val in values:
+            fill(page, sel, val)
+            run_click(page)
+            ok = bool(out_text(page)) and error_visible(page) is False
+            check(f"{sel} = {val} renders plan", ok, out_text(page)[:60])
+
+
+def _restore_defaults(page):
+    for sel, val in DEFAULT_INPUTS.items():
+        fill(page, sel, val)
+
+
+def _check_output_changes(page):
+    baseline = out_text(page)
+    for sel, new_val in CHANGE_VALUES.items():
+        fill(page, sel, new_val)
+        run_click(page)
+        check(f"changing {sel} changes output", out_text(page) != baseline)
+
+
+def _check_size_pick(page):
+    page.select_option("#sock-size", "w-m")
+    run_click(page)
+    circ = page.query_selector(CIRC_TOP).input_value()
+    foot = page.query_selector(LEN_FOOT).input_value()
+    check("size pick fills leg circumference", circ == "10.25", circ)
+    check("size pick fills foot length", foot == "9.25", foot)
+    check("size pick yields a plan", KNIT_ALONG in page.eval_on_selector(OUT_SEL, INNER_HTML))
+
+
+def _check_warnings(page):
+    fill(page, SPI, 2)
+    fill(page, RPI, 3)
+    run_click(page)
+    warn_html = page.eval_on_selector(OUT_SEL, INNER_HTML)
+    check("unusual gauge shows warnings", "Before you start" in warn_html)
+    check("unusual gauge still renders plan", KNIT_ALONG in warn_html)
+
+    fill(page, SPI, 9)
+    fill(page, RPI, 11)
+    fill(page, CIRC_TOP, 8)
+    fill(page, CIRC_ANKLE, 10)
+    run_click(page)
+    warn_html = page.eval_on_selector(OUT_SEL, INNER_HTML)
+    check("leg<ankle shows a warning", "Before you start" in warn_html)
+    check("leg<ankle renders without leg decreases note",
+          "no leg decreases" in re.sub(r"<[^>]+>", " ", warn_html))
+
+
+def _check_invalid_recovery(page):
+    t_before_invalid = time.monotonic()
+    _restore_defaults(page)
+    for sel, bad_val in ((SPI, 0), (CIRC_ANKLE, -3), (LEN_FOOT, "")):
+        fill(page, sel, bad_val)
+        run_click(page)
+        check(f"invalid {sel}={bad_val} shows error", error_visible(page))
+    _restore_defaults(page)
+    run_click(page)
+    check("recovers after invalid inputs", "<svg" in page.eval_on_selector(OUT_SEL, INNER_HTML))
+    return t_before_invalid
+
+
 def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1280, "height": 1100})
         console_errors, page_errors = [], []
-
-        def on_console(msg):
-            t = msg.text
-            if msg.type == "error" and not is_noise(t):
-                console_errors.append((time.monotonic(), t[:300]))
-
-        def on_pageerror(exc):
-            page_errors.append(str(exc)[:300])
-
-        page.on("console", on_console)
-        page.on("pageerror", on_pageerror)
+        page.on("console", _console_sink(console_errors))
+        page.on("pageerror", _pageerror_sink(page_errors))
 
         t0 = time.time()
         page.goto(BASE, wait_until="domcontentloaded", timeout=120_000)
@@ -101,123 +230,26 @@ def main():
         check("no boot console errors", not console_errors, "; ".join(c[1] for c in console_errors[:3]))
         check("no page errors during load", not page_errors, "; ".join(page_errors[:2]))
 
-        # ---- default plan ----
-        run_click(page)
-        html = page.eval_on_selector("#demo-output", "el => el.innerHTML") or ""
-        check("default click produced svg", "<svg" in html)
-        for marker in ("How this sock is built", "Your numbers at a glance",
-                       "Knit along", "1. Cast on and get started",
-                       "3. Work the heel flap", "4. Turn the heel",
-                       "5. Shape the gusset", "7. Knit the toe"):
-            check("plan has '%s'" % marker, marker in html)
-        baseline = html
-
-        # ---- SVG geometry: no negative / non-numeric values ----
-        svg = re.search(r"<svg.*?</svg>", html, re.S).group(0)
-        bad = [a for a in re.findall(r'(width|height|x|y)="(-?\d*\.?\d+)"', svg)
-               if float(a[1]) < 0]
-        check("svg has no negative geometry", not bad, str(bad[:5]))
-        check("svg mentions cast-on stitches", "cast on" in svg)
+        # ---- default plan + svg geometry ----
+        html = _check_default_plan(page)
+        _check_svg_geometry(html)
 
         # ---- every numeric input, normal + edge ----
-        inputs = {
-            "#stitches_per_inch": (5, 6, 12, 16),
-            "#rows_per_inch": (6, 9, 14, 18),
-            "#circumference_at_top": (8, 10.75, 14),
-            "#circumference_of_ankle": (7.5, 9.25, 11.5),
-            "#length_from_sock_top_to_heel_bottom": (5.5, 8.25, 12),
-            "#length_from_heel_to_toe": (7, 9.75, 13),
-        }
-        for sel, values in inputs.items():
-            for val in values:
-                fill(page, sel, val)
-                run_click(page)
-                cur = out_text(page)
-                ok = bool(cur) and error_visible(page) is False
-                check(f"{sel} = {val} renders plan", ok, out_text(page)[:60])
-        # restore defaults
-        fill(page, "#stitches_per_inch", 9)
-        fill(page, "#rows_per_inch", 11)
-        fill(page, "#circumference_at_top", 10)
-        fill(page, "#circumference_of_ankle", 9.5)
-        fill(page, "#length_from_sock_top_to_heel_bottom", 7.75)
-        fill(page, "#length_from_heel_to_toe", 10.5)
+        _probe_edge_values(page)
+        _restore_defaults(page)
 
         # ---- output changes when every input changes ----
-        baseline_text = out_text(page)
-        for sel, new_val in {
-            "#stitches_per_inch": 7,
-            "#rows_per_inch": 13,
-            "#circumference_at_top": 11,
-            "#circumference_of_ankle": 8.5,
-            "#length_from_sock_top_to_heel_bottom": 9,
-            "#length_from_heel_to_toe": 12,
-        }.items():
-            fill(page, sel, new_val)
-            run_click(page)
-            changed = out_text(page) != baseline_text
-            check(f"changing {sel} changes output", changed)
-            if not changed:
-                print("      (debug) current:", out_text(page)[:80])
-        # restore
-        fill(page, "#circumference_at_top", 10)
-        fill(page, "#circumference_of_ankle", 9.5)
-        fill(page, "#length_from_sock_top_to_heel_bottom", 7.75)
-        fill(page, "#length_from_heel_to_toe", 10.5)
-        fill(page, "#stitches_per_inch", 9)
-        fill(page, "#rows_per_inch", 11)
+        _check_output_changes(page)
+        _restore_defaults(page)
 
         # ---- size quick-pick fills the fields and produces a plan ----
-        page.select_option("#sock-size", "w-m")
-        run_click(page)
-        circ = page.query_selector("#circumference_at_top").input_value()
-        foot = page.query_selector("#length_from_heel_to_toe").input_value()
-        check("size pick fills leg circumference", circ == "10.25", circ)
-        check("size pick fills foot length", foot == "9.25", foot)
-        check("size pick yields a plan", "Knit along" in page.eval_on_selector(
-            "#demo-output", "el => el.innerHTML"))
+        _check_size_pick(page)
 
-        # ---- warnings: unusual gauge ----
-        fill(page, "#stitches_per_inch", 2)
-        fill(page, "#rows_per_inch", 3)
-        run_click(page)
-        warn_html = page.eval_on_selector("#demo-output", "el => el.innerHTML")
-        check("unusual gauge shows warnings", "Before you start" in warn_html)
-        # no crash
-        check("unusual gauge still renders plan", "Knit along" in warn_html)
-
-        # ---- warning: ankle bigger than leg ----
-        fill(page, "#stitches_per_inch", 9)
-        fill(page, "#rows_per_inch", 11)
-        fill(page, "#circumference_at_top", 8)
-        fill(page, "#circumference_of_ankle", 10)
-        run_click(page)
-        warn_html = page.eval_on_selector("#demo-output", "el => el.innerHTML")
-        check("leg<ankle shows a warning", "Before you start" in warn_html)
-        check("leg<ankle renders without leg decreases note",
-              "no leg decreases" in re.sub(r"<[^>]+>", " ", warn_html))
+        # ---- warnings: unusual gauge, ankle bigger than leg ----
+        _check_warnings(page)
 
         # ---- invalid inputs: zero, negative, empty ----
-        t_before_invalid = time.monotonic()
-        fill(page, "#circumference_at_top", 10)
-        fill(page, "#circumference_of_ankle", 9.5)
-        fill(page, "#length_from_sock_top_to_heel_bottom", 7.75)
-        fill(page, "#length_from_heel_to_toe", 10.5)
-        for sel, bad_val in (
-            ("#stitches_per_inch", 0),
-            ("#circumference_of_ankle", -3),
-            ("#length_from_heel_to_toe", ""),
-        ):
-            fill(page, sel, bad_val)
-            run_click(page)
-            check(f"invalid {sel}={bad_val} shows error", error_visible(page))
-        # recover
-        fill(page, "#stitches_per_inch", 9)
-        fill(page, "#circumference_of_ankle", 9.5)
-        fill(page, "#length_from_heel_to_toe", 10.5)
-        run_click(page)
-        check("recovers after invalid inputs", "<svg" in page.eval_on_selector(
-            "#demo-output", "el => el.innerHTML"))
+        t_before_invalid = _check_invalid_recovery(page)
 
         # ---- interaction console should have no unexpected errors ----
         # (ValueError tracebacks during the invalid-input exercise are expected)
