@@ -1,6 +1,35 @@
 # PyKnit in the Browser
 
-This directory contains a fully interactive PyScript-based demo that runs pyKnit directly in your web browser. No server-side processing needed!
+This directory contains a fully interactive PyScript-based demo suite that runs pyKnit directly in your web browser. No server-side processing needed!
+
+## Demo Library
+
+The suite lives in `pyknit/pyscript/` and is organised as:
+
+- `index.html` — hub page linking to every demo
+- `_assets/shared.py` — shared helpers (DOM access, pyknit feature detection, rendering)
+- `_assets/common.css` — shared styling
+- `_demos/<name>.py` — plain logic modules exposing a `DEMO` dict (`TITLE`, `DEFAULT_INPUTS`, `compute`, `to_html`)
+- `<demo-name>/demo.html` — one page per demo
+
+| Demo | Functionality |
+|------|---------------|
+| Gauge Conversion | `GaugeSwatch`, `convert_stitch_measure` |
+| Chart Renderer | `Chart.parse_chart`, SVG chart rendering |
+| Even Shaping | `increase_evenly` / `decrease_evenly` with a row diagram |
+| Hat Crown Planner | `Hat.Hat.crown_decreases` |
+| Pi Shawl Planner | `pi_shawl` (doubling rounds for a circular shawl) |
+| Pattern I/O | `pyknit.io` CSV/JSON export and round-trip |
+| Raglan Sweater | `raglan_increases` (top-down marker setup) |
+| Shawl Shapes | `shawl_shapes.generate_shawl` for crescent/triangle/square/rectangle |
+| Sleeve Decreases | `sleeve_decreases` (evenly-spaced decrease rows) |
+| Sock Calculator | `pyknit.Sock.Sock` (made-to-measure socks) |
+| Yarn & Time Estimator | `GaugeSwatch` yardage/weight + `estimate.estimate_knitting_time` |
+
+Each demo runs entirely in the browser, uses real pyKnit functions where
+available, degrades gracefully when a newer pyknit API is absent, and shows a
+clear error message instead of crashing. The logic modules are covered by the
+local test suite in `test/test_pyscript_demos.py`.
 
 ## Quick Start
 
@@ -36,8 +65,10 @@ php -S localhost:8000
 
 Then open your browser and navigate to:
 ```
-http://localhost:8000/demo.html
+http://localhost:8000/index.html
 ```
+
+This is the hub page — every demo has its own link (e.g. `hat-crown/demo.html`, `sock-calculator/demo.html`).
 
 ## What You'll See
 
