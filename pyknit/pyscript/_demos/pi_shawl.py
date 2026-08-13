@@ -65,7 +65,6 @@ def _rings_svg(total_rounds, increase_rows):
     for r in increase_rows:
         ratio = r / total_rounds
         radius = max(10, max_radius * ratio)
-        flag = "double stitches here"
         parts.append(
             f'<circle cx="{cx}" cy="{cy}" r="{radius:.1f}" '
             f'fill="none" stroke="#7b3fa0" stroke-width="2" '
