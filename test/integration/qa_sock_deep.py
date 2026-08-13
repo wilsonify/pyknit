@@ -182,9 +182,21 @@ def _check_size_pick(page):
     check("size pick yields a plan", KNIT_ALONG in page.eval_on_selector(OUT_SEL, INNER_HTML))
 
 
+def _check_ease_select(page):
+    page.select_option("#negative_ease", "0")
+    run_click(page)
+    html0 = page.eval_on_selector(OUT_SEL, INNER_HTML) or ""
+    check("0% ease renders a plan", KNIT_ALONG in html0)
+    page.select_option("#negative_ease", "20")
+    run_click(page)
+    html20 = page.eval_on_selector(OUT_SEL, INNER_HTML) or ""
+    check("ease selector changes the plan", html0 != html20)
+    check("ease appears in output", "negative ease" in html20)
+
+
 def _check_warnings(page):
-    fill(page, SPI, 2)
-    fill(page, RPI, 3)
+    fill(page, SPI, 3)
+    fill(page, RPI, 4.5)
     run_click(page)
     warn_html = page.eval_on_selector(OUT_SEL, INNER_HTML)
     check("unusual gauge shows warnings", "Before you start" in warn_html)
@@ -244,6 +256,9 @@ def main():
 
         # ---- size quick-pick fills the fields and produces a plan ----
         _check_size_pick(page)
+
+        # ---- negative ease selector is wired through ----
+        _check_ease_select(page)
 
         # ---- warnings: unusual gauge, ankle bigger than leg ----
         _check_warnings(page)
