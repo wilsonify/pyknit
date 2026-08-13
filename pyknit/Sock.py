@@ -408,10 +408,8 @@ class Sock:
         that a UI can render directly.
         """
         self._check()
-        from pyknit import decrease_evenly
 
         m = self
-        n = round
 
         cast = m.cast_on_stitches
         ankle = m.ankle_stitches
@@ -459,177 +457,188 @@ class Sock:
             "finished sock.",
         ]
 
-        sections = []
-        steps = []
+        sections = [
+            self._plan_cast_on(cast),
+            self._plan_leg(ankle),
+            self._plan_heel_flap(flap, instep),
+            self._plan_heel_turn(flap),
+            self._plan_gusset(pickup, instep, heel_rem, after_pickup, ankle,
+                              gusset_first, gusset_rest),
+            self._plan_foot(foot_rounds),
+            self._plan_toe(ankle, toe),
+            self._plan_finish(),
+        ]
 
-        steps.append(
-            f"Cast on {cast} stitches using a stretchy cast-on (the long-tail "
-            "or German twisted cast-on both work well), and join into a round "
-            "without twisting.  Place a marker for the start of the round."
-        )
-        steps.append(
-            "Distribute the stitches evenly over your needles/magic loop so "
-            "you can knit around easily.  The exact split does not matter yet."
-        )
-        sections.append({
+        return {
+            "measurements": measurements,
+            "assumptions": assumptions,
+            "warnings": m.warnings(),
+            "sections": sections,
+        }
+
+    # ------------------------------------------------------------------
+    # Guided-plan helpers
+    # ------------------------------------------------------------------
+
+    def _plan_cast_on(self, cast):
+        return {
             "heading": "1. Cast on and get started",
             "intro": (
                 f"You will cast on {cast} stitches.  A stretchy edge makes "
                 "the cuff comfortable, which matters more than you might "
                 "think."
             ),
-            "steps": steps,
-        })
+            "steps": [
+                f"Cast on {cast} stitches using a stretchy cast-on (the "
+                "long-tail or German twisted cast-on both work well), and "
+                "join into a round without twisting.  Place a marker for the "
+                "start of the round.",
+                "Distribute the stitches evenly over your needles/magic loop "
+                "so you can knit around easily.  The exact split does not "
+                "matter yet.",
+            ],
+        }
+
+    def _plan_leg(self, ankle):
+        """Section 2: cuff ribbing, plain leg and the decrease schedule."""
+        from pyknit import decrease_evenly
 
         steps = []
-        if m.length_from_sock_top_to_heel_flap <= 0:
+        if self.length_from_sock_top_to_heel_flap <= 0:
             steps.append(
                 "Your leg length came out at zero, so the heel flap will "
                 "start right after the cast-on."
             )
-        else:
-            rib = m.rib_rounds
-            rib_in = round(rib / m.rows_per_inch, 2)
-            unit = "inch" if rib_in == 1 else "inches"
-            steps.append(
-                f"Knit {rib} rounds of k2, p2 ribbing (about {rib_in:g} "
-                f"{unit}).  The ribbing keeps the cuff from rolling."
-            )
-            plain_in = round(m.plain_leg_rounds / m.rows_per_inch, 2)
-            steps.append(
-                f"Then knit every round in stockinette for "
-                f"{m.plain_leg_rounds} rounds (about {plain_in:g} in) until "
-                "the leg measures "
-                f"{m.length_from_sock_top_to_heel_flap:g} in from the "
-                "cast-on edge to the heel."
-            )
-            schedule = m.leg_decrease_schedule()
-            if schedule:
-                steps.append(
-                    "The leg tapers from the calf down to the ankle.  "
-                    "Decrease 2 stitches per decrease round; after all "
-                    f"{m.number_of_decrease_rows} decrease rounds you will "
-                    f"have exactly {ankle} stitches."
-                )
-                trows = []
-                for round_no, before in schedule:
-                    pattern = decrease_evenly(before, 2, in_the_round=True)
-                    trows.append([str(round_no), pattern, str(before - 2)])
-                sections.append({
-                    "heading": "2. The leg (cuff to heel)",
-                    "intro": None,
-                    "steps": steps,
-                    "table": {
-                        "columns": ["Round (from cast-on)", "Decrease round",
-                                    "Stitches after"],
-                        "rows": trows,
-                    },
-                })
-            else:
-                steps.append(
-                    "Your leg and ankle are the same width, so the leg is "
-                    "knit straight with no decreases."
-                )
-                sections.append({
-                    "heading": "2. The leg (cuff to heel)",
-                    "intro": None,
-                    "steps": steps,
-                })
+            return {
+                "heading": "2. The leg (cuff to heel)",
+                "intro": None,
+                "steps": steps,
+            }
 
-        steps = []
+        rib = self.rib_rounds
+        rib_in = round(rib / self.rows_per_inch, 2)
+        unit = "inch" if rib_in == 1 else "inches"
         steps.append(
-            f"You now move the {flap} sole stitches onto one needle; these "
-            "become the heel.  The other "
-            f"{instep} stitches (the top of the foot) wait on their holders."
+            f"Knit {rib} rounds of k2, p2 ribbing (about {rib_in:g} "
+            f"{unit}).  The ribbing keeps the cuff from rolling."
         )
+        plain_in = round(self.plain_leg_rounds / self.rows_per_inch, 2)
         steps.append(
-            "Heel flap, Row 1 (right side): k2, then repeat *slip 1 with the "
-            "yarn in back, k1* across the remaining heel stitches, ending "
-            "with a knit stitch.  If the maths does not work out exactly, "
-            "just slip/k1 as you go - the edges matter more than the middle."
+            f"Then knit every round in stockinette for "
+            f"{self.plain_leg_rounds} rounds (about {plain_in:g} in) until "
+            f"the leg measures {self.length_from_sock_top_to_heel_flap:g} "
+            "in from the cast-on edge to the heel."
         )
-        steps.append(
-            "Row 2 (wrong side): slip 1, purl across, turn."
-        )
-        steps.append(
-            "Row 3 (right side): *slip 1, k1* across, turn."
-        )
-        steps.append(
-            "Repeat rows 2 and 3 until the flap is square - you will have "
-            f"about {flap} rows in total.  Finish with a right-side row.  "
-            "The slipped stitches make a firm, durable fabric and give you "
-            "the little edge-loops you will pick into later."
-        )
-        sections.append({
+
+        schedule = self.leg_decrease_schedule()
+        table = None
+        if schedule:
+            steps.append(
+                "The leg tapers from the calf down to the ankle.  "
+                "Decrease 2 stitches per decrease round; after all "
+                f"{self.number_of_decrease_rows} decrease rounds you will "
+                f"have exactly {ankle} stitches."
+            )
+            trows = []
+            for round_no, before in schedule:
+                pattern = decrease_evenly(before, 2, in_the_round=True)
+                trows.append([str(round_no), pattern, str(before - 2)])
+            table = {
+                "columns": ["Round (from cast-on)", "Decrease round",
+                            "Stitches after"],
+                "rows": trows,
+            }
+        else:
+            steps.append(
+                "Your leg and ankle are the same width, so the leg is "
+                "knit straight with no decreases."
+            )
+        return {
+            "heading": "2. The leg (cuff to heel)",
+            "intro": None,
+            "steps": steps,
+            "table": table,
+        }
+
+    def _plan_heel_flap(self, flap, instep):
+        return {
             "heading": "3. Work the heel flap",
             "intro": (
                 "The heel flap is knit back and forth over the sole stitches "
                 "in a slip-stitch pattern.  It feels odd at first because you "
                 "abandon half your stitches for a while - that is expected."
             ),
-            "steps": steps,
-        })
+            "steps": [
+                f"You now move the {flap} sole stitches onto one needle; "
+                "these become the heel.  The other "
+                f"{instep} stitches (the top of the foot) wait on their "
+                "holders.",
+                "Heel flap, Row 1 (right side): k2, then repeat *slip 1 with "
+                "the yarn in back, k1* across the remaining heel stitches, "
+                "ending with a knit stitch.  If the maths does not work out "
+                "exactly, just slip/k1 as you go - the edges matter more "
+                "than the middle.",
+                "Row 2 (wrong side): slip 1, purl across, turn.",
+                "Row 3 (right side): *slip 1, k1* across, turn.",
+                "Repeat rows 2 and 3 until the flap is square - you will "
+                f"have about {flap} rows in total.  Finish with a right-side "
+                "row.  The slipped stitches make a firm, durable fabric and "
+                "give you the little edge-loops you will pick into later.",
+            ],
+        }
 
-        steps = []
-        turn_rows, remaining = m.heel_turn_rows()
-        steps.append(
+    def _plan_heel_turn(self, flap):
+        steps = [
             f"Set-up row (wrong side): slip 1, purl {flap // 2 + 1}, p2tog, "
-            "p1, turn."
-        )
+            "p1, turn.",
+        ]
+        turn_rows, remaining = self.heel_turn_rows()
         for i, row in enumerate(turn_rows):
             side = "right" if row["decrease"] == "ssk" else "wrong"
-            work_count = row["count"]
             if row["decrease"] == "ssk":
-                tail = f"slip 1, k{work_count}, ssk, k1"
+                tail = f"slip 1, k{row['count']}, ssk, k1"
             else:
-                tail = f"slip 1, p{work_count}, p2tog, p1"
+                tail = f"slip 1, p{row['count']}, p2tog, p1"
             if row["last"]:
                 tail += " - all heel stitches have now been used, so do not turn."
             else:
                 tail += ", turn."
-            steps.append(
-                f"Row {i + 2} ({side} side): {tail}"
-            )
+            steps.append(f"Row {i + 2} ({side} side): {tail}")
         steps.append(
             f"Count your stitches: you should now have {remaining} stitches "
             "on the heel needle, which will form the rounded cup under your "
             "ankle."
         )
-        sections.append({
+        return {
             "heading": "4. Turn the heel",
             "intro": None,
             "steps": steps,
-        })
+        }
 
-        steps = []
-        gusset_needed = after_pickup - ankle
-        steps.append(
+    def _plan_gusset(self, pickup, instep, heel_rem, after_pickup, ankle,
+                     gusset_first, gusset_rest):
+        steps = [
             f"Pick up and knit {pickup} stitches along the left edge of the "
             "heel flap (one into each slipped-stitch loop), knit across the "
             f"{instep} instep stitches, place a marker, then pick up and knit "
             f"{pickup} stitches along the right edge.  "
             f"Finally knit the {heel_rem} heel stitches.  (If you find a gap "
             "at the corners, pick up one extra stitch there - the extra "
-            "stitch is removed again by the decreases.)"
-        )
-        steps.append(
+            "stitch is removed again by the decreases.)",
             f"You now have {after_pickup} stitches: the instep marker sits "
-            f"between the {instep} instep stitches and the sole stitches."
-        )
-        if gusset_needed <= 0:
+            f"between the {instep} instep stitches and the sole stitches.",
+        ]
+        if after_pickup - ankle <= 0:
             steps.append(
                 "The picked-up stitches match the ankle count, so you can "
                 "start the foot section directly."
             )
         else:
-            dec_2 = (
-                "knit to 3 stitches before the first marker, k2tog, k1, slip "
-                "marker, knit across the instep, slip marker, k1, ssk, knit "
-                "to the end of the round"
-            )
             steps.append(
-                f"Gusset decrease round: {dec_2}.  This removes 2 stitches "
-                "(one at each edge of the sole)."
+                "Gusset decrease round: knit to 3 stitches before the first "
+                "marker, k2tog, k1, slip marker, knit across the instep, "
+                "slip marker, k1, ssk, knit to the end of the round.  This "
+                "removes 2 stitches (one at each edge of the sole)."
             )
             gusset_total = gusset_first + gusset_rest
             if gusset_first == 1:
@@ -654,7 +663,7 @@ class Sock:
                     f"decrease rounds.  After the last one you are back to "
                     f"{ankle} stitches."
                 )
-        sections.append({
+        return {
             "heading": "5. Shape the gusset",
             "intro": (
                 "Picking up stitches along the heel flap closes the heel into "
@@ -662,8 +671,9 @@ class Sock:
                 "side are the 'gusset', and they are decreased away."
             ),
             "steps": steps,
-        })
+        }
 
+    def _plan_foot(self, foot_rounds):
         steps = []
         if foot_rounds <= 0:
             steps.append(
@@ -674,71 +684,55 @@ class Sock:
             steps.append(
                 f"Knit straight in the round (every round knit) for "
                 f"{foot_rounds} rounds, about "
-                f"{n(foot_rounds / m.rows_per_inch, 2):g} in.  Try the sock "
-                "on as you go: the toe should begin when the sock reaches "
-                "the base of your little toe."
+                f"{round(foot_rounds / self.rows_per_inch, 2):g} in.  Try "
+                "the sock on as you go: the toe should begin when the sock "
+                "reaches the base of your little toe."
             )
             steps.append(
                 "The foot length is measured from the back of the heel to "
                 "the bend of the toes, so trust your measurements over how "
                 "the sock looks off your foot."
             )
-        sections.append({
+        return {
             "heading": "6. Knit the foot",
             "intro": None,
             "steps": steps,
-        })
+        }
 
-        steps = []
-        steps.append(
-            "Place a second marker halfway around, so the round is split "
-            f"into two halves of {ankle // 2} stitches each."
-        )
-        steps.append(
-            "Toe decrease round: k1, ssk, knit to 3 stitches before the "
-            "marker, k2tog, k1, slip marker, k1, ssk, knit to 3 stitches "
-            "before the start-of-round marker, k2tog, k1.  This removes "
-            "4 stitches (2 at each side of the foot)."
-        )
-        steps.append(
-            f"Phase 1: work a decrease round, then a plain knit round, "
-            f"repeating until {toe['phase1_end_stitches']} stitches remain "
-            f"(about {toe['phase1_decrease_rounds']} decrease rounds).  This "
-            "shapes the rounded part of the toe."
-        )
-        steps.append(
-            f"Phase 2: now work a decrease round every round until "
-            f"{toe['finish_stitches']} stitches (or fewer) remain (about "
-            f"{toe['phase2_decrease_rounds']} rounds)."
-        )
-        steps.append(
-            f"Cut the yarn leaving a 6 in tail, thread it through the "
-            f"remaining {toe['finish_stitches']} stitches, pull firmly closed "
-            "and weave the end inside.  (For an invisible finish, graft the "
-            "last stitches with Kitchener stitch instead.)"
-        )
-        sections.append({
+    def _plan_toe(self, ankle, toe):
+        return {
             "heading": "7. Knit the toe",
             "intro": None,
-            "steps": steps,
-        })
+            "steps": [
+                "Place a second marker halfway around, so the round is "
+                f"split into two halves of {ankle // 2} stitches each.",
+                "Toe decrease round: k1, ssk, knit to 3 stitches before the "
+                "marker, k2tog, k1, slip marker, k1, ssk, knit to 3 stitches "
+                "before the start-of-round marker, k2tog, k1.  This removes "
+                "4 stitches (2 at each side of the foot).",
+                f"Phase 1: work a decrease round, then a plain knit round, "
+                f"repeating until {toe['phase1_end_stitches']} stitches "
+                f"remain (about {toe['phase1_decrease_rounds']} decrease "
+                "rounds).  This shapes the rounded part of the toe.",
+                f"Phase 2: now work a decrease round every round until "
+                f"{toe['finish_stitches']} stitches (or fewer) remain (about "
+                f"{toe['phase2_decrease_rounds']} rounds).",
+                f"Cut the yarn leaving a 6 in tail, thread it through the "
+                f"remaining {toe['finish_stitches']} stitches, pull firmly "
+                "closed and weave the end inside.  (For an invisible finish, "
+                "graft the last stitches with Kitchener stitch instead.)",
+            ],
+        }
 
-        steps = [
-            "Weave in all loose ends on the inside of the sock.",
-            "Wash and block the sock - this evens out the stitches and makes "
-            "it look much neater.",
-            "Knit a second sock exactly the same way (yes, store-bought "
-            "socks do not come in pairs - but yours should).",
-        ]
-        sections.append({
+    def _plan_finish(self):
+        return {
             "heading": "8. Finish and repeat",
             "intro": None,
-            "steps": steps,
-        })
-
-        return {
-            "measurements": measurements,
-            "assumptions": assumptions,
-            "warnings": m.warnings(),
-            "sections": sections,
+            "steps": [
+                "Weave in all loose ends on the inside of the sock.",
+                "Wash and block the sock - this evens out the stitches and "
+                "makes it look much neater.",
+                "Knit a second sock exactly the same way (yes, store-bought "
+                "socks do not come in pairs - but yours should).",
+            ],
         }
