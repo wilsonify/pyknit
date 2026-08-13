@@ -274,31 +274,44 @@ def _esc(text):
     return html.escape(str(text), quote=False)
 
 
+SECTION_END = "</section>"
+
+
+def _render_steps(steps):
+    parts = ["<ol class='plan-steps'>"]
+    for step in steps:
+        parts.append(f"<li>{_esc(step)}</li>")
+    parts.append("</ol>")
+    return "\n".join(parts)
+
+
+def _render_table(table):
+    parts = ["<table class='plan-table'><thead><tr>"]
+    for col in table["columns"]:
+        parts.append(f"<th>{_esc(col)}</th>")
+    parts.append("</tr></thead><tbody>")
+    for row in table["rows"]:
+        parts.append("<tr>")
+        for cell in row:
+            parts.append(f"<td>{_esc(cell)}</td>")
+        parts.append("</tr>")
+    parts.append("</tbody></table>")
+    return "\n".join(parts)
+
+
 def _render_sections(plan):
     blocks = []
     for section in plan["sections"]:
-        parts = [f'<section class="plan-section">']
-        parts.append(f'<h4>{_esc(section["heading"])}</h4>')
+        parts = ['<section class="plan-section">',
+                 f'<h4>{_esc(section["heading"])}</h4>']
         if section.get("intro"):
             parts.append(f'<p class="plan-intro">{_esc(section["intro"])}</p>')
         if section.get("steps"):
-            parts.append("<ol class='plan-steps'>")
-            for step in section["steps"]:
-                parts.append(f"<li>{_esc(step)}</li>")
-            parts.append("</ol>")
+            parts.append(_render_steps(section["steps"]))
         table = section.get("table")
         if table:
-            parts.append("<table class='plan-table'><thead><tr>")
-            for col in table["columns"]:
-                parts.append(f"<th>{_esc(col)}</th>")
-            parts.append("</tr></thead><tbody>")
-            for row in table["rows"]:
-                parts.append("<tr>")
-                for cell in row:
-                    parts.append(f"<td>{_esc(cell)}</td>")
-                parts.append("</tr>")
-            parts.append("</tbody></table>")
-        parts.append("</section>")
+            parts.append(_render_table(table))
+        parts.append(SECTION_END)
         blocks.append("\n".join(parts))
     return "\n".join(blocks)
 
@@ -334,13 +347,13 @@ def to_html(result):
         "<section class='plan-section'>",
         "<h4>How this sock is built</h4>",
         f"<ul class='plan-assumptions'>{assumptions}</ul>",
-        "</section>",
+        SECTION_END,
         "<section class='plan-section'>",
         "<h4>Your numbers at a glance</h4>",
         "<table class='plan-table measure-table'><tbody>",
         rows,
         "</tbody></table>",
-        "</section>",
+        SECTION_END,
         "<h3 class='plan-title'>Knit along</h3>",
         _render_sections(plan),
     ])
