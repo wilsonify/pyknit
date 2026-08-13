@@ -149,7 +149,7 @@ def test_sock_plan_leg_decreases_end_at_ankle():
     schedule = sock.leg_decrease_schedule()
     assert len(schedule) == sock.number_of_decrease_rows
     if schedule:
-        last_round, last_before = schedule[-1]
+        _, last_before = schedule[-1]
         assert last_before - 2 == sock.ankle_stitches
         rounds = [r for r, _ in schedule]
         assert rounds == sorted(set(rounds))
