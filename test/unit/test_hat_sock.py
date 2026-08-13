@@ -202,7 +202,7 @@ def test_sock_plan_warnings_for_tiny_ankle():
 
 def test_sock_plan_unusual_gauge_warns():
     sock = Sock()
-    sock.init(stitches_per_inch=2, rows_per_inch=3)
+    sock.init(stitches_per_inch=3.5, rows_per_inch=4.5)
     assert any("gauge" in w for w in sock.warnings())
 
 
@@ -219,9 +219,8 @@ def test_sock_plan_leg_uses_decrease_evenly():
 
 def test_sock_plan_zero_gauge_raises():
     sock = Sock()
-    sock.init(stitches_per_inch=0, rows_per_inch=11)
     try:
-        sock.get_plan()
+        sock.init(stitches_per_inch=0, rows_per_inch=11)
         assert False, "expected an exception for zero gauge"
     except ValueError:
         pass
