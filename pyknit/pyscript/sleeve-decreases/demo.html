@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Sleeve Decreases</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <link rel="stylesheet" href="../_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Sleeve Decreases</h1>
+    <p>Plan evenly-spaced decrease rows for a tapered sleeve.</p>
+    <div class="linkbar">
+      <a href="../index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    packages = ["pydantic", "pillow", "pyknit"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Sleeve</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="number_of_rows">Total rows</label>
+        <input id="number_of_rows" type="number" value="61" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="starting_count">Starting stitches</label>
+        <input id="starting_count" type="number" value="59" min="2" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="ending_count">Ending stitches</label>
+        <input id="ending_count" type="number" value="43" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="decrease_per_row">Decreases per decrease row</label>
+        <input id="decrease_per_row" type="number" value="2" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="padding_mode">Padding mode</label>
+        <select id="padding_mode">
+          <option value="after" selected>After</option>
+          <option value="before">Before</option>
+          <option value="both">Both</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+    </div>
+    <button id="run" class="btn-primary">Plan Decreases</button>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.sleeve_decreases</code>.</p>
+  </footer>
+
+  <script type="py" src="../_assets/shared.py"></script>
+  <script type="py" src="../_demos/sleeve_decreases.py"></script>
+  <script type="py">
+    set_status("ready", "✔ pyknit loaded", "ready to plan")
+    bind_click("run", wire_demo(DEMO))
+  </script>
+</body>
+</html>
