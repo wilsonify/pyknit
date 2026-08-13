@@ -61,11 +61,11 @@ def compute(inputs):
         "bust": bust,
         "rows": rows,
         "result": result,
-        "svg": _raglan_svg(neck, arm, bust),
+        "svg": _raglan_svg(neck, bust),
     }
 
 
-def _raglan_svg(neck, arm, bust):
+def _raglan_svg(neck, bust):
     """Simple top-down circle: neck hole with four raglan seams."""
     size = 340
     cx = cy = size / 2
