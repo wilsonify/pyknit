@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Sock Calculator</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <link rel="stylesheet" href="../_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Sock Calculator</h1>
+    <p>Enter your gauge and foot measurements for a made-to-measure sock.</p>
+    <div class="linkbar">
+      <a href="../index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    packages = ["pydantic", "pillow", "pyknit"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Gauge &amp; measurements</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="stitches_per_inch">Stitches per inch</label>
+        <input id="stitches_per_inch" type="number" value="9" min="0.5" step="0.5" />
+      </div>
+      <div class="form-group">
+        <label for="rows_per_inch">Rows per inch</label>
+        <input id="rows_per_inch" type="number" value="11" min="0.5" step="0.5" />
+      </div>
+      <div class="form-group">
+        <label for="circumference_at_top">Leg circumference (in)</label>
+        <input id="circumference_at_top" type="number" value="10" min="0.5" step="0.25" />
+      </div>
+      <div class="form-group">
+        <label for="circumference_of_ankle">Ankle circumference (in)</label>
+        <input id="circumference_of_ankle" type="number" value="9.5" min="0.5" step="0.25" />
+      </div>
+      <div class="form-group">
+        <label for="length_from_sock_top_to_heel_bottom">Top of sock to heel bottom (in)</label>
+        <input id="length_from_sock_top_to_heel_bottom" type="number" value="7.75" min="0.5" step="0.25" />
+      </div>
+      <div class="form-group">
+        <label for="length_from_heel_to_toe">Heel to toe (in)</label>
+        <input id="length_from_heel_to_toe" type="number" value="10.5" min="0.5" step="0.25" />
+      </div>
+    </div>
+    <button id="run" class="btn-primary">Calculate Sock</button>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.Sock.Sock</code>.</p>
+  </footer>
+
+  <script type="py" src="../_assets/shared.py"></script>
+  <script type="py" src="../_demos/sock_calculator.py"></script>
+  <script type="py">
+    set_status("ready", "✔ pyknit loaded", "ready to calculate")
+    bind_click("run", wire_demo(DEMO))
+  </script>
+</body>
+</html>
