@@ -49,6 +49,10 @@ BENIGN_STDERR = (
     "Error: Pattern cannot", "Available backends",
 )
 
+INNER_HTML = "el => el.innerHTML"
+BLOCK_DISPLAY = "display: block"
+BLOCK_DISPLAY_NO_SPACE = "display:block"
+
 
 def is_noise(text):
     if any(tok in text for tok in SKIP_JS_NOISE):
@@ -85,27 +89,29 @@ class QAReport:
         return not self.failures
 
 
+def _read_banner_state(page):
+    try:
+        banner = page.query_selector("#status-banner")
+        if banner:
+            cls = banner.get_attribute("class") or ""
+            if "ready" in cls:
+                return "ready"
+            if "error" in cls:
+                return "error"
+            if "loading" in cls:
+                return "loading"
+    except Exception:
+        pass
+    return None
+
+
 def wait_for_ready(page, report, timeout=240_000):
     """Wait until status banner has class 'ready' or buttons are enabled."""
     deadline = time.time() + timeout / 1000
     while time.time() < deadline:
-        state = None
-        try:
-            banner = page.query_selector("#status-banner")
-            if banner:
-                cls = banner.get_attribute("class") or ""
-                if "ready" in cls:
-                    state = "ready"
-                elif "error" in cls:
-                    state = "error"
-                elif "loading" in cls:
-                    state = "loading"
-        except Exception:
-            pass
-        if state == "ready":
-            return "ready"
-        if state == "error":
-            return "error"
+        state = _read_banner_state(page)
+        if state in ("ready", "error"):
+            return state
         # also detect boot errors printed to console
         if report.page_errors:
             return "page-error"
@@ -113,14 +119,14 @@ def wait_for_ready(page, report, timeout=240_000):
     return "timeout"
 
 
-def run_demo(browser, spec):
-    name = spec["dir"]
-    report = QAReport(name)
-    print("  DEMO: " + name)
+def _apply_checks(report, fails, ok_msg):
+    for f in fails:
+        report.fail(f)
+    if not fails:
+        report.ok(ok_msg)
 
-    page = browser.new_page(viewport={"width": 1280, "height": 1000})
-    ready_flag = {"done": False}
 
+def _console_handler(report, ready_flag):
     def on_console(msg):
         text = msg.text
         if msg.type == "error" and not is_noise(text):
@@ -130,25 +136,52 @@ def run_demo(browser, spec):
                 report.console_errors.append(text[:400])
         if msg.type in ("warning", "log", "info") and "pyknit" in text.lower():
             report.note(f"console[{msg.type}]: {text[:120]}")
+    return on_console
 
+
+def _requestfailed_handler(report):
     def on_requestfailed(req):
         url = req.url
         if "127.0.0.1:8877" in url or url.startswith("http"):
             report.failed_requests.append(f"{url} :: {req.failure}")
+    return on_requestfailed
 
+
+def _response_handler(report):
     def on_response(resp):
         if resp.status >= 400:
-            report.failed_requests.append(
-                f"{resp.status} {resp.url[:160]}"
-            )
+            report.failed_requests.append(f"{resp.status} {resp.url[:160]}")
+    return on_response
 
+
+def _pageerror_handler(report):
     def on_pageerror(exc):
         report.page_errors.append(str(exc)[:400])
+    return on_pageerror
 
-    page.on("console", on_console)
-    page.on("requestfailed", on_requestfailed)
-    page.on("response", on_response)
-    page.on("pageerror", on_pageerror)
+
+def check_buttons_enabled(page, report, button_ids):
+    for bid in button_ids:
+        btn = page.query_selector(f"#{bid}")
+        if btn is None:
+            report.fail(f"button #{bid} missing from DOM")
+            continue
+        disabled = btn.get_attribute("disabled")
+        if disabled == "true" or disabled == "":
+            report.fail(f"button #{bid} is disabled after ready")
+
+
+def run_demo(browser, spec):
+    name = spec["dir"]
+    report = QAReport(name)
+    print("  DEMO: " + name)
+
+    page = browser.new_page(viewport={"width": 1280, "height": 1000})
+    ready_flag = {"done": False}
+    page.on("console", _console_handler(report, ready_flag))
+    page.on("requestfailed", _requestfailed_handler(report))
+    page.on("response", _response_handler(report))
+    page.on("pageerror", _pageerror_handler(report))
 
     t0 = time.time()
     try:
@@ -182,36 +215,19 @@ def run_demo(browser, spec):
     report.ok("pyScript booted, status ready (%.1fs)" % (report.load_ms / 1000))
 
     # buttons enabled?
-    for bid in spec["buttons"]:
-        btn = page.query_selector(f"#{bid}")
-        if btn is None:
-            report.fail(f"button #{bid} missing from DOM")
-            continue
-        disabled = btn.get_attribute("disabled")
-        if disabled == "true" or disabled == "":
-            report.fail(f"button #{bid} is disabled after ready")
+    check_buttons_enabled(page, report, spec["buttons"])
 
     # interactive: click each button with default inputs
     for bid in spec["buttons"]:
-        fails = exercise(page, spec, bid)
-        for f in fails:
-            report.fail(f)
-        if not fails:
-            report.ok(f"default click on #{bid} produced output")
+        _apply_checks(report, exercise(page, spec, bid),
+                      f"default click on #{bid} produced output")
 
     # verify rendered content (SVG chart or table/pre) is present after a run
-    render_fails = check_rendered(page, spec)
-    for f in render_fails:
-        report.fail(f)
-    if not render_fails:
-        report.ok("rendered chart/svg output verified")
+    _apply_checks(report, check_rendered(page, spec), "rendered chart/svg output verified")
 
     # invalid input path
-    inv_fails = exercise_invalid(page, spec, name)
-    for f in inv_fails:
-        report.fail(f)
-    if not inv_fails:
-        report.ok("invalid input produced a visible error")
+    _apply_checks(report, exercise_invalid(page, spec, name),
+                  "invalid input produced a visible error")
 
     page.close()
     return report
@@ -222,12 +238,12 @@ def check_rendered(page, spec):
     fails = []
     if spec["dir"] == "gauge-conversion":
         # calc -> text output; chart -> svg
-        chart_html = page.eval_on_selector("#chart-output", "el => el.innerHTML") or ""
+        chart_html = page.eval_on_selector("#chart-output", INNER_HTML) or ""
         if "<svg" not in chart_html:
             fails.append("gauge-conversion: chart-output has no <svg> after render")
         return fails
     out_id = spec["outputs"][0]
-    out_html = page.eval_on_selector(f"#{out_id}", "el => el.innerHTML") or ""
+    out_html = page.eval_on_selector(f"#{out_id}", INNER_HTML) or ""
     if not out_html.strip():
         fails.append(f"#{out_id} empty after interaction")
     # every new demo renders an SVG diagram
@@ -249,10 +265,38 @@ def _banner_text(page):
     return el.inner_text() if el else "(no status message)"
 
 
+def _targets_for(bid):
+    if bid == "run-calc":
+        return ["calc-output"], ["calc-error"]
+    if bid == "run-chart":
+        return ["chart-output"], ["chart-error"]
+    return ["demo-output"], ["demo-error"]
+
+
+def _check_outputs(page, oids):
+    fails = []
+    for oid in oids:
+        text = out_text(page, oid)
+        if not text.strip():
+            fails.append(f"output #{oid} blank after default click")
+    return fails
+
+
+def _check_no_error(page, eids):
+    fails = []
+    for eid in eids:
+        el = page.query_selector(f"#{eid}")
+        if el is not None:
+            style = el.get_attribute("style") or ""
+            if BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style:
+                fails.append(f"error #{eid} visible after valid click")
+    return fails
+
+
 def exercise(page, spec, button_id):
     """Click with current inputs and check output non-blank + changed on input change."""
-    fails = []
     bid = button_id
+    fails = []
 
     btn = page.query_selector(f"#{bid}")
     if btn is None:
@@ -260,23 +304,9 @@ def exercise(page, spec, button_id):
     btn.click()
     time.sleep(1.5)
 
-    if bid == "run-calc":
-        oids, eids = ["calc-output"], ["calc-error"]
-    elif bid == "run-chart":
-        oids, eids = ["chart-output"], ["chart-error"]
-    else:
-        oids, eids = ["demo-output"], ["demo-error"]
-
-    for oid in oids:
-        text = out_text(page, oid)
-        if not text.strip():
-            fails.append(f"output #{oid} blank after default click")
-    for eid in eids:
-        el = page.query_selector(f"#{eid}")
-        if el is not None:
-            style = el.get_attribute("style") or ""
-            if "display: block" in style or "display:block" in style:
-                fails.append(f"error #{eid} visible after valid click")
+    oids, eids = _targets_for(bid)
+    fails.extend(_check_outputs(page, oids))
+    fails.extend(_check_no_error(page, eids))
 
     if not fails and not change_input_and_compare(page, oids, bid):
         fails.append("changing an input did not change the output")
@@ -346,60 +376,55 @@ def change_input_and_compare(page, oids, bid):
     return False
 
 
-def exercise_invalid(page, spec, name):
-    """Enter an invalid value, click, and require a visible error element."""
+def _error_visible(page, eid):
+    err = page.query_selector(f"#{eid}")
+    if err is None:
+        return False
+    # true visibility = computed display (hidden errors keep stale text)
+    disp = page.evaluate("el => getComputedStyle(el).display", err)
+    return disp == "block"
+
+
+def _has_block_style(el):
+    return el is not None and (el.get_attribute("style") or "").find(BLOCK_DISPLAY) != -1
+
+
+def _gauge_conversion_invalid(page):
     fails = []
-    if name == "gauge-conversion":
-        el = page.query_selector("#measurement")
-        el.fill("-5")
-        page.query_selector("#run-calc").click()
-        time.sleep(1.0)
-        cerr = page.query_selector("#calc-error")
-        if cerr is None or (cerr.get_attribute("style") or "").find("display: block") == -1:
-            fails.append("gauge-conversion: invalid measurement produced no visible error")
-        el.fill("42")
-        page.evaluate("document.querySelector('#measurement').blur()")
-        # chart: invalid pattern
-        sel = page.query_selector("#pattern-input")
-        sel.fill("not a valid pattern xyz")
-        page.query_selector("#run-chart").click()
-        time.sleep(1.0)
-        ch = page.query_selector("#chart-error")
-        if ch is None or (ch.get_attribute("style") or "").find("display: block") == -1:
-            fails.append("gauge-conversion: invalid pattern produced no visible error")
-        sel.fill("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
-        page.query_selector("#run-chart").click()
-        return fails
+    el = page.query_selector("#measurement")
+    el.fill("-5")
+    page.query_selector("#run-calc").click()
+    time.sleep(1.0)
+    if not _has_block_style(page.query_selector("#calc-error")):
+        fails.append("gauge-conversion: invalid measurement produced no visible error")
+    el.fill("42")
+    page.evaluate("document.querySelector('#measurement').blur()")
+    # chart: invalid pattern
+    sel = page.query_selector("#pattern-input")
+    sel.fill("not a valid pattern xyz")
+    page.query_selector("#run-chart").click()
+    time.sleep(1.0)
+    if not _has_block_style(page.query_selector("#chart-error")):
+        fails.append("gauge-conversion: invalid pattern produced no visible error")
+    sel.fill("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
+    page.query_selector("#run-chart").click()
+    return fails
 
-    bid = spec["buttons"][0]
-    eid = spec["errors"][0]
 
-    def error_visible():
-        err = page.query_selector(f"#{eid}")
-        if err is None:
-            return False
-        # true visibility = computed display (hidden errors keep stale text)
-        disp = page.evaluate(
-            "el => getComputedStyle(el).display", err
-        )
-        return disp == "block"
+def _invalid_textarea(page, bid, eid, ta):
+    original = ta.input_value()
+    ta.fill("this is not a valid knitting pattern zzz qqq")
+    page.query_selector(f"#{bid}").click()
+    time.sleep(1.2)
+    fails = []
+    if not _error_visible(page, eid):
+        fails.append(f"invalid (garbage) pattern produced no visible error in #{eid}")
+    ta.fill(original)
+    return fails
 
-    # textarea-first demos: a non-parseable pattern must raise
-    ta = page.query_selector("section.card textarea")
-    if ta is not None:
-        original = ta.input_value()
-        ta.fill("this is not a valid knitting pattern zzz qqq")
-        page.query_selector(f"#{bid}").click()
-        time.sleep(1.2)
-        if not error_visible():
-            fails.append(f"invalid (garbage) pattern produced no visible error in #{eid}")
-        ta.fill(original)
-        return fails
 
-    # numeric demos: zero each numeric input until an error appears
-    inputs = page.query_selector_all("section.card input[type=number]")
-    if not inputs:
-        return []
+def _invalid_numeric(page, bid, eid, out_id, inputs):
+    fails = []
     triggered = False
     for el in inputs:
         original = el.input_value()
@@ -410,7 +435,7 @@ def exercise_invalid(page, spec, name):
         el.fill("0")
         page.query_selector(f"#{bid}").click()
         time.sleep(1.2)
-        if error_visible():
+        if _error_visible(page, eid):
             triggered = True
             el.fill(original or "5")
             break
@@ -422,10 +447,30 @@ def exercise_invalid(page, spec, name):
     # recover: valid click again works
     page.query_selector(f"#{bid}").click()
     time.sleep(1.2)
-    out_html = (page.eval_on_selector(f"#{spec['outputs'][0]}", "el => el.innerHTML") or "").strip()
-    if not out_html or error_visible():
+    out_html = (page.eval_on_selector(f"#{out_id}", INNER_HTML) or "").strip()
+    if not out_html or _error_visible(page, eid):
         fails.append("demo did not recover after restoring valid input")
     return fails
+
+
+def exercise_invalid(page, spec, name):
+    """Enter an invalid value, click, and require a visible error element."""
+    if name == "gauge-conversion":
+        return _gauge_conversion_invalid(page)
+
+    bid = spec["buttons"][0]
+    eid = spec["errors"][0]
+
+    # textarea-first demos: a non-parseable pattern must raise
+    ta = page.query_selector("section.card textarea")
+    if ta is not None:
+        return _invalid_textarea(page, bid, eid, ta)
+
+    # numeric demos: zero each numeric input until an error appears
+    inputs = page.query_selector_all("section.card input[type=number]")
+    if not inputs:
+        return []
+    return _invalid_numeric(page, bid, eid, spec["outputs"][0], inputs)
 
 
 def check_index(browser):
@@ -455,61 +500,73 @@ def check_index(browser):
     return problems
 
 
+def _launch_and_run(headless):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless, slow_mo=60 if not headless else 0)
+        reports = []
+        for spec in DEMOS:
+            reports.append(run_demo(browser, spec))
+        browser.close()
+    return reports
+
+
+def _check_index_once():
+    with sync_playwright() as p2:
+        b2 = p2.chromium.launch(headless=True)
+        try:
+            return check_index(b2)
+        finally:
+            b2.close()
+
+
+def _flag_if_present(items, headline, limit):
+    if not items:
+        return False
+    print(headline % len(items))
+    for item in items[:limit]:
+        print("        - " + item)
+    return True
+
+
+def _print_report(r):
+    status = "PASS" if r.passed else "FAIL"
+    print(f"\n[{status}] {r.name}  (loaded in {r.load_ms} ms)")
+    for n in r.notes:
+        print("     note: " + n)
+    for f in r.failures:
+        print("     FAIL: " + f)
+    ok = r.passed
+    if _flag_if_present(r.console_errors, "     boot console errors: %d", 5):
+        ok = False
+    if _flag_if_present(r.page_errors, "     page errors (%d):", 5):
+        ok = False
+    if _flag_if_present(
+            [c[:160] for c in r.interaction_console],
+            "     interaction console messages (expected tracebacks): %d", 3):
+        ok = False
+    if _flag_if_present(r.failed_requests, "     failed requests (%d):", 8):
+        ok = False
+    return ok
+
+
 def main():
     use_headless = "--headed" not in sys.argv
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=use_headless, slow_mo=60 if not use_headless else 0)
-        all_reports = []
-        for spec in DEMOS:
-            report = run_demo(browser, spec)
-            all_reports.append(report)
-
-        browser.close()
+    all_reports = _launch_and_run(use_headless)
+    idx_problems = _check_index_once()
 
     print("\n" + "=" * 70)
     print("QA SUMMARY")
     print("=" * 70)
-    passed_all = True
-    # index check
-    with sync_playwright() as p2:
-        b2 = p2.chromium.launch(headless=True)
-        idx_problems = check_index(b2)
-        b2.close()
     if idx_problems:
-        passed_all = False
         print("\n[index.html] PROBLEMS")
-        for p_ in idx_problems:
-            print("     FAIL: " + p_)
     else:
         print("\n[index.html] PASS  (all demo links resolve)")
+    for p_ in idx_problems:
+        print("     FAIL: " + p_)
+
+    passed_all = not idx_problems
     for r in all_reports:
-        status = "PASS" if r.passed else "FAIL"
-        if not r.passed:
-            passed_all = False
-        print(f"\n[{status}] {r.name}  (loaded in {r.load_ms} ms)")
-        for n in r.notes:
-            print("     note: " + n)
-        for f in r.failures:
-            print("     FAIL: " + f)
-        if r.console_errors:
-            print("     boot console errors: %d" % len(r.console_errors))
-            for c in r.console_errors[:5]:
-                print("        - " + c)
-            passed_all = False
-        if r.page_errors:
-            print("     page errors (%d):" % len(r.page_errors))
-            for pe in r.page_errors[:5]:
-                print("        - " + pe)
-            passed_all = False
-        if r.interaction_console:
-            print("     interaction console messages (expected tracebacks): %d" % len(r.interaction_console))
-            for c in r.interaction_console[:3]:
-                print("        - " + c[:160])
-        if r.failed_requests:
-            print("     failed requests (%d):" % len(r.failed_requests))
-            for fr in r.failed_requests[:8]:
-                print("        - " + fr)
-            passed_all = False
+        passed_all = _print_report(r) and passed_all
     print("\n" + "=" * 70)
     print("ALL PASS" if passed_all else "SOME DEMOS FAILED")
     print("=" * 70)
