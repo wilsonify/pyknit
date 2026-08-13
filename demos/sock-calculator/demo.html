@@ -12,7 +12,7 @@
   <header class="demo-header">
     <div class="eyebrow">pyKnit · PyScript demo</div>
     <h1>Sock Calculator</h1>
-    <p>Knit your first pair of socks, your size. Answer the 6 questions
+    <p>Knit your first pair of socks, your size. Answer the 7 questions
     below, press one button, and get a complete step-by-step plan.</p>
     <div class="linkbar">
       <a href="../index.html">← all demos</a>
@@ -83,6 +83,19 @@
         <label for="length_from_heel_to_toe">Foot length (in)</label>
         <input id="length_from_heel_to_toe" type="number" value="10.5" min="0.5" step="0.25" />
         <span class="field-hint">From the back of your heel to the tip of your longest toe.</span>
+      </div>
+      <div class="form-group">
+        <label for="negative_ease">Negative ease</label>
+        <select id="negative_ease">
+          <option value="0">0% — no ease (loose)</option>
+          <option value="5">5% — a little snug</option>
+          <option value="10">10% — gently snug</option>
+          <option value="15">15% — snug</option>
+          <option value="20" selected>20% — classic (recommended)</option>
+          <option value="25">25% — very snug</option>
+        </select>
+        <span class="field-hint">How much smaller than your foot the sock is
+        knit. 20% is the classic fit; 0% makes a slouchier, saggy sock.</span>
       </div>
     </div>
 
