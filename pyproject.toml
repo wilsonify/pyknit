@@ -31,10 +31,4 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["pyknit", "pyknit.pyscript"]
-package-data = {
-    "pyknit.pyscript": [
-        "_assets/*.py",
-        "_demos/*.py",
-    ],
-}
+packages = ["pyknit"]
