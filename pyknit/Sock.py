@@ -264,7 +264,7 @@ class Sock:
         return rows, remaining
 
     def heel_turn_remaining(self):
-        rows, remaining = self.heel_turn_rows()
+        _, remaining = self.heel_turn_rows()
         return remaining
 
     def gusset_pickup_per_side(self):
