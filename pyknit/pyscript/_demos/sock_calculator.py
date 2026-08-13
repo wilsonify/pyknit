@@ -21,9 +21,18 @@ DEFAULT_INPUTS = {
     "circumference_of_ankle": 9.5,
     "length_from_sock_top_to_heel_bottom": 7.75,
     "length_from_heel_to_toe": 10.5,
+    "negative_ease": 20,
 }
 
 TITLE = "Sock Calculator"
+
+
+def _ease_factor(inputs):
+    """Turn a negative-ease percent (e.g. 20 = 20% smaller) into a factor."""
+    pct = float(inputs["negative_ease"])
+    if pct < 0 or pct > 50:
+        raise ValueError("negative ease must be between 0% and 50%")
+    return 1 - pct / 100.0
 
 
 def compute(inputs):
@@ -38,6 +47,7 @@ def compute(inputs):
             inputs, "length_from_sock_top_to_heel_bottom"
         ),
         length_from_heel_to_toe=_pos(inputs, "length_from_heel_to_toe"),
+        negative_ease=_ease_factor(inputs),
     )
 
     data = {
@@ -48,6 +58,7 @@ def compute(inputs):
         "number_of_decrease_rows": sock.number_of_decrease_rows,
         "number_of_heel_flap_stitches": sock.number_of_heel_flap_stitches,
         "instep_stitches": sock.instep_stitches,
+        "negative_ease_percent": round((1 - sock.negative_ease) * 100),
         "length_of_heel_flap": sock.length_of_heel_flap,
         "length_from_sock_top_to_heel_flap": sock.length_from_sock_top_to_heel_flap,
         "length_from_sock_top_to_heel_bottom": (
@@ -114,7 +125,7 @@ def _sock_svg(m):
 
     foot_even = m["length_from_heel_to_beginning_of_toe_decrease"]
     toe_in = m["length_of_toe_decrease"]
-    toe_start_x = bx + foot_even * pp
+    toe_start_x = max(bx, bx + foot_even * pp)
     toe_end_x = toe_start_x + toe_in * pp
 
     depth_cuff = _clamp(14 + cast * 0.45, 26, 90)
@@ -258,7 +269,8 @@ def _sock_svg(m):
     parts.append(
         f'<text x="{bx}" y="{heel_y + 64:.1f}" font-size="11" fill="#5a2a75">'
         f'gauge · {m["stitches_per_inch"]:g} sts/in × '
-        f'{m["rows_per_inch"]:g} rows/in</text>'
+        f'{m["rows_per_inch"]:g} rows/in · '
+        f'{m["negative_ease_percent"]}% negative ease</text>'
     )
 
     parts.append("</svg>")
