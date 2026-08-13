@@ -12,7 +12,7 @@ import pathlib
 
 import pytest
 
-DEMOS_DIR = pathlib.Path(__file__).parent.parent / "pyknit" / "pyscript" / "_demos"
+DEMOS_DIR = pathlib.Path(__file__).parent.parent.parent / "pyknit" / "pyscript" / "_demos"
 
 DEMO_NAMES = [
     "chart_renderer",
@@ -146,6 +146,24 @@ class TestDemoSpecifics:
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         assert result["cast_on_stitches"] > 0
         assert result["ankle_stitches"] > 0
+        assert result["warnings"] == []
+        assert "plan" in result
+        assert "<svg" in result["svg"]
+
+    def test_sock_plan_renders_full_guide(self):
+        module = load_demo("sock_calculator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        rendered = module.DEMO["to_html"](result)
+        for marker in (
+            "How this sock is built",
+            "Your numbers at a glance",
+            "Knit along",
+            "1. Cast on and get started",
+            "4. Turn the heel",
+            "7. Knit the toe",
+            "<svg",
+        ):
+            assert marker in rendered
 
     def test_shawl_shapes_instructions(self):
         module = load_demo("shawl_shapes")
