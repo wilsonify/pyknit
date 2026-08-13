@@ -132,7 +132,7 @@ class TestChartRendering:
     def test_render_formats(self):
         """Verify render_pattern returns known formats."""
         pattern = parse_chart("k2 yo k2tog")
-        fmt, content = render_pattern(pattern)
+        fmt, _ = render_pattern(pattern)
         # Should be one of these formats
         assert fmt in ("svg", "png", "text")
 
