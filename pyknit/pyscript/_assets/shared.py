@@ -135,11 +135,30 @@ def set_buttons_enabled(enabled: bool) -> None:
             btn.disabled = not enabled
 
 
+_BOUND_PROXIES = []
+
+
 def bind_click(button_id: str, handler) -> None:
-    """Attach a click listener, guarded for out-of-browser use."""
+    """Attach a click listener, guarded for out-of-browser use.
+
+    In the browser the raw Python function cannot be passed straight to
+    ``addEventListener``: Pyodide would destroy the borrowed proxy at the end
+    of the call, so the listener would silently never fire.  We wrap the
+    handler in ``create_proxy`` and keep a reference so it survives for the
+    lifetime of the page (see the QA suite for the regression test).
+    """
     btn = _get("#" + button_id)
-    if btn is not None and hasattr(btn, "addEventListener"):
-        btn.addEventListener("click", handler)
+    if btn is None or not hasattr(btn, "addEventListener"):
+        return
+    callback = handler
+    try:
+        from pyodide.ffi import create_proxy
+
+        callback = create_proxy(handler)
+        _BOUND_PROXIES.append(callback)
+    except Exception:
+        pass
+    btn.addEventListener("click", callback)
 
 
 # --------------------------------------------------------------------------
