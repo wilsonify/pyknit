@@ -55,8 +55,8 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import hat_crown as DEMO
-    set_status("ready", "✔ pyknit loaded", "ready to plan")
-    bind_click("run", wire_demo(DEMO))
+    shared.set_status("ready", "✔ pyknit loaded", "ready to plan")
+    shared.bind_click("run", shared.wire_demo(DEMO))
 </script>
 </body>
 </html>
