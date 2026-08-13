@@ -219,7 +219,7 @@ def run_demo(browser, spec):
 
     # interactive: click each button with default inputs
     for bid in spec["buttons"]:
-        _apply_checks(report, exercise(page, spec, bid),
+        _apply_checks(report, exercise(page, bid),
                       f"default click on #{bid} produced output")
 
     # verify rendered content (SVG chart or table/pre) is present after a run
@@ -293,7 +293,7 @@ def _check_no_error(page, eids):
     return fails
 
 
-def exercise(page, spec, button_id):
+def exercise(page, button_id):
     """Click with current inputs and check output non-blank + changed on input change."""
     bid = button_id
     fails = []
