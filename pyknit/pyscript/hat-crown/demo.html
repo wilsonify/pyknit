@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Hat Crown Planner</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <link rel="stylesheet" href="../_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Hat Crown Planner</h1>
+    <p>Work out the decrease rounds to shape the crown of a hat in the round.</p>
+    <div class="linkbar">
+      <a href="../index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    packages = ["pydantic", "pillow", "pyknit"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Hat</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="stitches">Cast-on stitches</label>
+        <input id="stitches" type="number" value="80" min="1" step="4" />
+      </div>
+      <div class="form-group">
+        <label for="repeats">Decrease repeats per round</label>
+        <input id="repeats" type="number" value="8" min="1" step="1" />
+      </div>
+    </div>
+    <button id="run" class="btn-primary">Plan Crown</button>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.Hat.Hat.crown_decreases</code>.</p>
+  </footer>
+
+  <script type="py" src="../_assets/shared.py"></script>
+  <script type="py" src="../_demos/hat_crown.py"></script>
+  <script type="py">
+    set_status("ready", "✔ pyknit loaded", "ready to plan")
+    bind_click("run", wire_demo(DEMO))
+  </script>
+</body>
+</html>
