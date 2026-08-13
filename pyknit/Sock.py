@@ -227,7 +227,6 @@ class Sock:
         if count != self.ankle_stitches:
             # Keep the arithmetic honest no matter what.
             schedule = schedule[: self.number_of_decrease_rows]
-            count = self.cast_on_stitches - 2 * len(schedule)
         return sorted(schedule)
 
     def heel_turn_rows(self):
