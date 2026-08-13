@@ -121,6 +121,10 @@ def test_increase_evenly_error(starting_count, increase_number, in_the_round, ex
         (21, 5, True, "[k2, k2tog] * 2 times, k3, k2tog, [k2, k2tog] * 2 times"),
         (21, 5, False, "k2, [k2tog, k2] * 2 times, [k2tog, k2] * 2 times, k2tog k1"),
 
+        # 4-decrease rounds (used by a short sock leg) must never crash
+        (10, 4, True, "k2tog, [k1, k2tog] * 2 times, k2tog"),
+        (14, 4, True, "k1, k2tog, [k2, k2tog] * 2 times, k1, k2tog"),
+
     ],
 )
 def test_decrease_evenly(starting_count, decrease_number, in_the_round, expected):
