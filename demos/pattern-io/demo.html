@@ -54,11 +54,11 @@ p1 k2 yo k2tog p2</textarea>
     <p>Powered by <code>pyknit.io</code> (pattern_to_csv/json, csv_to_pattern/json_to_pattern).</p>
   </footer>
 
-  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
-  <script type="py" src="../../pyknit/pyscript/_demos/pattern_io.py"></script>
-  <script type="py">
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import pattern_io as DEMO
     set_status("ready", "✔ pyknit loaded", "ready to export")
     bind_click("run", wire_demo(DEMO))
-  </script>
+</script>
 </body>
 </html>

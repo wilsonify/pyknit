@@ -66,11 +66,11 @@
     <p>Powered by <code>pyknit.increase_evenly</code> and <code>pyknit.decrease_evenly</code>.</p>
   </footer>
 
-  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
-  <script type="py" src="../../pyknit/pyscript/_demos/shaping.py"></script>
-  <script type="py">
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import even_shaping as DEMO
     set_status("ready", "✔ pyknit loaded", "ready to compute")
     bind_click("run", wire_demo(DEMO))
-  </script>
+</script>
 </body>
 </html>

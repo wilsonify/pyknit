@@ -28,7 +28,7 @@
   </div>
 
   <py-config>
-    packages = ["pydantic", "pillow", "../_wheel/pyknit-0.1.0-py3-none-any.whl"]
+    packages = ["pydantic", "pillow"]
     terminal = false
   </py-config>
 
@@ -125,11 +125,11 @@
     });
   </script>
 
-  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
-  <script type="py" src="../../pyknit/pyscript/_demos/sock_calculator.py"></script>
   <script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import sock_calculator as DEMO
     set_status("ready", "✔ pyknit loaded", "ready to plan your socks")
     bind_click("run", wire_demo(DEMO))
-  </script>
+</script>
 </body>
 </html>

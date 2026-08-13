@@ -95,11 +95,11 @@
     <p>Powered by <code>pyknit.GaugeSwatch</code> (estimate_yardage / estimate_weight) and <code>pyknit.estimate</code>.</p>
   </footer>
 
-  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
-  <script type="py" src="../../pyknit/pyscript/_demos/yarn_estimator.py"></script>
-  <script type="py">
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import yarn_estimator as DEMO
     set_status("ready", "✔ pyknit loaded", "ready to estimate")
     bind_click("run", wire_demo(DEMO))
-  </script>
+</script>
 </body>
 </html>

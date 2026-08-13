@@ -81,11 +81,11 @@
     <p>Powered by <code>pyknit.shawl_shapes.generate_shawl</code> and <code>GaugeSwatch</code>.</p>
   </footer>
 
-  <script type="py" src="../../pyknit/pyscript/_assets/shared.py"></script>
-  <script type="py" src="../../pyknit/pyscript/_demos/shawl_shapes.py"></script>
-  <script type="py">
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import shawl_shapes as DEMO
     set_status("ready", "✔ pyknit loaded", "ready to generate")
     bind_click("run", wire_demo(DEMO))
-  </script>
+</script>
 </body>
 </html>
