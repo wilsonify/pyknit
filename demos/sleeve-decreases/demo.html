@@ -72,8 +72,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import sleeve_decreases as DEMO
-    shared.set_status("ready", "✔ pyknit loaded", "ready to plan")
-    shared.bind_click("run", shared.wire_demo(DEMO))
+  shared.bootstrap_demo(DEMO, action_label="Plan Decreases")
 </script>
 </body>
 </html>

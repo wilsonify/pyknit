@@ -75,8 +75,7 @@ p3 k2tog yo p1</textarea>
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import chart_renderer as DEMO
-    shared.set_status("ready", "✔ pyknit loaded", "ready to render")
-    shared.bind_click("run", shared.wire_demo(DEMO))
+  shared.bootstrap_demo(DEMO, action_label="Render Chart")
 </script>
 </body>
 </html>
