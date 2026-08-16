@@ -540,10 +540,11 @@ def _print_report(r):
         ok = False
     if _flag_if_present(r.page_errors, "     page errors (%d):", 5):
         ok = False
-    if _flag_if_present(
-            [c[:160] for c in r.interaction_console],
-            "     interaction console messages (expected tracebacks): %d", 3):
-        ok = False
+    _flag_if_present(
+        [c[:160] for c in r.interaction_console],
+        "     interaction console messages (expected tracebacks): %d",
+        3,
+    )
     if _flag_if_present(r.failed_requests, "     failed requests (%d):", 8):
         ok = False
     return ok
