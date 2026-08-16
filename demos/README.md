@@ -24,7 +24,8 @@ Each demo page pulls its Python modules straight from the package
 > version, rebuild the wheel and update every `py-config` block:
 
 ```bash
-python -m build --wheel -o demos/_wheel
+cd demos
+make wheel
 ```
 
 The browser demos *must* load the locally-built wheel: the version on PyPI
@@ -60,6 +61,29 @@ local test suite in `test/test_pyscript_demos.py`.
 - An internet connection (first visit downloads ~20-30 MB of packages from PyPI)
 
 ### Running the Demo
+
+From a fresh machine, the easiest path is the `demos/Makefile`:
+
+```bash
+cd demos
+make setup
+make serve
+```
+
+Then open `http://localhost:8000/demos/index.html`.
+
+You can also do setup + serve in one command:
+
+```bash
+cd demos
+make run
+```
+
+Other useful targets:
+
+- `make wheel` rebuilds `demos/_wheel/pyknit-<version>-py3-none-any.whl`
+- `make favicon` creates `demos/favicon.ico` if missing
+- `make serve PORT=9000` serves on a different port
 
 The demo pages load Python from `pyknit/pyscript/`, so serve the **repository
 root** (the folder containing both `demos/` and `pyknit/`), then open
