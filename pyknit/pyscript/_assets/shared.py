@@ -358,6 +358,40 @@ def collect_inputs(defaults: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def _normalize_demo(module: Any) -> Dict[str, Any]:
+    """Return a canonical demo mapping.
+
+    Supported inputs:
+    - a DEMO dict
+    - a module/object exposing ``DEMO``
+    - a globals dict with ``DEFAULT_INPUTS`` and ``compute``
+    """
+    if module is None:
+        module = globals()
+    if isinstance(module, dict):
+        if "compute" in module and "DEFAULT_INPUTS" in module:
+            return module
+        if "DEMO" in module and isinstance(module["DEMO"], dict):
+            return module["DEMO"]
+    demo = getattr(module, "DEMO", None)
+    if isinstance(demo, dict):
+        return demo
+    if hasattr(module, "compute") and hasattr(module, "DEFAULT_INPUTS"):
+        return {
+            "TITLE": getattr(module, "TITLE", "Demo"),
+            "DEFAULT_INPUTS": getattr(module, "DEFAULT_INPUTS"),
+            "compute": getattr(module, "compute"),
+            "to_html": getattr(module, "to_html", None),
+        }
+    raise TypeError("demo module must expose DEMO or compute/default inputs")
+
+
+def _log_unexpected_error() -> None:
+    import traceback
+
+    traceback.print_exc()
+
+
 def wire_demo(module: Optional[Any] = None) -> Any:
     """Return the demo page's :func:`run` handler.
 
@@ -367,32 +401,56 @@ def wire_demo(module: Optional[Any] = None) -> Any:
     ``src`` scripts into the shared global namespace, so the conventional
     names are picked up automatically when ``module`` is ``None``.
     """
-    import traceback
-
-    if module is None:
-        module = globals()
+    demo = _normalize_demo(module)
 
     def run(event=None):
         try:
-            inputs = collect_inputs(module["DEFAULT_INPUTS"])
-            result = module["compute"](inputs)
+            inputs = collect_inputs(demo["DEFAULT_INPUTS"])
+            result = demo["compute"](inputs)
         except Exception as exc:
-            set_status("error", f"Error: {exc}", "")
+            if isinstance(exc, ValueError):
+                set_status("ready", "Please check your inputs", str(exc))
+            else:
+                set_status("error", "Unexpected demo error", str(exc))
+                _log_unexpected_error()
             show_error("demo-error", str(exc))
-            traceback.print_exc()
             return
         hide_error("demo-error")
-        to_html = module.get("to_html")
+        to_html = demo.get("to_html")
         if to_html is not None:
             set_html("demo-output", to_html(result))
         else:
             set_html("demo-output", _default_result_html(result))
         set_status(
             "ready",
-            f"✔ {module.get('TITLE', 'Demo')} computed successfully",
-            "",
+            f"✔ {demo.get('TITLE', 'Demo')} updated",
+            "Adjust inputs and run again.",
         )
 
+    return run
+
+
+def bootstrap_demo(
+    module: Optional[Any] = None,
+    button_id: str = "run",
+    action_label: str = "Run",
+    auto_run: bool = True,
+) -> Any:
+    """Wire a standard demo page and optionally run default inputs once."""
+    set_status(
+        "loading",
+        "Loading pyknit runtime...",
+        "First load can take 30-60 seconds while packages initialize.",
+    )
+    run = wire_demo(module)
+    bind_click(button_id, run)
+    set_status(
+        "ready",
+        "✔ pyknit loaded",
+        f"Edit inputs, then click '{action_label}'.",
+    )
+    if auto_run:
+        run()
     return run
 
 
