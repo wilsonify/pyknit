@@ -351,6 +351,22 @@ def _export_plan_text(plan) -> str:
     for item in plan:
         if not isinstance(item, dict):
             continue
+        if "heading" in item:
+            heading = str(item.get("heading", "")).strip()
+            if heading:
+                lines.append(heading.upper())
+            intro = str(item.get("intro", "")).strip()
+            if intro:
+                lines.append(intro)
+            steps = item.get("steps")
+            if isinstance(steps, list):
+                for step in steps:
+                    lines.append(f"- {step}".strip())
+            rows = item.get("rows")
+            if isinstance(rows, list):
+                for row in rows:
+                    lines.append(f"  {row}".strip())
+            continue
         if "instruction" in item:
             instruction = str(item.get("instruction", "")).strip()
             transition = str(item.get("transition", "")).strip()
@@ -381,10 +397,16 @@ def export_pattern_text(result: Any) -> str:
     if isinstance(result, str):
         return result.strip()
     if isinstance(result, dict):
-        if "plan" in result and isinstance(result["plan"], list):
-            text = _export_plan_text(result["plan"])
-            if text:
-                return text
+        if "plan" in result:
+            plan = result["plan"]
+            if isinstance(plan, list):
+                text = _export_plan_text(plan)
+                if text:
+                    return text
+            if isinstance(plan, dict) and isinstance(plan.get("sections"), list):
+                text = _export_plan_text(plan["sections"])
+                if text:
+                    return text
         for key in ("instructions", "result", "pattern", "text"):
             if key in result:
                 value = result[key]
@@ -406,8 +428,6 @@ def export_pattern_text(result: Any) -> str:
                     text = "\n".join(str(item) for item in value)
                     if text.strip():
                         return text.strip()
-        if "svg" in result:
-            return ""
         lines = []
         for key, value in result.items():
             if key in {"svg", "html", "pattern", "text"}:
