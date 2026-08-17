@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>pyKnit · Hat Crown Planner</title>
-  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
-  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <link rel="stylesheet" href="../_assets/pyscript/core.css" />
+  <script type="module" src="../_assets/pyscript/core.js"></script>
   <link rel="stylesheet" href="../_assets/common.css" />
 </head>
 <body>
@@ -27,7 +27,8 @@
   </div>
 
   <py-config>
-    packages = ["pydantic", "pillow", "../_wheel/pyknit-0.1.0-py3-none-any.whl"]
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.0-py3-none-any.whl"]
     terminal = false
   </py-config>
 

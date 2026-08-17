@@ -144,3 +144,5 @@ PyKnit_Demo.ipynb
 .scannerwork/
 .vscode/
 *.whl
+
+_assets/
