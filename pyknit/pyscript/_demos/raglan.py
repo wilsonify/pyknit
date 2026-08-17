@@ -33,6 +33,7 @@ DEFAULT_INPUTS = {
     "underarm_width": 2,
     # sleeve measurements (inches)
     "upper_arm_circumference": 12,
+    "upper_arm_ease": 1,
     "wrist_circumference": 7.5,
     # lengths (inches)
     "body_length": 13,
@@ -85,7 +86,8 @@ def _freq_phrase(freq):
     return "every round" if freq == "every_round" else "every other round"
 
 
-def _section(heading, intro=None, steps=None, rows=None, table=None):
+def _section(heading, intro=None, steps=None, rows=None, table=None,
+             collapsible=False):
     section = {"heading": heading}
     if intro:
         section["intro"] = intro
@@ -95,6 +97,8 @@ def _section(heading, intro=None, steps=None, rows=None, table=None):
         section["rows"] = rows
     if table:
         section["table"] = table
+    if collapsible:
+        section["collapsible"] = True
     return section
 
 
@@ -109,6 +113,10 @@ def compute(inputs):
         raise ValueError("ease must be between -4 and 10 inches")
     underarm_w = _pos(inputs, "underarm_width", "underarm width")
     upper_arm = _pos(inputs, "upper_arm_circumference", "upper arm circumference")
+    upper_arm_ease = float(inputs.get("upper_arm_ease") or 0)
+    if upper_arm_ease < -2 or upper_arm_ease > 6:
+        raise ValueError("upper arm ease must be between -2 and 6 inches")
+    upper_arm_eased = upper_arm + upper_arm_ease
     wrist_circ = _pos(inputs, "wrist_circumference", "wrist circumference")
     body_len = _pos(inputs, "body_length", "body length")
     sleeve_len = _pos(inputs, "sleeve_length", "sleeve length")
@@ -129,14 +137,14 @@ def compute(inputs):
             "neck circumference must be smaller than the bust circumference "
             "(the raglan widens from the neck down)"
         )
-    if upper_arm >= bust_circ:
+    if upper_arm_eased >= bust_circ:
         raise ValueError(
-            "upper arm circumference must be smaller than the bust circumference"
+            "upper arm circumference + ease must be smaller than the bust circumference"
         )
-    if wrist_circ >= upper_arm:
+    if wrist_circ >= upper_arm_eased:
         raise ValueError(
             "wrist circumference must be smaller than the upper arm "
-            "for a tapering sleeve"
+            "(with ease) for a tapering sleeve"
         )
 
     # Gauge <-> measurement math goes through GaugeSwatch.
@@ -149,7 +157,7 @@ def compute(inputs):
     )
     neck = _even(swatch.measurement_to_stitches(neck_circ))
     bust = _even(swatch.measurement_to_stitches(bust_circ + ease))
-    arm = _even(swatch.measurement_to_stitches(upper_arm))
+    arm = _even(swatch.measurement_to_stitches(upper_arm_eased))
     armpit = max(2, _even(swatch.measurement_to_stitches(underarm_w)))
     wrist = _even(swatch.measurement_to_stitches(wrist_circ))
 
@@ -325,7 +333,8 @@ def compute(inputs):
         f"There are four raglan seams with {inc} increases per increase round "
         f"({seg} to each section), so the stitch counts stay balanced.",
         f"Positive ease of {_num(ease)} in at the bust; the sleeve is knit at "
-        "the measured upper-arm circumference (measure with a little room).",
+        f"the measured upper arm circumference plus {_num(upper_arm_ease)} in "
+        "of ease.",
         f"The collar is about {COLLAR_IN:g} in of ribbing, and the hem and "
         f"cuffs about {HEM_IN:g} in each.",
         "Underarm cast-on stitches are shared: they join the front and back "
@@ -382,6 +391,10 @@ def compute(inputs):
             "freq": freq,
             "display_rounds": display_rounds,
             "marker": marker,
+            "rg": rg,
+            "st": st,
+            "body_len": body_len,
+            "sleeve_len": sleeve_len,
         },
     }
 
@@ -405,8 +418,8 @@ def _math_section(v):
         f"{derived(v['neck_circ'] * v['st'], v['neck'], '')}",
         f"Bust: ({_num(v['bust_circ'])} + {_num(v['ease'])} in ease) x "
         f"{_num(v['st'])} = {derived((v['bust_circ'] + v['ease']) * v['st'], v['bust'], ' sts in the round')}",
-        f"Upper arm: {_num(v['upper_arm'])} in x {_num(v['st'])} = "
-        f"{derived(v['upper_arm'] * v['st'], v['arm'], ' sts')}",
+        f"Upper arm: ({_num(v['upper_arm'])} + {_num(v['upper_arm_ease'])} in ease) x "
+        f"{_num(v['st'])} = {derived(v['upper_arm_eased'] * v['st'], v['arm'], ' sts')}",
         f"Underarm cast-on (each side): {_num(v['underarm_w'])} in x "
         f"{_num(v['st'])} = {derived(v['underarm_w'] * v['st'], v['armpit'], ' sts')}",
         f"Wrist: {_num(v['wrist_circ'])} in x {_num(v['st'])} = "
@@ -446,6 +459,8 @@ def _measurements_section(v):
                         f"({_num(v['bust_circ'])} + {_num(v['ease'])} ease)"),
         ("Bust stitches (body in the round)", f"{v['bust']} sts"),
         ("Underarm cast-on", f"{v['armpit']} sts each side"),
+        ("Upper arm + ease", f"{_num(v['upper_arm_eased'])} in "
+                             f"({_num(v['upper_arm'])} + {_num(v['upper_arm_ease'])} ease)"),
         ("Upper arm (sleeve in the round)", f"{v['arm']} sts"),
         ("Wrist", f"{v['wrist']} sts"),
         ("Raglan depth (neck to underarm)", f"{_num(v['depth_in'])} in"),
@@ -503,18 +518,10 @@ def _marker_section(marker, front_start, back_start, sleeve_start, calc_neck,
 def _increase_schedule_section(inc_rounds, freq, inc, seg, working,
                                front_final, back_final, sleeve_final, pre,
                                table_rows, text_rows):
-    shown = table_rows[:MAX_TABLE_ROWS]
     intro = (
         f"Work {inc_rounds} increase rounds, {_freq_phrase(freq)}, adding "
-        f"{inc} stitches per increase round ({seg} to each section). This "
-        "table shows the stitch count after every round so you can check "
-        "your progress."
+        f"{inc} stitches per increase round ({seg} to each section)."
     )
-    if len(table_rows) > MAX_TABLE_ROWS:
-        intro += (
-            f" The first {MAX_TABLE_ROWS} rounds are shown; the exported "
-            "pattern contains the complete schedule."
-        )
     steps = [
         f"Increase round: knit to 1 stitch before the marker, M1R, slip "
         f"marker, knit 1, M1L, knit to the next marker, and repeat for all "
@@ -534,8 +541,9 @@ def _increase_schedule_section(inc_rounds, freq, inc, seg, working,
         intro=intro,
         steps=steps,
         table={"columns": ["Round", "Action", "Total", "Front", "Back", "Sleeve"],
-               "rows": shown},
+               "rows": table_rows},
         rows=text_rows,
+        collapsible=True,
     )
 
 
@@ -643,49 +651,472 @@ def _cuff_section(cuff_rounds, rg, sleeve_len):
 
 def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust,
                  depth_in):
-    """Top-down schematic: neck hole, four seams and the derived numbers."""
-    size = 360
-    cx = cy = size / 2
-    neck_r = max(20, neck / 7)
-    bust_r = max(85, bust / 2.1)
+    """Top-down flat schematic: T-shaped sweater with neck, raglan seams,
+    body, sleeves, underarm, hem, cuffs, and a stitch proportion bar."""
+    vw = 480
+    vh = 440
+
+    body_w = 140
+    body_top = 130
+    body_h = 155
+
+    sleeve_w = 90
+    sleeve_h = 100
+
+    neck_w = 50
+    neck_h = 30
+
+    cx = vw // 2
+
+    # Proportion bar dimensions
+    bar_y = body_top + body_h + 50
+    bar_h = 24
+    bar_margin = 40
+    bar_w = vw - 2 * bar_margin
+
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
-        f'height="{size}" viewBox="0 0 {size} {size}" '
-        'font-family="system-ui, sans-serif">'
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{vw}" '
+        f'height="{vh}" viewBox="0 0 {vw} {vh}" '
+        'font-family="system-ui, -apple-system, sans-serif">',
+        '<defs>',
+        '<style>',
+        '.sleeve { fill: #c8e6f5; stroke: #2980b9; stroke-width: 2; }',
+        '.body { fill: #d5f5e3; stroke: #27ae60; stroke-width: 2; }',
+        '.neck { fill: #f5f5f5; stroke: #7f8c8d; stroke-width: 2; }',
+        '.raglan { stroke: #e74c3c; stroke-width: 2.5; '
+        'stroke-dasharray: 6,3; fill: none; }',
+        '.rib { fill: none; stroke: #8e44ad; stroke-width: 1.5; }',
+        '.label { font-size: 11px; fill: #2c3e50; }',
+        '.sublabel { font-size: 10px; fill: #7f8c8d; }',
+        '.title { font-size: 13px; fill: #2c3e50; font-weight: bold; }',
+        '.bar-label { font-size: 10px; fill: white; font-weight: bold; }',
+        '.bar-legend { font-size: 10px; fill: #555; }',
+        '</style>',
+        '<marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" '
+        'markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
+        '<path d="M 0 0 L 10 5 L 0 10 z" fill="#7f8c8d"/>'
+        '</marker>',
+        '</defs>',
     ]
+
+    # --- Right sleeve ---
+    sx = cx + body_w // 2
+    sy = body_top + 15
+    sleeve_pts = (
+        f"{sx},{sy} {sx + sleeve_w},{sy + 10} "
+        f"{sx + sleeve_w},{sy + sleeve_h - 10} {sx},{sy + sleeve_h}"
+    )
+    parts.append(f'<polygon points="{sleeve_pts}" class="sleeve"/>')
+
+    # Cuff (ribbing at sleeve end)
+    cuff_x = sx + sleeve_w - 12
+    for i in range(4):
+        cy = sy + 20 + i * ((sleeve_h - 40) / 3)
+        parts.append(
+            f'<line x1="{cuff_x}" y1="{cy:.1f}" '
+            f'x2="{sx + sleeve_w}" y2="{cy:.1f}" class="rib"/>'
+        )
+
+    # --- Left sleeve (mirrored) ---
+    lx = cx - body_w // 2
+    ly = body_top + 15
+    left_pts = (
+        f"{lx},{ly} {lx - sleeve_w},{ly + 10} "
+        f"{lx - sleeve_w},{ly + sleeve_h - 10} {lx},{ly + sleeve_h}"
+    )
+    parts.append(f'<polygon points="{left_pts}" class="sleeve"/>')
+
+    # Left cuff
+    lcuff_x = lx - sleeve_w + 12
+    for i in range(4):
+        cy = ly + 20 + i * ((sleeve_h - 40) / 3)
+        parts.append(
+            f'<line x1="{lcuff_x}" y1="{cy:.1f}" '
+            f'x2="{lx - sleeve_w}" y2="{cy:.1f}" class="rib"/>'
+        )
+
+    # --- Body ---
     parts.append(
-        f'<circle cx="{cx}" cy="{cy}" r="{bust_r}" fill="#e8dcf2" '
-        'stroke="#7b3fa0" stroke-width="2"/>'
+        f'<rect x="{cx - body_w // 2}" y="{body_top}" '
+        f'width="{body_w}" height="{body_h}" class="body"/>'
+    )
+
+    # Hem (ribbing at bottom)
+    hem_y = body_top + body_h - 14
+    for i in range(4):
+        hx = cx - body_w // 2 + 10 + i * ((body_w - 20) / 3)
+        parts.append(
+            f'<line x1="{hx:.1f}" y1="{hem_y}" '
+            f'x2="{hx:.1f}" y2="{body_top + body_h}" class="rib"/>'
+        )
+
+    # --- Raglan lines (4 diagonal seams from neck to underarms) ---
+    neck_left = cx - neck_w // 2
+    neck_right = cx + neck_w // 2
+    neck_bottom = body_top + neck_h
+    ur_x = cx + body_w // 2
+    ur_y = body_top + 15
+    ul_x = cx - body_w // 2
+    ul_y = body_top + 15
+
+    parts.append(
+        f'<line x1="{neck_right}" y1="{body_top}" '
+        f'x2="{ur_x}" y2="{ur_y}" class="raglan"/>'
     )
     parts.append(
-        f'<circle cx="{cx}" cy="{cy}" r="{neck_r}" fill="white" '
-        'stroke="#5a2a75" stroke-width="2"/>'
+        f'<line x1="{neck_left}" y1="{body_top}" '
+        f'x2="{ul_x}" y2="{ul_y}" class="raglan"/>'
     )
-    for angle in (45, 135, 225, 315):
-        rad = math.radians(angle)
+    parts.append(
+        f'<line x1="{neck_right}" y1="{neck_bottom}" '
+        f'x2="{ur_x}" y2="{ur_y + sleeve_h}" class="raglan"/>'
+    )
+    parts.append(
+        f'<line x1="{neck_left}" y1="{neck_bottom}" '
+        f'x2="{ul_x}" y2="{ul_y + sleeve_h}" class="raglan"/>'
+    )
+
+    # --- Neck opening (ellipse) ---
+    parts.append(
+        f'<ellipse cx="{cx}" cy="{body_top + neck_h // 2}" '
+        f'rx="{neck_w // 2}" ry="{neck_h // 2}" class="neck"/>'
+    )
+
+    # --- Labels ---
+    # Neck label (above)
+    parts.append(
+        f'<text x="{cx}" y="{body_top - 30}" text-anchor="middle" '
+        f'class="title">Neck: {neck} sts</text>'
+    )
+    parts.append(
+        f'<text x="{cx}" y="{body_top - 17}" text-anchor="middle" '
+        f'class="sublabel">cast on and join in the round</text>'
+    )
+
+    # Raglan line labels (at midpoints of the four seams)
+    mid_r = ((neck_right + ur_x) / 2, (body_top + ur_y) / 2)
+    parts.append(
+        f'<text x="{mid_r[0] + 8}" y="{mid_r[1] - 4}" '
+        f'class="sublabel" text-anchor="start">raglan</text>'
+    )
+    mid_l = ((neck_left + ul_x) / 2, (body_top + ul_y) / 2)
+    parts.append(
+        f'<text x="{mid_l[0] - 8}" y="{mid_l[1] - 4}" '
+        f'class="sublabel" text-anchor="end">raglan</text>'
+    )
+
+    # Front label (center of body)
+    parts.append(
+        f'<text x="{cx}" y="{body_top + body_h // 2 - 8}" '
+        f'text-anchor="middle" class="label">'
+        f'Front: {front_final} sts</text>'
+    )
+    parts.append(
+        f'<text x="{cx}" y="{body_top + body_h // 2 + 8}" '
+        f'text-anchor="middle" class="label">'
+        f'Back: {back_final} sts</text>'
+    )
+
+    # Sleeve labels (center of each sleeve polygon)
+    r_sleeve_cx = sx + sleeve_w * 0.45
+    r_sleeve_cy = sy + sleeve_h * 0.5
+    parts.append(
+        f'<text x="{r_sleeve_cx:.0f}" y="{r_sleeve_cy:.0f}" '
+        f'text-anchor="middle" class="label">'
+        f'Sleeve: {sleeve_final} sts</text>'
+    )
+    l_sleeve_cx = lx - sleeve_w * 0.45
+    l_sleeve_cy = ly + sleeve_h * 0.5
+    parts.append(
+        f'<text x="{l_sleeve_cx:.0f}" y="{l_sleeve_cy:.0f}" '
+        f'text-anchor="middle" class="label">'
+        f'Sleeve: {sleeve_final} sts</text>'
+    )
+
+    # Underarm cast-on labels
+    parts.append(
+        f'<text x="{ur_x + 8}" y="{ur_y + sleeve_h + 16}" '
+        f'class="sublabel" text-anchor="start">'
+        f'underarm +{armpit}</text>'
+    )
+    parts.append(
+        f'<text x="{ul_x - 8}" y="{ul_y + sleeve_h + 16}" '
+        f'class="sublabel" text-anchor="end">'
+        f'underarm +{armpit}</text>'
+    )
+
+    # Body in the round label (below body, above proportion bar)
+    parts.append(
+        f'<text x="{cx}" y="{body_top + body_h + 18}" '
+        f'text-anchor="middle" class="label">'
+        f'Body: {bust} sts in the round</text>'
+    )
+    parts.append(
+        f'<text x="{cx}" y="{body_top + body_h + 32}" '
+        f'text-anchor="middle" class="sublabel">'
+        f'~{_num(depth_in)} in neck to underarm</text>'
+    )
+
+    # Raglan depth annotation (right side, vertical line)
+    ann_x = cx + body_w // 2 + 20
+    parts.append(
+        f'<line x1="{ann_x}" y1="{body_top}" x2="{ann_x}" y2="{ur_y}" '
+        f'stroke="#7f8c8d" stroke-width="1" marker-start="url(#arrow)" '
+        f'marker-end="url(#arrow)"/>'
+    )
+    parts.append(
+        f'<text x="{ann_x + 6}" y="{(body_top + ur_y) / 2 + 4}" '
+        f'class="sublabel" text-anchor="start">'
+        f'{_num(depth_in)}" raglan</text>'
+    )
+
+    # --- Stitch proportion bar ---
+    total = front_final + back_final + 2 * sleeve_final
+    if total > 0:
+        # Color segments: sleeve L (blue), back (orange), front (teal), sleeve R (blue)
+        segments = [
+            (sleeve_final, "#3498db", f"Sleeve {sleeve_final}"),
+            (back_final, "#e67e22", f"Back {back_final}"),
+            (front_final, "#1abc9c", f"Front {front_final}"),
+            (sleeve_final, "#3498db", f"Sleeve {sleeve_final}"),
+        ]
+        x = bar_margin
+        for count, color, label in segments:
+            seg_w = max(2, bar_w * count / total)
+            parts.append(
+                f'<rect x="{x:.1f}" y="{bar_y}" width="{seg_w:.1f}" '
+                f'height="{bar_h}" fill="{color}" rx="3"/>'
+            )
+            # Label inside bar if wide enough, else above
+            text_x = x + seg_w / 2
+            if seg_w > 30:
+                parts.append(
+                    f'<text x="{text_x:.1f}" y="{bar_y + bar_h / 2 + 3.5}" '
+                    f'text-anchor="middle" class="bar-label">{label}</text>'
+                )
+            else:
+                parts.append(
+                    f'<text x="{text_x:.1f}" y="{bar_y - 4}" '
+                    f'text-anchor="middle" class="bar-legend">{label}</text>'
+                )
+            x += seg_w
+
+        # Bar border
         parts.append(
-            f'<line x1="{cx + neck_r * math.cos(rad):.1f}" '
-            f'y1="{cy + neck_r * math.sin(rad):.1f}" '
-            f'x2="{cx + bust_r * math.cos(rad):.1f}" '
-            f'y2="{cy + bust_r * math.sin(rad):.1f}" stroke="#4aa3a2" '
-            'stroke-width="3"/>'
+            f'<rect x="{bar_margin}" y="{bar_y}" width="{bar_w}" '
+            f'height="{bar_h}" fill="none" stroke="#ccc" stroke-width="1" rx="3"/>'
         )
-    labels = [
-        (cx, cy - bust_r - 14, f"neck {neck} sts"),
-        (cx - bust_r + 2, cy, f"back {back_final}", "end"),
-        (cx + bust_r - 2, cy, f"front {front_final}"),
-        (cx + 10, cy - neck_r - 16, f"arm {sleeve_final} sts"),
-        (cx - bust_r + 6, cy + bust_r - 12, f"underarm +{armpit} each side"),
-        (cx, cy + bust_r + 26, f"body {bust} sts in the round · "
-                               f"~{_num(depth_in)} in neck to underarm"),
+
+        # Total label below bar
+        parts.append(
+            f'<text x="{cx}" y="{bar_y + bar_h + 16}" '
+            f'text-anchor="middle" class="sublabel">'
+            f'total at underarm: {total} sts ({front_final}+{back_final}+{sleeve_final}+{sleeve_final})'
+            f'</text>'
+        )
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def _raglan_growth_svg(front_start, back_start, sleeve_start, front_final,
+                       back_final, sleeve_final, inc_rounds, freq, seg, inc):
+    """Line chart showing how each raglan section grows from neck to underarm."""
+    vw = 420
+    vh = 240
+    pad_l, pad_r, pad_t, pad_b = 55, 20, 30, 50
+    cw = vw - pad_l - pad_r
+    ch = vh - pad_t - pad_b
+
+    total_rounds = inc_rounds if freq == "every_round" else 2 * inc_rounds
+    max_sts = max(front_final, back_final, sleeve_final) + 2
+    min_sts = min(front_start, back_start, sleeve_start, 0)
+
+    def x(round_num):
+        return pad_l + (round_num / max(total_rounds, 1)) * cw
+
+    def y(sts):
+        return pad_t + ch - ((sts - min_sts) / max(max_sts - min_sts, 1)) * ch
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{vw}" height="{vh}" '
+        f'viewBox="0 0 {vw} {vh}" '
+        'font-family="system-ui, -apple-system, sans-serif">',
+        '<defs><style>',
+        '.chart-label { font-size: 10px; fill: #555; }',
+        '.chart-title { font-size: 12px; fill: #2c3e50; font-weight: bold; }',
+        '.grid-line { stroke: #eee; stroke-width: 1; }',
+        '.inc-marker { stroke: #ddd; stroke-width: 1; stroke-dasharray: 3,3; }',
+        '</style></defs>',
     ]
-    for x, y, text, *anchor in labels:
-        anchor_attr = " text-anchor='end'" if anchor and anchor[0] == "end" else ""
+
+    # Grid lines (horizontal, every 10 stitches)
+    step = 20 if max_sts - min_sts > 60 else 10
+    v = int(min_sts // step * step)
+    while v <= max_sts + step:
         parts.append(
-            f'<text x="{x}" y="{y}" font-size="11" fill="#5a2a75"'
-            f"{anchor_attr}"
-            f">{text}</text>"
+            f'<line x1="{pad_l}" y1="{y(v):.1f}" x2="{pad_l + cw}" '
+            f'y2="{y(v):.1f}" class="grid-line"/>'
         )
+        parts.append(
+            f'<text x="{pad_l - 6}" y="{y(v) + 3}" text-anchor="end" '
+            f'class="chart-label">{v}</text>'
+        )
+        v += step
+
+    # X axis labels
+    for r in range(0, total_rounds + 1, max(1, total_rounds // 5)):
+        parts.append(
+            f'<text x="{x(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" '
+            f'class="chart-label">{r}</text>'
+        )
+    parts.append(
+        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" '
+        f'class="chart-label">raglan rounds</text>'
+    )
+
+    # Data lines (front/back and sleeve)
+    series = [
+        ([front_start, front_final], "#1abc9c", "front"),
+        ([back_start, back_final], "#e67e22", "back"),
+        ([sleeve_start, sleeve_final], "#3498db", "sleeve (each)"),
+    ]
+    for pts, color, label in series:
+        x1, y1 = x(0), y(pts[0])
+        x2, y2 = x(total_rounds), y(pts[1])
+        parts.append(
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            f'stroke="{color}" stroke-width="2.5"/>'
+        )
+        # Start dot
+        parts.append(f'<circle cx="{x1:.1f}" cy="{y1:.1f}" r="3" fill="{color}"/>')
+        # End dot
+        parts.append(f'<circle cx="{x2:.1f}" cy="{y2:.1f}" r="3" fill="{color}"/>')
+        # End label
+        parts.append(
+            f'<text x="{x2 + 5:.1f}" y="{y2 + 3:.1f}" font-size="9" '
+            f'fill="{color}" font-weight="bold">{pts[1]}</text>'
+        )
+
+    # Legend (top right)
+    lx = pad_l + cw - 8
+    for i, (_, color, label) in enumerate(reversed(series)):
+        ly = pad_t + 6 + i * 14
+        parts.append(
+            f'<line x1="{lx - 30}" y1="{ly}" x2="{lx - 16}" y2="{ly}" '
+            f'stroke="{color}" stroke-width="2"/>'
+        )
+        parts.append(
+            f'<text x="{lx - 13}" y="{ly + 3}" font-size="9" '
+            f'fill="{color}" text-anchor="start">{label}</text>'
+        )
+
+    # Title
+    parts.append(
+        f'<text x="{pad_l + cw / 2}" y="{pad_t - 10}" text-anchor="middle" '
+        f'class="chart-title">Raglan yoke growth ({total_rounds} rounds)</text>'
+    )
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def _sleeve_taper_svg(arm, wrist, sleeve_shaping_rounds, rg, sleeve_sched):
+    """Visual showing the sleeve taper from upper arm to wrist."""
+    vw = 420
+    vh = 220
+    pad_l, pad_r, pad_t, pad_b = 50, 30, 30, 40
+    cw = vw - pad_l - pad_r
+    ch = vh - pad_t - pad_b
+
+    total_r = max(sleeve_shaping_rounds, 1)
+    max_sts = arm + 4
+    min_sts = max(wrist - 4, 0)
+
+    def px(round_num):
+        return pad_l + (round_num / total_r) * cw
+
+    def py(sts):
+        return pad_t + ch - ((sts - min_sts) / max(max_sts - min_sts, 1)) * ch
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{vw}" height="{vh}" '
+        f'viewBox="0 0 {vw} {vh}" '
+        'font-family="system-ui, -apple-system, sans-serif">',
+        '<defs><style>',
+        '.taper-label { font-size: 10px; fill: #555; }',
+        '.taper-title { font-size: 12px; fill: #2c3e50; font-weight: bold; }',
+        '.taper-grid { stroke: #eee; stroke-width: 1; }',
+        '.taper-shade { fill: #3498db; opacity: 0.12; }',
+        '.taper-line { stroke: #3498db; stroke-width: 2.5; fill: none; }',
+        '</style></defs>',
+    ]
+
+    # Grid
+    step = 10 if arm - wrist > 30 else 5
+    v = int(min_sts // step * step)
+    while v <= max_sts + step:
+        parts.append(
+            f'<line x1="{pad_l}" y1="{py(v):.1f}" x2="{pad_l + cw}" '
+            f'y2="{py(v):.1f}" class="taper-grid"/>'
+        )
+        parts.append(
+            f'<text x="{pad_l - 6}" y="{py(v) + 3}" text-anchor="end" '
+            f'class="taper-label">{v}</text>'
+        )
+        v += step
+
+    for r in range(0, total_r + 1, max(1, total_r // 5)):
+        parts.append(
+            f'<text x="{px(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" '
+            f'class="taper-label">{r}</text>'
+        )
+    parts.append(
+        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" '
+        f'class="taper-label">shaping rounds</text>'
+    )
+
+    # Shaded area under the line
+    pts = [(px(0), py(arm))]
+    for r in range(total_r + 1):
+        # Estimate stitch count at this round
+        frac = r / total_r
+        est = arm - frac * (arm - wrist)
+        pts.append((px(r), py(est)))
+    pts.append((px(total_r), py(wrist)))
+    pts.append((px(total_r), pad_t + ch))
+    pts.append((px(0), pad_t + ch))
+    poly = " ".join(f"{px:.1f},{py:.1f}" for px, py in pts)
+    parts.append(f'<polygon points="{poly}" class="taper-shade"/>')
+
+    # Main line
+    line_pts = [(px(0), py(arm))]
+    for r in range(total_r + 1):
+        frac = r / total_r
+        est = arm - frac * (arm - wrist)
+        line_pts.append((px(r), py(est)))
+    line_str = " ".join(f"{lx:.1f},{ly:.1f}" for lx, ly in line_pts)
+    parts.append(f'<polyline points="{line_str}" class="taper-line"/>')
+
+    # Start/end dots and labels
+    parts.append(f'<circle cx="{px(0):.1f}" cy="{py(arm):.1f}" r="4" fill="#3498db"/>')
+    parts.append(
+        f'<text x="{px(0) + 6:.1f}" y="{py(arm) - 6:.1f}" font-size="11" '
+        f'fill="#3498db" font-weight="bold">{arm} sts (arm)</text>'
+    )
+    parts.append(f'<circle cx="{px(total_r):.1f}" cy="{py(wrist):.1f}" r="4" fill="#e74c3c"/>')
+    parts.append(
+        f'<text x="{px(total_r) - 6:.1f}" y="{py(wrist) - 6:.1f}" '
+        f'text-anchor="end" font-size="11" '
+        f'fill="#e74c3c" font-weight="bold">{wrist} sts (wrist)</text>'
+    )
+
+    # Title
+    parts.append(
+        f'<text x="{pad_l + cw / 2}" y="{pad_t - 10}" text-anchor="middle" '
+        f'class="taper-title">Sleeve shaping ({sleeve_sched})</text>'
+    )
+
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -740,7 +1171,25 @@ def _render_sections(sections):
             parts.append(_render_steps(section["steps"]))
         table = section.get("table")
         if table:
-            parts.append(_render_table(table))
+            if section.get("collapsible"):
+                shown = table["rows"][:MAX_TABLE_ROWS]
+                total = len(table["rows"])
+                parts.append("<details class='plan-details'>")
+                parts.append(
+                    f"<summary>Show round-by-round stitch table "
+                    f"({len(shown)} of {total} rounds)</summary>"
+                )
+                parts.append(_render_table({"columns": table["columns"],
+                                            "rows": shown}))
+                if total > MAX_TABLE_ROWS:
+                    parts.append(
+                        f"<p class='plan-note'>The first {MAX_TABLE_ROWS} "
+                        "rounds are shown; the exported pattern contains the "
+                        "complete schedule.</p>"
+                    )
+                parts.append("</details>")
+            else:
+                parts.append(_render_table(table))
         elif section.get("rows"):
             parts.append(_render_rows(section["rows"]))
         parts.append("</section>")
@@ -751,7 +1200,34 @@ def _render_sections(sections):
 def to_html(result):
     """Render the schematic plus the full guided sweater plan."""
     plan = result["plan"]
-    blocks = [f"<div class='output-box'>{result['svg']}</div>"]
+    m = result["meta"]
+
+    # Stat pills: at-a-glance key numbers
+    pills = [
+        ("Cast on", f"{m['neck']} sts"),
+        ("Body", f"{m['bust']} sts"),
+        ("Sleeve", f"{m['arm']} sts"),
+        ("Raglan", f"~{_num(m['depth_in'])} in"),
+        ("Body length", f"{_num(m['body_len'])} in"),
+        ("Sleeve length", f"{_num(m['sleeve_len'])} in"),
+    ]
+    pill_html = "".join(
+        f"<div class='raglan-pill'><span class='label'>{label}</span>"
+        f"<span class='value'>{value}</span></div>"
+        for label, value in pills
+    )
+
+    blocks = [
+        "<style>"
+        ".raglan-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin:0.6rem 0;}"
+        ".raglan-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.4rem 0.65rem;background:#fdfcfa;flex:1 1 auto;min-width:90px;text-align:center;}"
+        ".raglan-pill .label{display:block;font-size:0.72rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"
+        ".raglan-pill .value{font-size:0.95rem;font-weight:700;color:#2b2333;}"
+        "</style>",
+        f"<div class='output-box'>{result['svg']}</div>",
+        f"<div class='raglan-pills'>{pill_html}</div>",
+    ]
+
     est = result.get("_estimator_data", {})
     if est.get("stitch_count"):
         blocks.append(
@@ -776,6 +1252,26 @@ def to_html(result):
         f"<ul class='plan-assumptions'>{assumptions}</ul>"
         "</section>"
     )
+
+    # Raglan growth chart
+    growth_svg = _raglan_growth_svg(
+        m["front_start"], m["back_start"], m["sleeve_start"],
+        m["front_final"], m["back_final"], m["sleeve_final"],
+        m["inc_rounds"], m["freq"], m["seg"], m["inc"],
+    )
+    blocks.append(
+        f"<div class='output-box'>{growth_svg}</div>"
+    )
+
+    # Sleeve taper chart
+    taper_svg = _sleeve_taper_svg(
+        m["arm"], m["wrist"], m["sleeve_shaping_rounds"], m["rg"],
+        m["sleeve_sched"],
+    )
+    blocks.append(
+        f"<div class='output-box'>{taper_svg}</div>"
+    )
+
     blocks.append("<h3 class='plan-title'>Your knitting plan</h3>")
     blocks.append(_render_sections(plan["sections"]))
     return "\n".join(blocks)

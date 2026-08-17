@@ -206,7 +206,8 @@
 
 <script type="py">
     from pyknit.pyscript._assets import shared
-    from pyknit.pyscript._demos import yarn_estimator as DEMO
+    from pyknit.pyscript._demos import yarn_estimator as _yarn_estimator
+    DEMO = _yarn_estimator.DEMO
 
     # Wire up the main friendly-mode estimate button
     def run_friendly(event=None):
