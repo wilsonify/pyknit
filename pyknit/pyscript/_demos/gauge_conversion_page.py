@@ -10,8 +10,6 @@ Both are wrapped in a ``DEMO`` dict so ``shared.bootstrap_demo`` can be used
 for the chart section, while the gauge-calc section is wired separately.
 """
 
-import sys
-
 from pyknit.pyscript._assets import shared
 
 READY = False
@@ -19,6 +17,9 @@ BOOT_ERROR = None
 parse_chart = None
 GaugeSwatch = None
 convert_stitch_measure = None
+
+latest_calc_result = None
+latest_chart_result = None
 
 
 # --------------------------------------------------------------------------
@@ -74,6 +75,16 @@ def calc_to_html(result):
     )
 
 
+def calc_to_text(result):
+    """Human-readable export text for the gauge conversion."""
+    return (
+        f"{result['measurement']:g} in at the pattern gauge "
+        f"({result['pattern_st']} stitches / {result['pattern_meas']} in) "
+        f"becomes {result['result']:.2f} in at your gauge "
+        f"({result['my_st']} stitches / {result['my_meas']} in)."
+    )
+
+
 # --------------------------------------------------------------------------
 # Chart rendering compute (uses shared module — no duplicate code)
 # --------------------------------------------------------------------------
@@ -117,7 +128,7 @@ def _bootstrap_runtime():
     global READY, BOOT_ERROR, parse_chart, GaugeSwatch, convert_stitch_measure
 
     try:
-        print("Attempting to import pyknit...", file=sys.stderr)
+        print("Attempting to import pyknit...")
         import pyknit  # noqa: F401
         from pyknit.Chart import parse_chart as _parse_chart
         from pyknit import GaugeSwatch as _GaugeSwatch
@@ -129,16 +140,17 @@ def _bootstrap_runtime():
         READY = True
         shared.set_status("ready", "pyknit loaded", "Edit inputs, then click the button.")
         shared.set_buttons_enabled(True)
-        print("pyknit imported successfully", file=sys.stderr)
+        print("pyknit imported successfully")
     except Exception as exc:
         READY = False
         BOOT_ERROR = str(exc)
         shared.set_status("error", f"Failed to load pyknit: {exc}")
         shared.set_buttons_enabled(False)
-        print(f"ERROR: Failed to load pyknit: {exc}", file=sys.stderr)
+        print(f"ERROR: Failed to load pyknit: {exc}")
 
 
 def _handle_calc(event=None):
+    global latest_calc_result
     if not READY:
         shared.show_error("calc-error", "pyknit is not loaded")
         return
@@ -152,6 +164,7 @@ def _handle_calc(event=None):
             "measurement": shared.value("measurement"),
         }
         result = compute_calc(inputs)
+        latest_calc_result = result
         shared.set_html("calc-output", calc_to_html(result))
         shared.hide_error("calc-error")
         return result
@@ -165,6 +178,7 @@ def _handle_calc(event=None):
 
 
 def _handle_chart(event=None):
+    global latest_chart_result
     if not READY:
         shared.show_error("chart-error", "pyknit is not loaded")
         return
@@ -172,6 +186,7 @@ def _handle_chart(event=None):
     try:
         inputs = {"pattern": shared.value("pattern-input")}
         result = compute_chart(inputs)
+        latest_chart_result = result
         shared.set_html("chart-output", chart_to_html(result))
         shared.hide_error("chart-error")
         return result
@@ -203,11 +218,25 @@ def bootstrap_page():
 
     shared.bind_click("run-calc", _handle_calc)
     shared.bind_click("run-chart", _handle_chart)
+    shared.bind_export_pattern(
+        "export-calc",
+        lambda: (calc_to_text(latest_calc_result) if latest_calc_result else ""),
+        title="gauge-conversion",
+    )
+    shared.bind_export_pattern(
+        "export-chart",
+        lambda: (
+            shared.export_pattern_text(latest_chart_result)
+            if latest_chart_result
+            else ""
+        ),
+        title="gauge-conversion-chart",
+    )
 
     _enable_fields()
 
     if READY:
-        print("Running default calculations...", file=sys.stderr)
+        print("Running default calculations...")
         _handle_calc()
         _handle_chart()
 
