@@ -54,3 +54,17 @@ def test_total_rows_half_pi_matches_full_pi_rounds():
     assert pi_shawl.total_rows_half_pi(50, 3) == pi_shawl.total_rounds_for_pi_shawl(
         50, 3
     )
+
+
+def test_invalid_pi_shawl_inputs_raise_value_error():
+    for args in [(0, 5), (-1, 5), (10, 0), (10, -1), (float("nan"), 5), (10, float("nan"))]:
+        with pytest.raises(ValueError):
+            pi_shawl.total_rounds_for_pi_shawl(*args)
+
+
+def test_pi_shawl_increase_rows_show_clear_progression():
+    rows = pi_shawl.pi_shawl_increase_rows(16.5, 4.5)
+    assert rows[0] == 2
+    assert rows == sorted(rows)
+    assert rows[-1] <= pi_shawl.total_rounds_for_pi_shawl(16.5, 4.5)
+    assert rows[1] > rows[0]

@@ -134,6 +134,22 @@ class TestDemoSpecifics:
         else:
             assert half <= result["total_rounds"]
 
+    def test_pi_shawl_explains_math_and_progression(self):
+        module = load_demo("pi_shawl")
+        result = module.DEMO["compute"]({"radius": 16.5, "row_gauge": 4.5})
+        html = module.DEMO["to_html"](result)
+        assert "Full-circle increase rounds" in html
+        assert "Half-circle" in html
+        assert "2 → 6" in html or "2, 6" in html
+        assert "Formula:" in html
+        assert "rounds" in html.lower()
+
+    def test_pi_shawl_rejects_invalid_inputs(self):
+        module = load_demo("pi_shawl")
+        for bad in ({"radius": 0, "row_gauge": 4.5}, {"radius": -1, "row_gauge": 4.5}, {"radius": 10, "row_gauge": 0}):
+            with pytest.raises(ValueError):
+                module.DEMO["compute"](bad)
+
     def test_hat_crown_rounds(self):
         module = load_demo("hat_crown")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
