@@ -44,6 +44,19 @@ def compute(inputs):
     from pyknit.estimate import estimate_knitting_time, format_knitting_time
     from pyknit.GaugeSwatch import GaugeSwatch
 
+    for field in (
+        "stitch_count",
+        "stitch_measure",
+        "row_count",
+        "row_measure",
+        "yards_per_stitch",
+        "grams_per_stitch",
+        "ball_yardage",
+        "ball_weight",
+    ):
+        if float(inputs[field]) <= 0:
+            raise ValueError(f"{field} must be positive")
+
     gs = GaugeSwatch(
         stitch_count=float(inputs["stitch_count"]),
         stitch_measure=float(inputs["stitch_measure"]),
@@ -56,6 +69,8 @@ def compute(inputs):
     project_stitches = int(inputs["project_stitches"])
     if project_stitches <= 0:
         raise ValueError("project stitches must be positive")
+    if float(inputs["seconds_per_stitch"]) <= 0:
+        raise ValueError("seconds per stitch must be positive")
 
     yards = gs.estimate_yardage(project_stitches)
     grams = gs.estimate_weight(project_stitches)
@@ -66,8 +81,8 @@ def compute(inputs):
 
     ball_yards = float(inputs["ball_yardage"])
     ball_grams = float(inputs["ball_weight"])
-    balls = max(1, -(-yards // ball_yards)) if ball_yards > 0 else 1
-    balls_by_weight = max(1, -(-grams // ball_grams)) if ball_grams > 0 else 1
+    balls = max(1, -(-yards // ball_yards))
+    balls_by_weight = max(1, -(-grams // ball_grams))
 
     return {
         "stitch_gauge": round(gs.stitch_gauge(), 2),
