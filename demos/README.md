@@ -15,13 +15,13 @@ The page content lives in `demos/` and all Python logic stays inside the
 - `pyknit/pyscript/_demos/<name>.py` — plain Python modules exposing a `DEMO` dict (`TITLE`, `DEFAULT_INPUTS`, `compute`, `to_html`)
 
 Each demo page pulls its Python modules straight from the package
-(`../../pyknit/pyscript/...`), so the site is served from the repository root
-(never from `demos/` alone).
+(`../../pyknit/pyscript/...`), and the site is served from the `demos/`
+directory itself.
 
 > **Important:** does the demo page still point at the local wheel? Each demo's
-> `py-config` installs `../_wheel/pyknit-<version>-py3-none-any.whl` (relative
-> to the demo page, resolved against `demos/_wheel/`). If you bump the package
-> version, rebuild the wheel and update every `py-config` block:
+> `py-config` installs `/_wheel/pyknit-<version>-py3-none-any.whl` from the
+> demos web root. If you bump the package version, rebuild the wheel and
+> update every `py-config` block:
 
 ```bash
 cd demos
@@ -40,7 +40,6 @@ functions), so pointing at PyPI would produce import errors in every demo.
 | Even Shaping | `increase_evenly` / `decrease_evenly` with a row diagram |
 | Hat Crown Planner | `Hat.Hat.crown_decreases` |
 | Pi Shawl Planner | `pi_shawl` (doubling rounds for a circular shawl) |
-| Pattern I/O | `pyknit.io` CSV/JSON export and round-trip |
 | Raglan Sweater | `raglan_increases` (top-down marker setup) |
 | Shawl Shapes | `shawl_shapes.generate_shawl` for crescent/triangle/square/rectangle |
 | Sleeve Decreases | `sleeve_decreases` (evenly-spaced decrease rows) |
@@ -49,8 +48,9 @@ functions), so pointing at PyPI would produce import errors in every demo.
 
 Each demo runs entirely in the browser, uses real pyKnit functions where
 available, degrades gracefully when a newer pyknit API is absent, and shows a
-clear error message instead of crashing. The logic modules are covered by the
-local test suite in `test/test_pyscript_demos.py`.
+clear error message instead of crashing. CSV/JSON pattern round-trips are
+still covered by the local test suite, but Pattern I/O is no longer a
+standalone demo card.
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ make setup
 make serve
 ```
 
-Then open `http://localhost:8000/demos/index.html`.
+Then open `http://localhost:8000/index.html`.
 
 You can also do setup + serve in one command:
 
@@ -85,9 +85,9 @@ Other useful targets:
 - `make favicon` creates `demos/favicon.ico` if missing
 - `make serve PORT=9000` serves on a different port
 
-The demo pages load Python from `pyknit/pyscript/`, so serve the **repository
-root** (the folder containing both `demos/` and `pyknit/`), then open
-`/demos/index.html`.
+The demo pages load Python from `pyknit/pyscript/`, so serve the **demos/**
+directory (the folder containing `index.html` and the demo subdirectories),
+then open `/index.html`.
 
 **Python (built-in):**
 ```bash
@@ -111,7 +111,7 @@ php -S localhost:8000
 
 Then open your browser and navigate to:
 ```
-http://localhost:8000/demos/index.html
+http://localhost:8000/index.html
 ```
 
 This is the hub page — every demo has its own link (e.g. `hat-crown/demo.html`, `sock-calculator/demo.html`).
@@ -382,8 +382,8 @@ Self-contained rendering in the HTML - works with any version!
 
 The demo is **ready to use now**:
 
-1. Run: `python -m http.server` from the repository root
-2. Open: `http://localhost:8000/demos/index.html`
+1. Run: `cd demos && make serve`
+2. Open: `http://localhost:8000/index.html`
 3. Wait 30-60 seconds for PyScript to load
 4. Try gauge conversion and chart rendering
 

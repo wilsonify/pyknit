@@ -430,11 +430,13 @@ def export_pattern_text(result: Any) -> str:
 def _download_text_file(filename: str, text: str) -> bool:
     """Download plain text in-browser; no-op outside the browser."""
     try:
-        from js import Blob, URL, document
+        from js import document
     except Exception:
         return False
-    blob = Blob.new([text], {"type": "text/plain;charset=utf-8"})
-    url = URL.createObjectURL(blob)
+
+    encoded = text.replace("%", "%25").replace("\n", "%0A").replace("\r", "%0D").replace(" ", "%20")
+    url = f"data:text/plain;charset=utf-8,{encoded}"
+
     link = document.createElement("a")
     link.href = url
     link.download = filename
@@ -444,7 +446,6 @@ def _download_text_file(filename: str, text: str) -> bool:
         link.click()
     finally:
         link.remove()
-        URL.revokeObjectURL(url)
     return True
 
 

@@ -11,7 +11,7 @@ help:
 	@echo "  make setup         Build local wheel and ensure favicon exists"
 	@echo "  make wheel         Build local wheel into demos/_wheel"
 	@echo "  make favicon       Create an empty demos/favicon.ico if missing"
-	@echo "  make serve         Run http.server from repo root (default port 8000)"
+	@echo "  make serve         Run http.server from demos/ (default port 8000)"
 	@echo "  make run           setup + serve"
 	@echo "  make clean         Remove built wheel artifacts"
 	@echo ""
@@ -29,7 +29,7 @@ favicon:
 	test -f favicon.ico || : > favicon.ico
 
 serve:
-	cd .. && $(PYTHON) -m http.server $(PORT)
+	cd .. && $(PYTHON) -m http.server $(PORT) --directory demos
 
 run: setup serve
 
