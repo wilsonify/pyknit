@@ -181,6 +181,25 @@ def compute(inputs):
         )
     calc_neck = neck + pre
 
+    # The per-section starting counts (identical math to raglan_increases):
+    # each increase round adds inc/4 stitches to each of the four sections,
+    # so back out that growth to get the marker counts.
+    seg = inc // 4  # stitches added to each section per increase round
+    body_start = bust / 2 - inc_rounds * seg - armpit
+    front_start = math.ceil(body_start)
+    back_start = math.floor(body_start)
+    sleeve_start = arm - armpit - inc_rounds * seg
+
+    if min(front_start, back_start, sleeve_start) < 1:
+        worst = min(front_start, back_start, sleeve_start)
+        raise ValueError(
+            f"The neck cast-on ({neck} sts) is too small for the bust and "
+            f"arm measurements: the smallest raglan section would start at "
+            f"{worst} stitches. Increase the neck circumference (a wider "
+            "neckline), widen the underarm cast-on, or reduce ease/bust so "
+            "the increases can distribute evenly."
+        )
+
     try:
         raglan = raglan_increases(
             neck,
@@ -201,13 +220,6 @@ def compute(inputs):
     match_incrow = re.search(r"Increase row:\s*(.*?)Marker setup:", raglan)
     inc_row_str = match_incrow.group(1).strip() if match_incrow else ""
 
-    # The per-section starting counts (identical math to raglan_increases).
-    body_start = bust / 2 - 2 * inc_rounds - armpit
-    front_start = math.ceil(body_start)
-    back_start = math.floor(body_start)
-    sleeve_start = arm - armpit - 2 * inc_rounds
-
-    seg = inc // 4  # stitches added to each of the 4 sections per increase round
     raglan_total_rounds = inc_rounds if freq == "every_round" else 2 * inc_rounds
     depth_in = raglan_total_rounds / rg
 
@@ -333,6 +345,14 @@ def compute(inputs):
         "result": raglan,
         "svg": _sweater_svg(neck, front_final, back_final, sleeve_final,
                             armpit, bust, depth_in),
+        "_estimator_data": {
+            "stitch_count": (
+                round(bust * body_total_rounds)
+                + round(arm * sleeve_total_rounds * 2)
+            ),
+            "project_type": "sweater",
+            "source": "raglan_planner",
+        },
         "meta": {
             "neck": neck,
             "bust": bust,
@@ -373,19 +393,24 @@ def compute(inputs):
 
 def _math_section(v):
     """Section 0: the visible math behind every derived number."""
+
+    def derived(raw, final, suffix):
+        raw = int(round(raw))
+        arrow = f" -> {final}" if final != raw else ""
+        return f"{raw}{arrow}{suffix}"
+
     rows = [
         f"Gauge: {_num(v['st'])} sts/in x {_num(v['rg'])} rows/in (blocked)",
         f"Neck cast-on: {_num(v['neck_circ'])} in x {_num(v['st'])} = "
-        f"{round(v['neck_circ'] * v['st'])} -> {v['neck']} (rounded even)",
+        f"{derived(v['neck_circ'] * v['st'], v['neck'], '')}",
         f"Bust: ({_num(v['bust_circ'])} + {_num(v['ease'])} in ease) x "
-        f"{_num(v['st'])} = {round((v['bust_circ'] + v['ease']) * v['st'])} "
-        f"-> {v['bust']} sts in the round",
+        f"{_num(v['st'])} = {derived((v['bust_circ'] + v['ease']) * v['st'], v['bust'], ' sts in the round')}",
         f"Upper arm: {_num(v['upper_arm'])} in x {_num(v['st'])} = "
-        f"{round(v['upper_arm'] * v['st'])} -> {v['arm']} sts",
+        f"{derived(v['upper_arm'] * v['st'], v['arm'], ' sts')}",
         f"Underarm cast-on (each side): {_num(v['underarm_w'])} in x "
-        f"{_num(v['st'])} = {round(v['underarm_w'] * v['st'])} -> {v['armpit']} sts",
+        f"{_num(v['st'])} = {derived(v['underarm_w'] * v['st'], v['armpit'], ' sts')}",
         f"Wrist: {_num(v['wrist_circ'])} in x {_num(v['st'])} = "
-        f"{round(v['wrist_circ'] * v['st'])} -> {v['wrist']} sts",
+        f"{derived(v['wrist_circ'] * v['st'], v['wrist'], ' sts')}",
         f"Raglan increases: {v['needed']} stitches between neck and underarm, "
         f"{v['inc']} per increase round -> {v['inc_rounds']} increase rounds "
         f"({_freq_phrase(v['freq'])}, {v['raglan_total_rounds']} rounds, about "
@@ -655,10 +680,11 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust,
                                f"~{_num(depth_in)} in neck to underarm"),
     ]
     for x, y, text, *anchor in labels:
+        anchor_attr = " text-anchor='end'" if anchor and anchor[0] == "end" else ""
         parts.append(
-            f'<text x="{x}" y="{y}" font-size="11" fill="#5a2a75" '
-            f'{"text-anchor=\'end\'" if anchor and anchor[0] == "end" else ""}'
-            f'>{text}</text>'
+            f'<text x="{x}" y="{y}" font-size="11" fill="#5a2a75"'
+            f"{anchor_attr}"
+            f">{text}</text>"
         )
     parts.append("</svg>")
     return "\n".join(parts)
@@ -726,6 +752,13 @@ def to_html(result):
     """Render the schematic plus the full guided sweater plan."""
     plan = result["plan"]
     blocks = [f"<div class='output-box'>{result['svg']}</div>"]
+    est = result.get("_estimator_data", {})
+    if est.get("stitch_count"):
+        blocks.append(
+            "<div class='button-row'><button class='btn-secondary send-to-estimator' "
+            f"data-stitches='{est['stitch_count']}' data-type='sweater'>"
+            "Send to Yarn Estimator &rarr;</button></div>"
+        )
 
     if plan["warnings"]:
         items = "".join(f"<li>{_esc(w)}</li>" for w in plan["warnings"])

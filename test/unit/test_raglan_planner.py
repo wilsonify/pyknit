@@ -161,6 +161,16 @@ class TestRaglanSweaterPlan:
         ):
             assert needle in text, needle
 
+    def test_non_standard_increase_rate_stays_consistent(self):
+        # 12 increases per round must still produce marker counts that sum
+        # to calc_neck and a final count that sums to working.
+        _, result = self._compute(increases_per_round=12)
+        m = result["meta"]
+        assert m["inc"] == 12
+        assert m["seg"] == 3
+        assert m["front_start"] + m["back_start"] + 2 * m["sleeve_start"] == m["calc_neck"]
+        assert m["front_final"] + m["back_final"] + 2 * m["sleeve_final"] == m["working"]
+
     def test_export_includes_visible_math(self):
         _, result = self._compute()
         text = shared.export_pattern_text(result)
@@ -177,7 +187,7 @@ class TestRaglanSweaterPlan:
         assert "Traceback" not in page
 
     def test_small_raglan_gives_friendly_error(self):
-        with pytest.raises(ValueError, match="distributed evenly"):
+        with pytest.raises(ValueError, match="too small for the bust"):
             self._compute(
                 upper_arm_circumference=6,
                 wrist_circumference=5,
@@ -207,11 +217,27 @@ class TestRaglanSweaterPlan:
             self._compute(sleeve_length=0.5)
 
     def test_wrist_rounding_to_arm_rejected(self):
-        # upper arm 6 in -> 30 sts, wrist 6 in -> 30 sts (no taper room)
+        # upper arm 6 in -> 30 sts; wrist 5.8 in -> 29 -> 30 sts (even)
+        # so the rounded wrist equals the upper arm: no taper room.
         with pytest.raises(ValueError, match="no room for"):
             self._compute(
                 upper_arm_circumference=6,
-                wrist_circumference=6,
+                wrist_circumference=5.8,
+            )
+
+    def test_infeasible_large_bust_gives_clear_error(self):
+        # A large bust with a small neck cannot distribute the increases
+        # evenly (the sleeves would start at zero stitches) and must explain
+        # what to change rather than emitting nonsense.
+        with pytest.raises(ValueError, match="too small for the bust"):
+            self._compute(
+                stitches_per_inch=4.5,
+                rows_per_inch=6,
+                neck_circumference=15,
+                bust_circumference=48,
+                ease=4,
+                upper_arm_circumference=16,
+                wrist_circumference=9,
             )
 
     def test_transition_table_capped_but_export_full(self):
@@ -236,14 +262,14 @@ class TestRaglanSweaterPlan:
         _, result = self._compute(
             stitches_per_inch=4.5,
             rows_per_inch=6,
-            neck_circumference=17,
-            bust_circumference=48,
+            neck_circumference=20,
+            bust_circumference=44,
             ease=4,
-            upper_arm_circumference=16,
-            wrist_circumference=9,
+            upper_arm_circumference=14,
+            wrist_circumference=8.5,
             body_length=16,
             sleeve_length=19,
-            increases_per_round=12,
+            increases_per_round=8,
         )
         m = result["meta"]
         assert m["bust"] > 0

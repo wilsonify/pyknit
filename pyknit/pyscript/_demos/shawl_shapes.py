@@ -23,8 +23,13 @@ def to_html(result):
         f"<tr><td class='mono'>{_esc(step)}</td></tr>"
         for step in result["instructions"]
     )
+    est = result.get("_estimator_data", {})
     return (
         f"<div class='output-box'>{result['svg']}</div>"
+        "<div class='button-row'><button class='btn-secondary send-to-estimator' "
+        f"data-stitches='{est.get('stitch_count', 0)}' "
+        f"data-type='{est.get('project_type', 'custom')}'>"
+        "Send to Yarn Estimator &rarr;</button></div>"
         "<h3>Instructions</h3>"
         f"<div class='output-box'><table class='instructions'><tbody>{steps}</tbody></table></div>"
     )
@@ -64,12 +69,20 @@ def compute(inputs):
         raise ValueError("width and length must be positive")
 
     instructions = shawl_shapes.generate_shawl(shape, width, length, gauge)
+    est_stitches = gauge.measurement_to_stitches(width) * gauge.measurement_to_rows(length)
+    if shape in ("triangle", "crescent"):
+        est_stitches = est_stitches // 2
     return {
         "shape": shape,
         "width": width,
         "length": length,
         "instructions": instructions,
         "svg": _shape_svg(shape),
+        "_estimator_data": {
+            "stitch_count": est_stitches,
+            "project_type": f"shawl_{shape}" if shape in ("triangle", "crescent", "rectangle") else "custom",
+            "source": "shawl_shapes_planner",
+        },
     }
 
 

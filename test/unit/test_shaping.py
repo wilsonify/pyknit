@@ -159,6 +159,36 @@ def test_raglan_increases_standard_input():
     assert result == "Marker setup: k12, pm, k26 (arm), pm, k24, pm, k26 (arm), pm k12"
 
 
+def test_raglan_increases_generalizes_increase_rate():
+    """The marker distribution must stay consistent for any multiple-of-4
+    increase rate: the marker counts always sum to calculated_neck (and the
+    post-increase total reaches working_stitches)."""
+    result = pyknit.raglan_increases(
+        neck_stitches=84,
+        arm_stitches=40,
+        bust_stitches=80,
+        neck_to_bust_rows=5,
+        increase_per_increase_row=12,
+        armpit_stitches=4,
+    )
+    assert result == "Marker setup: k10, pm, k21 (arm), pm, k21, pm, k21 (arm), pm k11"
+    # 10 + 21 + 21 + 21 + 11 = 84 = calculated_neck (working - 5*12)
+    assert result.count("pm") == 4
+
+
+def test_raglan_increases_rejects_non_multiple_of_4():
+    """A non-multiple-of-4 increase rate cannot divide evenly across the
+    four sections and must be rejected with a clear message."""
+    with pytest.raises(ValueError, match="multiple of 4"):
+        pyknit.raglan_increases(
+            neck_stitches=80,
+            arm_stitches=30,
+            bust_stitches=100,
+            neck_to_bust_rows=8,
+            increase_per_increase_row=6,
+        )
+
+
 def test_raglan_increases_calculated_neck_too_low():
     # Known gap in pyknit/__init__.py: when calculated_neck < neck_stitches
     # the non-increase rows are not emitted (no_increase_rows is a FIXME

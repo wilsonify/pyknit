@@ -492,6 +492,15 @@ def raglan_increases(
     'Marker setup: k15, pm, k10 (arm), pm, k30, pm, k10 (arm), pm k15'
     """
 
+    if increase_per_increase_row % 4 != 0:
+        msg = (
+            "increase_per_increase_row must be a multiple of 4 so the "
+            f"increases divide evenly across the four sections; got "
+            f"{increase_per_increase_row}"
+        )
+        logging.error(msg)
+        raise ValueError(msg)
+
     # Adjusting from collar to start of raglan
     instruction_string = ""
     # the final stitch count is bust_stitches + 2 * arm stitches
@@ -503,8 +512,20 @@ def raglan_increases(
 
     # The marker setup below distributes stitches around the body and each
     # arm; validate that these stay positive so we never emit "k-5 (arm)".
-    body_start = bust_stitches / 2 - neck_to_bust_rows * 2 - armpit_stitches
-    arm = arm_stitches - armpit_stitches - neck_to_bust_rows * 2
+    # Each increase round adds increase_per_increase_row / 4 stitches to each
+    # of the four sections (front, back and both sleeves), so the starting
+    # counts back out that growth.
+    increments_per_section = increase_per_increase_row // 4
+    body_start = (
+        bust_stitches / 2
+        - neck_to_bust_rows * increments_per_section
+        - armpit_stitches
+    )
+    arm = (
+        arm_stitches
+        - armpit_stitches
+        - neck_to_bust_rows * increments_per_section
+    )
     if body_start < 1 or arm < 1:
         raise ValueError(
             "The stitch counts or row counts are too small for a raglan "

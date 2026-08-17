@@ -28,6 +28,10 @@ def to_html(result):
     )
     return (
         f"<div class='output-box'>{result['svg']}</div>"
+        "<div class='button-row'><button class='btn-secondary send-to-estimator' "
+        f"data-stitches='{result.get('_estimator_data', {}).get('estimated_stitches', 0)}' "
+        "data-type='shawl_triangle'>"
+        "Send to Yarn Estimator &rarr;</button></div>"
         "<div class='output-box'>"
         "<h3>How the math works</h3>"
         "<p><strong>Formula:</strong> total rounds = round(radius × round_gauge).</p>"
@@ -68,6 +72,11 @@ def compute(inputs):
         "half_pi_rows": half_pi_rows,
         "half_pi": half_pi,
         "svg": _rings_svg(total_rounds, full_pi),
+        "_estimator_data": {
+            "estimated_stitches": total_rounds * round(radius * 2),
+            "project_type": "shawl_triangle",
+            "source": "pi_shawl_planner",
+        },
     }
 
 

@@ -97,7 +97,7 @@ class TestDemoErrors:
             ("sleeve_decreases", "starting_count"),
             ("shaping", "starting_count"),
             ("raglan", "neck_circumference"),
-            ("yarn_estimator", "project_stitches"),
+            ("yarn_estimator", "stitch_gauge"),
             ("pattern_io", "pattern"),
         ],
     )
@@ -238,16 +238,44 @@ class TestDemoSpecifics:
         """Zero gauge must raise a clear message, not a raw pydantic trace."""
         module = load_demo("yarn_estimator")
         inputs = dict(module.DEMO["DEFAULT_INPUTS"])
-        inputs["stitch_count"] = 0
-        with pytest.raises(ValueError, match="stitch_count must be positive"):
+        inputs["stitch_gauge"] = 0
+        with pytest.raises(ValueError, match="stitch gauge must be positive"):
             module.DEMO["compute"](inputs)
 
     def test_yarn_estimator_friendly_ball_error(self):
         module = load_demo("yarn_estimator")
         inputs = dict(module.DEMO["DEFAULT_INPUTS"])
-        inputs["ball_yardage"] = 0
-        with pytest.raises(ValueError, match="ball_yardage must be positive"):
+        inputs["yarn_per_ball_yards"] = 0
+        with pytest.raises(ValueError, match="yards per ball must be positive"):
             module.DEMO["compute"](inputs)
+
+    def test_yarn_estimator_advanced_mode(self):
+        """Advanced mode uses per-stitch inputs."""
+        module = load_demo("yarn_estimator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["advanced_mode"] = "true"
+        inputs["project_stitches"] = 1000
+        inputs["yards_per_stitch"] = 0.05
+        result = module.DEMO["compute"](inputs)
+        assert result["yards"] == pytest.approx(50.0, rel=0.01)
+        assert result["confidence"] == "low"
+
+    def test_yarn_estimator_ranges_present(self):
+        module = load_demo("yarn_estimator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert "yards_low" in result
+        assert "yards_high" in result
+        assert result["yards_low"] < result["yards"] < result["yards_high"]
+
+    def test_yarn_estimator_all_project_types(self):
+        """Every project type produces a valid estimate."""
+        module = load_demo("yarn_estimator")
+        for ptype in ("hat", "scarf", "shawl_triangle", "sweater", "blanket"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["project_type"] = ptype
+            result = module.DEMO["compute"](inputs)
+            assert result["project_stitches"] > 0
+            assert result["yards"] > 0
 
     def test_pattern_roundtrip(self):
         module = load_demo("pattern_io")
@@ -440,6 +468,37 @@ class TestDemoSpecifics:
             "result": 49.36,
         }
         assert module.calc_to_text(module.latest_calc_result).startswith("42")
+
+    def test_no_backslash_in_fstring_expressions(self):
+        """Pyodide runs Python 3.11, which rejects backslashes inside
+        f-string expressions (Python 3.12 allows them). Any such f-string
+        in a demo module would crash the browser demo at import time even
+        though the local test runner (3.12) parses it fine."""
+        import ast
+
+        bad = []
+        for path in [*DEMOS_DIR.glob("*.py")]:
+            src = path.read_text(encoding="utf-8")
+            lines = src.splitlines()
+            try:
+                tree = ast.parse(src)
+            except SyntaxError as exc:
+                bad.append(f"{path.name}: unparseable: {exc}")
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.JoinedStr):
+                    continue
+                for val in node.values:
+                    if not isinstance(val, ast.FormattedValue):
+                        continue
+                    expr = val.value
+                    if expr.lineno == expr.end_lineno:
+                        seg = lines[expr.lineno - 1][expr.col_offset:expr.end_col_offset]
+                    else:
+                        seg = "\\n".join(lines[expr.lineno - 1:expr.end_lineno])
+                    if "\\" in seg:
+                        bad.append(f"{path.name}:{expr.lineno}: {seg.strip()}")
+        assert bad == []
 
     def test_export_buttons_present_in_all_demo_pages(self):
         """Every demo page offers an export button."""
