@@ -96,7 +96,7 @@ class TestDemoErrors:
             ("shawl_shapes", "width"),
             ("sleeve_decreases", "starting_count"),
             ("shaping", "starting_count"),
-            ("raglan", "neck_stitches"),
+            ("raglan", "neck_circumference"),
             ("yarn_estimator", "project_stitches"),
             ("pattern_io", "pattern"),
         ],
