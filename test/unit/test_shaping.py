@@ -173,6 +173,28 @@ def test_raglan_increases_calculated_neck_too_low():
     assert "Marker setup:" in result
 
 
+def test_raglan_increases_rejects_slim_arm_negative_markers():
+    """A raglan that would yield negative marker counts (e.g. 'k-5 (arm)')
+    must raise a clear error rather than emit nonsensical instructions."""
+    with pytest.raises(ValueError, match="too small"):
+        pyknit.raglan_increases(
+            neck_stitches=80,
+            arm_stitches=15,
+            bust_stitches=100,
+            neck_to_bust_rows=8,
+        )
+
+
+def test_raglan_increases_rejects_tiny_bust_negative_markers():
+    with pytest.raises(ValueError, match="too small"):
+        pyknit.raglan_increases(
+            neck_stitches=80,
+            arm_stitches=30,
+            bust_stitches=30,
+            neck_to_bust_rows=8,
+        )
+
+
 def test_sleeve_decreases_repeat_string():
     expected = (
         "[decrease row, do 7 rows in pattern] * 5 times, "
@@ -194,6 +216,20 @@ def test_sleeve_decreases_repeat_string():
 def test_sleeve_decreases_error(number_of_rows, starting_count, ending_count, expected):
     with pytest.raises(expected):
         pyknit.sleeve_decreases(number_of_rows, starting_count, ending_count)
+
+
+@pytest.mark.parametrize(
+    ("starting_count", "ending_count", "expect"),
+    [
+        (59, 60, "already smaller"),
+        (59, 59, "same as the ending count"),
+    ],
+)
+def test_sleeve_decreases_error_has_useful_message(starting_count, ending_count, expect):
+    """The ValueError for no-needed decreases must carry a readable message
+    (the demo surfaces the exception text to the knitter)."""
+    with pytest.raises(ValueError, match=expect):
+        pyknit.sleeve_decreases(10, starting_count, ending_count)
 
 
 @pytest.mark.parametrize(
