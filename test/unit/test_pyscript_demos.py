@@ -12,6 +12,8 @@ import pathlib
 
 import pytest
 
+from pyknit.pyscript._assets import shared
+
 DEMOS_DIR = pathlib.Path(__file__).parent.parent.parent / "pyknit" / "pyscript" / "_demos"
 
 DEMO_NAMES = [
@@ -254,6 +256,22 @@ class TestDemoSpecifics:
         inputs["legend"] = "japanese"
         html = module.DEMO["to_html"](module.DEMO["compute"](inputs))
         assert ("<image " in html) or ("·" in html) or ("/" in html) or ("O" in html)
+
+    def test_shared_export_text_handles_pattern_and_plan_results(self):
+        chart_module = load_demo("chart_renderer")
+        pattern_result = chart_module.DEMO["compute"](chart_module.DEMO["DEFAULT_INPUTS"])
+        pattern_text = shared.export_pattern_text(pattern_result)
+        assert "k2" in pattern_text or "p1" in pattern_text
+
+        hat_module = load_demo("hat_crown")
+        hat_result = hat_module.DEMO["compute"]({"stitches": 72, "repeats": 8})
+        hat_text = shared.export_pattern_text(hat_result)
+        assert "Round 1" in hat_text or "72 -> 64" in hat_text
+
+    def test_demo_index_no_longer_promotes_pattern_io(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        index_text = index_path.read_text(encoding="utf-8")
+        assert "Pattern I/O" not in index_text
 
 
 if __name__ == "__main__":

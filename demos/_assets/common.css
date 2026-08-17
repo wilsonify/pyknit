@@ -201,6 +201,14 @@ textarea {
   resize: vertical;
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.8rem 0;
+}
+
 button {
   padding: 0.55rem 1.1rem;
   font-size: 0.95rem;

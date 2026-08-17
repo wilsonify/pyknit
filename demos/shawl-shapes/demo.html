@@ -73,7 +73,10 @@
         <input id="row_measure" type="number" value="4" min="0.1" step="0.1" />
       </div>
     </div>
-    <button id="run" class="btn-primary">Generate Instructions</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Generate Instructions</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
     <div id="demo-output"></div>
   </section>
@@ -85,7 +88,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import shawl_shapes as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Generate Instructions")
+    shared.bootstrap_demo(DEMO, action_label="Generate Instructions", export_button_id="export-pattern")
 </script>
 </body>
 </html>

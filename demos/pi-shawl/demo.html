@@ -45,7 +45,10 @@
         <input id="row_gauge" type="number" value="4.5" min="0.1" step="0.1" />
       </div>
     </div>
-    <button id="run" class="btn-primary">Plan Shawl</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Plan Shawl</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
     <div id="demo-output"></div>
   </section>
@@ -57,7 +60,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import pi_shawl as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Plan Shawl")
+    shared.bootstrap_demo(DEMO, action_label="Plan Shawl", export_button_id="export-pattern")
 </script>
 </body>
 </html>

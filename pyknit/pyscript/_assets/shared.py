@@ -343,6 +343,145 @@ def humanize_hours(total_hours: float) -> str:
     return " ".join(parts) if parts else "under a minute"
 
 
+def _export_plan_text(plan) -> str:
+    """Render a list of step dicts like hat-crown plan rows into text."""
+    if not isinstance(plan, list):
+        return ""
+    lines = []
+    for item in plan:
+        if not isinstance(item, dict):
+            continue
+        if "instruction" in item:
+            instruction = str(item.get("instruction", "")).strip()
+            transition = str(item.get("transition", "")).strip()
+            round_no = item.get("round")
+            if round_no is not None:
+                prefix = f"Round {round_no}"
+                if instruction:
+                    line = f"{prefix}: {instruction}"
+                else:
+                    line = prefix
+                if transition and transition != "->" and transition != "-":
+                    line = f"{line} ({transition})"
+                lines.append(line)
+            else:
+                if transition:
+                    line = f"{instruction} ({transition})" if instruction else transition
+                else:
+                    line = instruction
+                if line:
+                    lines.append(line)
+    return "\n".join(line for line in lines if line)
+
+
+def export_pattern_text(result: Any) -> str:
+    """Return a human-readable knitting export for the current demo result."""
+    if result is None:
+        return ""
+    if isinstance(result, str):
+        return result.strip()
+    if isinstance(result, dict):
+        if "plan" in result and isinstance(result["plan"], list):
+            text = _export_plan_text(result["plan"])
+            if text:
+                return text
+        for key in ("instructions", "result", "pattern", "text"):
+            if key in result:
+                value = result[key]
+                if isinstance(value, str):
+                    if key != "text" and value.strip():
+                        return value.strip()
+                    if key == "text" and value.strip() and not any(
+                        k in result for k in ("instructions", "result", "pattern")
+                    ):
+                        return value.strip()
+                if isinstance(value, list):
+                    if key == "pattern":
+                        try:
+                            from pyknit.io import pattern_to_instructions
+
+                            return pattern_to_instructions(value)
+                        except Exception:
+                            pass
+                    text = "\n".join(str(item) for item in value)
+                    if text.strip():
+                        return text.strip()
+        if "svg" in result:
+            return ""
+        lines = []
+        for key, value in result.items():
+            if key in {"svg", "html", "pattern", "text"}:
+                continue
+            text = export_pattern_text(value)
+            if text.strip():
+                lines.append(f"{key}: {text}")
+        if lines:
+            return "\n".join(lines)
+        return str(result)
+    if isinstance(result, (list, tuple)):
+        if result and isinstance(result[0], dict):
+            text = _export_plan_text(result)
+            if text:
+                return text
+        return "\n".join(str(item) for item in result)
+    return str(result)
+
+
+def _download_text_file(filename: str, text: str) -> bool:
+    """Download plain text in-browser; no-op outside the browser."""
+    try:
+        from js import Blob, URL, document
+    except Exception:
+        return False
+    blob = Blob.new([text], {"type": "text/plain;charset=utf-8"})
+    url = URL.createObjectURL(blob)
+    link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    link.style.display = "none"
+    document.body.appendChild(link)
+    try:
+        link.click()
+    finally:
+        link.remove()
+        URL.revokeObjectURL(url)
+    return True
+
+
+def bind_export_pattern(
+    button_id: str,
+    result_getter,
+    filename_prefix: str = "pyknit-pattern",
+    title: Optional[str] = None,
+) -> None:
+    """Attach an export button that downloads the current demo result as text."""
+    btn = _get("#" + button_id)
+    if btn is None:
+        return
+
+    def handler(_event=None):
+        result = result_getter() if callable(result_getter) else result_getter
+        text = export_pattern_text(result)
+        if not text.strip():
+            set_status("ready", "Nothing to export yet", "Generate a result first.")
+            return
+        safe = (title or filename_prefix).lower()
+        safe = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in safe)
+        filename = f"{safe or 'pyknit-pattern'}.txt"
+        if not _download_text_file(filename, text):
+            set_status("ready", "Export is ready", "This browser does not support file downloads.")
+
+    callback = handler
+    try:
+        from pyodide.ffi import create_proxy
+
+        callback = create_proxy(handler)
+        _BOUND_PROXIES.append(callback)
+    except Exception:
+        pass
+    btn.addEventListener("click", callback)
+
+
 # --------------------------------------------------------------------------
 # page wiring used by every demo
 # --------------------------------------------------------------------------
@@ -426,6 +565,7 @@ def wire_demo(module: Optional[Any] = None) -> Any:
             f"✔ {demo.get('TITLE', 'Demo')} updated",
             "Adjust inputs and run again.",
         )
+        return result
 
     return run
 
@@ -435,6 +575,7 @@ def bootstrap_demo(
     button_id: str = "run",
     action_label: str = "Run",
     auto_run: bool = True,
+    export_button_id: Optional[str] = None,
 ) -> Any:
     """Wire a standard demo page and optionally run default inputs once."""
     set_status(
@@ -442,8 +583,46 @@ def bootstrap_demo(
         "Loading pyknit runtime...",
         "First load can take 30-60 seconds while packages initialize.",
     )
-    run = wire_demo(module)
+    demo = _normalize_demo(module)
+    latest_result = None
+
+    def run(event=None):
+        nonlocal latest_result
+        try:
+            inputs = collect_inputs(demo["DEFAULT_INPUTS"])
+            result = demo["compute"](inputs)
+            latest_result = result
+        except Exception as exc:
+            if isinstance(exc, ValueError):
+                set_status("ready", "Please check your inputs", str(exc))
+            else:
+                set_status("error", "Unexpected demo error", str(exc))
+                _log_unexpected_error()
+            show_error("demo-error", str(exc))
+            return
+        hide_error("demo-error")
+        to_html = demo.get("to_html")
+        if to_html is not None:
+            set_html("demo-output", to_html(result))
+        else:
+            set_html("demo-output", _default_result_html(result))
+        set_status(
+            "ready",
+            f"✔ {demo.get('TITLE', 'Demo')} updated",
+            "Adjust inputs and run again.",
+        )
+        return result
+
     bind_click(button_id, run)
+    if export_button_id:
+        bind_export_pattern(
+            export_button_id,
+            lambda: latest_result,
+            filename_prefix=(demo.get("TITLE", "pyknit") or "pyknit")
+            .lower()
+            .replace(" ", "-"),
+            title=demo.get("TITLE", "pyknit"),
+        )
     set_status(
         "ready",
         "✔ pyknit loaded",
