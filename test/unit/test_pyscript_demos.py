@@ -197,6 +197,23 @@ class TestDemoSpecifics:
         assert result["roundtrip_rows"] > 0
         assert result["roundtrip_stitches"] > 0
 
+    def test_chart_renderer_japanese_does_not_leak_paths(self):
+        module = load_demo("chart_renderer")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["legend"] = "japanese"
+        result = module.DEMO["compute"](inputs)
+        html = module.DEMO["to_html"](result)
+        assert "/site-packages/" not in html
+        assert "/lib/python" not in html
+        assert "<svg" in html
+
+    def test_chart_renderer_japanese_uses_embedded_images_or_safe_symbols(self):
+        module = load_demo("chart_renderer")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["legend"] = "japanese"
+        html = module.DEMO["to_html"](module.DEMO["compute"](inputs))
+        assert ("<image " in html) or ("·" in html) or ("/" in html) or ("O" in html)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -11,6 +11,10 @@ Convention shared by every ``_demos`` module:
 * ``compute(inputs)`` returns a plain dict.
 """
 
+import base64
+import importlib.resources as ir
+from pathlib import Path
+
 DEFAULT_INPUTS = {
     "pattern": (
         "k2 yo k2tog yo k1\n"
@@ -24,6 +28,7 @@ DEFAULT_INPUTS = {
 }
 
 TITLE = "Chart Renderer"
+_SYMBOL_URI_CACHE = {}
 
 
 def _parse(pattern_text, legend):
@@ -111,19 +116,88 @@ def _chart_svg(pattern):
     ]
     for y, row in enumerate(pattern):
         for x, st in enumerate(row):
-            symbol = getattr(st, "symbol", "?").strip() or "·"
+            raw_symbol = str(getattr(st, "symbol", "?"))
             parts.append(
                 f'<rect x="{10 + x * cell}" y="{10 + y * cell}" '
                 f'width="{cell - 1}" height="{cell - 1}" rx="3" fill="#f3ecf7" '
                 'stroke="#7b3fa0" stroke-width="1"/>'
             )
-            parts.append(
-                f'<text x="{10 + x * cell + cell / 2}" '
-                f'y="{10 + y * cell + cell / 2 + 4}" font-size="13" '
-                f'fill="#5a2a75" text-anchor="middle">{_esc(symbol)}</text>'
-            )
+            symbol_href = _symbol_href(raw_symbol)
+            if symbol_href is not None:
+                parts.append(
+                    f'<image x="{10 + x * cell + 2}" y="{10 + y * cell + 2}" '
+                    f'width="{cell - 5}" height="{cell - 5}" href="{symbol_href}" />'
+                )
+            else:
+                symbol = _display_symbol(st)
+                parts.append(
+                    f'<text x="{10 + x * cell + cell / 2}" '
+                    f'y="{10 + y * cell + cell / 2 + 4}" font-size="13" '
+                    f'fill="#5a2a75" text-anchor="middle">{_esc(symbol)}</text>'
+                )
     parts.append("</svg>")
     return "\n".join(parts)
+
+
+def _display_symbol(stitch):
+    symbol = str(getattr(stitch, "symbol", "?")).strip()
+    if not symbol:
+        return "·"
+    if _looks_like_path(symbol):
+        # Japanese legend may expose package paths; never render those literally.
+        cat = str(getattr(stitch, "category", "") or "")
+        if cat == "decrease":
+            return "/"
+        if cat == "yarn-over":
+            return "O"
+        if cat == "purl":
+            return "."
+        return "·"
+    return symbol
+
+
+def _looks_like_path(symbol):
+    return symbol.endswith(".png") or "/" in symbol or "\\" in symbol
+
+
+def _symbol_href(symbol):
+    """Convert a symbol image path into a browser-safe image href."""
+    if not _looks_like_path(symbol):
+        return None
+    name = Path(symbol).name
+    if not name or not name.endswith(".png"):
+        return None
+    cached = _SYMBOL_URI_CACHE.get(name)
+    if cached is not None:
+        return cached
+
+    data = _read_symbol_bytes(symbol, name)
+    if data is None:
+        # Fall back to vendored static assets in demos/_assets.
+        href = "/_assets/japanese-symbols/" + name
+        _SYMBOL_URI_CACHE[name] = href
+        return href
+
+    uri = "data:image/png;base64," + base64.b64encode(data).decode("ascii")
+    _SYMBOL_URI_CACHE[name] = uri
+    return uri
+
+
+def _read_symbol_bytes(symbol, name):
+    try:
+        p = Path(symbol)
+        if p.is_file():
+            return p.read_bytes()
+    except Exception:
+        pass
+
+    try:
+        asset = ir.files("pyknit").joinpath("symbols", "japanese", name)
+        if asset.is_file():
+            return asset.read_bytes()
+    except Exception:
+        pass
+    return None
 
 
 def _esc(text):
