@@ -68,13 +68,18 @@ def compute(inputs):
 
 
 def _row_svg(starting, number, increasing):
-    """Small diagram of a round: cells with +/− markers on the changes."""
-    width = 560
+    """Small diagram of a round: cells with +/− markers on the changes.
+
+    For large rounds the diagram shows a representative slice (first ~40
+    cells) rather than one cell per stitch, so the preview stays readable.
+    """
     cell = 18
     margin = 40
     total = starting
     gap = total / number
     height = 110
+    shown = min(total, 40)
+    width = max(560, margin * 2 + shown * cell)
 
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" '
@@ -83,7 +88,7 @@ def _row_svg(starting, number, increasing):
     x = margin
     marker = "+" if increasing else "-"
     color = "#28a745" if increasing else "#dc3545"
-    for i in range(total):
+    for i in range(shown):
         if number > 1 and i % max(1, int(gap)) == 0 and i > 0:
             parts.append(
                 f'<text x="{x - cell / 2}" y="{height - 28}" '
@@ -95,6 +100,11 @@ def _row_svg(starting, number, increasing):
             f'rx="3" fill="#f3ecf7" stroke="#7b3fa0" stroke-width="1"/>'
         )
         x += cell
+    if total > shown:
+        parts.append(
+            f'<text x="{x + 10}" y="26" font-size="12" fill="#8a8391">'
+            f"… {total - shown} more stitches</text>"
+        )
     parts.append(
         f'<text x="{margin}" y="{height - 4}" font-size="11" fill="#5a2a75">'
         f'{total} stitches · {number} evenly-spaced {"increases" if increasing else "decreases"}</text>'
