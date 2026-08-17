@@ -64,5 +64,14 @@
     from pyknit.pyscript._demos import hat_crown as DEMO
     shared.bootstrap_demo(DEMO, action_label="Plan Crown", export_button_id="export-pattern")
 </script>
+<script>
+document.addEventListener("click", function(e) {
+    var btn = e.target.closest(".send-to-estimator");
+    if (!btn) return;
+    var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
+    sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
+    window.location.href = "/yarn-estimator/demo.html";
+});
+</script>
 </body>
 </html>
