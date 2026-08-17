@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>pyKnit · Raglan Sweater</title>
+  <title>pyKnit · Raglan Sweater Planner</title>
   <link rel="stylesheet" href="/_assets/pyscript/core.css" />
   <script type="module" src="/_assets/pyscript/core.js"></script>
   <link rel="stylesheet" href="/_assets/common.css" />
@@ -11,8 +11,8 @@
 <body>
   <header class="demo-header">
     <div class="eyebrow">pyKnit · PyScript demo</div>
-    <h1>Raglan Sweater</h1>
-    <p>Calculate the marker setup for a top-down raglan sweater.</p>
+    <h1>Raglan Sweater Planner</h1>
+    <p>Plan a complete seamless top-down raglan sweater from your gauge and a few measurements — cast-on, raglan increases, sleeve separation, body, hem, sleeves and cuffs.</p>
     <div class="linkbar">
       <a href="/index.html">← all demos</a>
     </div>
@@ -33,49 +33,129 @@
   </py-config>
 
   <section class="card">
-    <h2>Raglan</h2>
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="neck_stitches">Neck stitches</label>
-        <input id="neck_stitches" type="number" value="80" min="1" step="1" />
-      </div>
-      <div class="form-group">
-        <label for="arm_stitches">Arm stitches</label>
-        <input id="arm_stitches" type="number" value="30" min="1" step="1" />
-      </div>
-      <div class="form-group">
-        <label for="bust_stitches">Bust stitches</label>
-        <input id="bust_stitches" type="number" value="100" min="1" step="1" />
-      </div>
-      <div class="form-group">
-        <label for="neck_to_bust_rows">Neck to bust rows</label>
-        <input id="neck_to_bust_rows" type="number" value="8" min="1" step="1" />
-      </div>
-      <div class="form-group">
-        <label for="increase_per_increase_row">Increases per increase row</label>
-        <input id="increase_per_increase_row" type="number" value="8" min="1" step="1" />
-      </div>
-      <div class="form-group">
-        <label for="armpit_stitches">Armpit stitches</label>
-        <input id="armpit_stitches" type="number" value="4" min="0" step="1" />
-      </div>
-    </div>
+    <h2>Design your sweater</h2>
+    <p class="plan-intro">Fill in your gauge and measurements. The plan is computed for you (defaults are a size-medium example) — one click is all it takes.</p>
+
     <div class="button-row">
-      <button id="run" class="btn-primary">Calculate Raglan</button>
+      <button id="run" class="btn-primary">Plan Sweater</button>
       <button id="export-pattern" class="btn-secondary">Export Pattern</button>
     </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
+
+    <fieldset>
+      <legend>Your gauge</legend>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="stitches_per_inch">Stitches per inch</label>
+          <input id="stitches_per_inch" type="number" value="5" min="0.1" step="0.5" />
+          <p class="field-hint">From a blocked stockinette swatch.</p>
+        </div>
+        <div class="form-group">
+          <label for="rows_per_inch">Rows per inch</label>
+          <input id="rows_per_inch" type="number" value="6.5" min="0.1" step="0.5" />
+          <p class="field-hint">From the same swatch, also in stockinette.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Body measurements (inches)</legend>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="neck_circumference">Neck circumference</label>
+          <input id="neck_circumference" type="number" value="14" min="0.5" step="0.5" />
+          <p class="field-hint">Where the collar sits.</p>
+        </div>
+        <div class="form-group">
+          <label for="bust_circumference">Bust / chest circumference</label>
+          <input id="bust_circumference" type="number" value="34" min="1" step="0.5" />
+          <p class="field-hint">At the fullest point of the chest.</p>
+        </div>
+        <div class="form-group">
+          <label for="ease">Desired ease</label>
+          <input id="ease" type="number" value="2" min="-4" max="10" step="0.5" />
+          <p class="field-hint">Inches added to the bust (positive = roomier).</p>
+        </div>
+        <div class="form-group">
+          <label for="underarm_width">Underarm cast-on width</label>
+          <input id="underarm_width" type="number" value="2" min="0.5" step="0.5" />
+          <p class="field-hint">Depth of each underarm join (usually 1.5–2.5 in).</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sleeve measurements (inches)</legend>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="upper_arm_circumference">Upper arm circumference</label>
+          <input id="upper_arm_circumference" type="number" value="12" min="1" step="0.5" />
+          <p class="field-hint">Measured around the fullest part, with a little room.</p>
+        </div>
+        <div class="form-group">
+          <label for="wrist_circumference">Wrist circumference</label>
+          <input id="wrist_circumference" type="number" value="7.5" min="0.5" step="0.5" />
+          <p class="field-hint">Must be smaller than the upper arm so the sleeve can taper.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Lengths (inches)</legend>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="body_length">Body length (underarm to hem)</label>
+          <input id="body_length" type="number" value="13" min="1" step="0.5" />
+          <p class="field-hint">How long the body is below the underarm.</p>
+        </div>
+        <div class="form-group">
+          <label for="sleeve_length">Sleeve length (underarm to cuff)</label>
+          <input id="sleeve_length" type="number" value="17" min="1" step="0.5" />
+          <p class="field-hint">From the underarm seam to the cuff edge.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Construction preferences</legend>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="increases_per_round">Increases per increase round</label>
+          <select id="increases_per_round">
+            <option value="4">4 (2 seams)</option>
+            <option value="8" selected>8 (4 seams, classic)</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+          </select>
+          <p class="field-hint">Must be a multiple of 4; 8 is the standard raglan.</p>
+        </div>
+        <div class="form-group">
+          <label for="increase_frequency">Increase frequency</label>
+          <select id="increase_frequency">
+            <option value="every_other_round" selected>Every other round</option>
+            <option value="every_round">Every round</option>
+          </select>
+          <p class="field-hint">Every other round gives a taller raglan and a lower underarm.</p>
+        </div>
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="card">
+    <h2>Your plan</h2>
     <div id="demo-output"></div>
   </section>
 
   <footer>
-    <p>Powered by <code>pyknit.raglan_increases</code>.</p>
+    <p>Powered by <code>pyknit.raglan_increases</code>, <code>pyknit.sleeve_decreases</code> and <code>pyknit.GaugeSwatch</code>.</p>
   </footer>
 
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import raglan as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Calculate Raglan", export_button_id="export-pattern")
+    shared.bootstrap_demo(DEMO, action_label="Plan Sweater", export_button_id="export-pattern")
 </script>
 </body>
 </html>
