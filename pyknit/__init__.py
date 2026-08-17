@@ -12,9 +12,31 @@ from typing import List, Set, Tuple
 
 from pydantic import PositiveInt, validate_arguments
 
-from .Chart import *
-from .GaugeSwatch import *
-from .Hat import *
+from .Chart import (
+    Stitch,
+    Legend,
+    PatternRow,
+    Pattern,
+    stitch_legend,
+    stitch_legend_japanese,
+    parse_row,
+    parse_chart,
+    print_row,
+    instruction_to_plot_order,
+    plot_chart,
+    render_chart_svg,
+)
+from .GaugeSwatch import (
+    GaugeSwatch,
+    stitch_operations,
+    stitches_consumed,
+    stitches_produced,
+    chart_width,
+    stitch_count,
+    convert_stitch_measure,
+    convert_row_measure,
+)
+from .Hat import Hat
 from . import browser
 
 logging_config_dict = {
@@ -180,10 +202,10 @@ def _handle_odd_times(times: float, k_string: str, higher_times: float, k_higher
     higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] {higher_times:.0f} times'
     
     decrease_pattern = f'{higher_times_string}, {times_string}'
-    higher_times += -1
+    higher_times -= 1
     if higher_times != 0:
         decrease_pattern += ''
-    
+
     return decrease_pattern
 
 
@@ -285,7 +307,7 @@ def _handle_flat_odd_times(times: float, k_string: str, higher_times: float,
     balanced_str_last = f', k2tog k{k_higher - math.ceil(k_higher / 2)}' if (k_higher - math.ceil(k_higher / 2)) != 0 else ', k2tog'
     
     decrease_pattern = f"{balanced_str_first}{higher_times_string}{times_string}"
-    higher_times += -1
+    higher_times -= 1
     
     if higher_times != 0:
         higher_times_string = k_higher_string if higher_times == 1 else f'[{k_higher_string}] * {higher_times} times'
@@ -347,8 +369,6 @@ def sleeve_decreases(
 
     >>> sleeve_decreases(61, 59, 43, 2)  # doctest: +ELLIPSIS
     '[decrease row, do 7 rows in pattern] * 5 times,...'
-
-    ``padding_mode`` controls where the plain non-decrease rows are placed
 
     ``padding_mode`` controls where the plain non-decrease rows are placed
     relative to each decrease row:

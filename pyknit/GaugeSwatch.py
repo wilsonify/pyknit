@@ -281,7 +281,7 @@ def convert_stitch_measure(
     measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
 ) -> float:
     """
-    Given a masurement in the original gauge, find out what it would
+    Given a measurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
 
@@ -307,7 +307,7 @@ def convert_row_measure(
     measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
 ) -> float:
     """
-    Given a masurement in the original gauge, find out what it would
+    Given a measurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
 

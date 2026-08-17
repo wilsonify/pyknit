@@ -524,7 +524,7 @@ def _match_stitch_pattern(section: str) -> Tuple[str, int] | None:
     Only matches one pattern per section to avoid ambiguity (e.g., k2tog as k2).
     """
     patterns = [
-        r"(C\d-\dP?[F|B|L|R])([0-9]*)",  # cables
+        r"(C\d-\dP?[FBLR])([0-9]*)",  # cables
         r"([A-Za-z]+[0-9]+[A-Za-z]+)([0-9]*)",  # things like k2tog or m1l
         r"([A-Za-z]+)([0-9]*)",  # things like p4
     ]
@@ -611,13 +611,13 @@ def plot_chart(
     cell_height = 50
     cell_width = 50
 
-    num_rows = len(stitch_array) if type(stitch_array[0] == list) else 1
+    num_rows = len(stitch_array) if isinstance(stitch_array[0], list) else 1
     if num_rows <= 0:
         raise ValueError("There must be at least one row in the pattern")
     elif num_rows == 1:
         stitch_array = [stitch_array]
 
-    longest_row_len = max([sum(st.width for st in row) for row in stitch_array])
+    longest_row_len = max(sum(st.width for st in row) for row in stitch_array)
 
     print(f"{num_rows} rows, {longest_row_len} sts wide at max")
     pattern_to_plot = instruction_to_plot_order(

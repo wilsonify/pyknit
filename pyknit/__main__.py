@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import sys
 
 from pyknit import VERSION, GaugeSwatch
 
@@ -74,7 +75,7 @@ def main():
 
     if not args.convert:
         parser.print_usage()
-        exit()
+        sys.exit()
 
     if args.convert == "row":
         _handle_row_conversion(args, logger)

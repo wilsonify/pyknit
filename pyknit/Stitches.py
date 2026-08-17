@@ -30,7 +30,7 @@ def cable(fname, cell_width, cell_height, front_sts, back_sts, purl=False):
         (front_sts*cell_width, cell_height), (0, cell_height)), fill="white", outline="black")
 
     chart_image.save(fname+"R.png")
-    flipped = chart_image.transpose(Image.FLIP_LEFT_RIGHT)
+    flipped = chart_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     flipped.save(fname+"L.png")
 
 
