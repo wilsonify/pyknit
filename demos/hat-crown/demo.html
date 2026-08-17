@@ -34,14 +34,17 @@
 
   <section class="card">
     <h2>Hat</h2>
+    <p class="form-help">Enter cast-on stitches and decrease repeats. The planner validates even division and shows each stitch-count transition round by round.</p>
     <div class="grid-2">
       <div class="form-group">
         <label for="stitches">Cast-on stitches</label>
-        <input id="stitches" type="number" value="80" min="1" step="4" />
+        <input id="stitches" type="number" value="80" min="2" step="1" />
+        <span class="field-hint">Must divide evenly by repeats and allow at least 2 stitches per repeat.</span>
       </div>
       <div class="form-group">
         <label for="repeats">Decrease repeats per round</label>
         <input id="repeats" type="number" value="8" min="1" step="1" />
+        <span class="field-hint">Each decrease round removes exactly this many stitches.</span>
       </div>
     </div>
     <button id="run" class="btn-primary">Plan Crown</button>

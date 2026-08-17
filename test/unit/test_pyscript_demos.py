@@ -138,8 +138,33 @@ class TestDemoSpecifics:
         module = load_demo("hat_crown")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         rounds = result["rounds"]
-        assert (isinstance(rounds, (list, tuple)) and len(rounds) > 0) or rounds > 0
+        assert isinstance(rounds, (list, tuple))
+        assert len(rounds) > 0
         assert result["stitches"] > 0
+        assert "plan" in result
+
+    def test_hat_crown_transition_math_and_layout(self):
+        module = load_demo("hat_crown")
+        result = module.DEMO["compute"]({"stitches": 72, "repeats": 8})
+        decrease_rows = [row for row in result["plan"] if row["kind"] == "Decrease"]
+        assert decrease_rows[0]["transition"] == "72 -> 64"
+        assert all((row["before"] - row["after"]) == 8 for row in decrease_rows)
+
+        html = module.DEMO["to_html"](result)
+        assert "Round-by-round instructions" in html
+        assert "Crown shaping strategy" in html
+        assert "72 / 8 = 9 per repeat" in html
+        assert "72 &rarr; 64" in html
+
+    def test_hat_crown_invalid_when_not_evenly_divisible(self):
+        module = load_demo("hat_crown")
+        with pytest.raises(ValueError, match="divide evenly"):
+            module.DEMO["compute"]({"stitches": 78, "repeats": 8})
+
+    def test_hat_crown_invalid_when_too_small_for_repeat_strategy(self):
+        module = load_demo("hat_crown")
+        with pytest.raises(ValueError, match="at least 2 stitches per repeat"):
+            module.DEMO["compute"]({"stitches": 8, "repeats": 8})
 
     def test_sock_counts(self):
         module = load_demo("sock_calculator")
