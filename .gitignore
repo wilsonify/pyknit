@@ -145,4 +145,4 @@ PyKnit_Demo.ipynb
 .vscode/
 *.whl
 
-_assets/
+demos/_assets/

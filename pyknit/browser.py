@@ -86,13 +86,13 @@ def _render_with_backend(fmt: str, pattern: Pattern, legend: Any, kwargs: Any) -
     if fmt == "svg":
         from pyknit.Chart import render_chart_svg
 
-        return render_chart_svg(pattern, legend=legend, **kwargs)
+        return render_chart_svg(pattern)
     if fmt == "pillow":
         import io
 
         from pyknit.Chart import plot_chart
 
-        image = plot_chart(pattern, **kwargs)
+        image = plot_chart(pattern)
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
         return buffer.getvalue()

@@ -645,6 +645,6 @@ def _default_result_html(result: Any) -> str:
                 f"<tr><th>{key}</th><td class='mono'>{html.escape(str(value))}</td></tr>"
             )
         return "<table class='instructions'><tbody>" + "".join(
-            f"<tr><th>{r[0]}</th><td class='mono'>{r[1]}</td></tr>" for r in rows
+            rows
         ) + "</tbody></table>"
     return f"<pre class='mono'>{html.escape(str(result))}</pre>"

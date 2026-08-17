@@ -61,7 +61,10 @@
         </select>
       </div>
     </div>
-    <button id="run" class="btn-primary">Plan Decreases</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Plan Decreases</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
     <div id="demo-output"></div>
   </section>
@@ -73,7 +76,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import sleeve_decreases as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Plan Decreases")
+    shared.bootstrap_demo(DEMO, action_label="Plan Decreases", export_button_id="export-pattern")
 </script>
 </body>
 </html>

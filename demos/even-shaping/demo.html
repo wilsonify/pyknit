@@ -58,7 +58,10 @@
         <input id="number" type="number" value="5" min="1" step="1" />
       </div>
     </div>
-    <button id="run" class="btn-primary">Compute Shaping</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Compute Shaping</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
     <div id="demo-output"></div>
   </section>
@@ -70,7 +73,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import shaping as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Compute Shaping")
+    shared.bootstrap_demo(DEMO, action_label="Compute Shaping", export_button_id="export-pattern")
 </script>
 </body>
 </html>

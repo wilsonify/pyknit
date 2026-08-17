@@ -88,9 +88,19 @@ def test_bootstrap_demo_binds_and_autoruns(monkeypatch):
 
     monkeypatch.setattr(shared, "set_status", lambda *args: rec.status.append(args))
     monkeypatch.setattr(shared, "bind_click", lambda _bid, _handler: rec.status.append(("bound",)))
-    monkeypatch.setattr(shared, "wire_demo", lambda _module=None: (lambda _event=None: rec.html.append("ran")))
+    monkeypatch.setattr(shared, "set_buttons_enabled", lambda _e: None)
+    monkeypatch.setattr(shared, "collect_inputs", lambda defaults: {"n": "2"})
+    monkeypatch.setattr(shared, "set_html", lambda _eid, html: rec.html.append(html))
+    monkeypatch.setattr(shared, "hide_error", lambda _eid: None)
+    monkeypatch.setattr(shared, "show_error", lambda _eid, _msg: None)
 
-    shared.bootstrap_demo(module={"DEFAULT_INPUTS": {}, "compute": lambda _x: {}}, action_label="Run", auto_run=True)
+    run = shared.bootstrap_demo(
+        module={"DEFAULT_INPUTS": {"n": 1}, "compute": lambda inputs: {"n": int(inputs["n"]) + 1}},
+        action_label="Run",
+        auto_run=True,
+    )
 
     assert ("bound",) in rec.status
-    assert rec.html == ["ran"]
+    assert len(rec.html) == 1
+    html = rec.html[0]
+    assert "3" in html

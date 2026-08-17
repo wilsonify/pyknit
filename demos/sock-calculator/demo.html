@@ -100,7 +100,10 @@
       </div>
     </div>
 
-    <button id="run" class="btn-primary">Knit me a sock plan</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Knit me a sock plan</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
   </section>
 
@@ -129,7 +132,7 @@
   <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import sock_calculator
-    shared.bootstrap_demo(sock_calculator, action_label="Knit me a sock plan")
+    shared.bootstrap_demo(sock_calculator, action_label="Knit me a sock plan", export_button_id="export-pattern")
   </script>
 </body>
 </html>

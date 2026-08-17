@@ -87,7 +87,10 @@
         <input id="ball_weight" type="number" value="50" min="1" step="1" />
       </div>
     </div>
-    <button id="run" class="btn-primary">Estimate Project</button>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Estimate Project</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
     <div id="demo-output"></div>
   </section>
@@ -99,7 +102,7 @@
 <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import yarn_estimator as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Estimate Project")
+    shared.bootstrap_demo(DEMO, action_label="Estimate Project", export_button_id="export-pattern")
 </script>
 </body>
 </html>
