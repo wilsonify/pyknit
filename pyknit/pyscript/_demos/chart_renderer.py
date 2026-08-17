@@ -92,8 +92,10 @@ def _pattern_to_text(pattern):
 
 
 def to_html(result):
-    """Render the chart as inline SVG plus a small stats row."""
-    svg = _chart_svg(result["pattern"])
+    """Render the chart as inline SVG (honouring lr/tb direction) plus a
+    small stats row.  Uses the shared renderer so direction options work;
+    falls back to the minimal local renderer when the full one is missing."""
+    svg = _chart_svg(result["pattern"], result.get("lr", "lr"), result.get("tb", "tb"))
     pills = []
     for label, count in result["report"]:
         pills.append(f"<span class='stat-pill'>{label}: <em>{count}</em></span>")
@@ -103,7 +105,22 @@ def to_html(result):
     )
 
 
-def _chart_svg(pattern):
+def _chart_svg(pattern, lr_direction="lr", tb_direction="tb"):
+    """Render the chart as inline SVG.
+
+    Prefers the full ``pyknit.Chart.render_chart_svg`` (which honours the
+    lr/tb directions and embeds symbol images as data URIs).  Falls back to
+    a minimal self-contained SVG when that renderer is unavailable.
+    """
+    try:
+        from pyknit.Chart import render_chart_svg
+
+        return render_chart_svg(pattern, lr_direction, tb_direction)
+    except Exception:
+        return _minimal_svg(pattern)
+
+
+def _minimal_svg(pattern):
     """Minimal self-contained SVG chart, no Pillow required."""
     cell = 24
     rows = len(pattern)
