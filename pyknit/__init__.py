@@ -373,15 +373,18 @@ def sleeve_decreases(
         raise ValueError(msg)
 
     if starting_count < ending_count:
-        logging.error(
-            f"Error: No decreases needed, {starting_count} is already smaller than {ending_count}"
+        msg = (
+            "No decreases needed, "
+            f"{starting_count} is already smaller than {ending_count}"
         )
-        raise ValueError
+        logging.error(msg)
+        raise ValueError(msg)
     elif starting_count == ending_count:
-        logging.error(
-            "Error: No decreases needed, the starting count is the same as the ending count"
+        msg = (
+            "No decreases needed, the starting count is the same as the ending count"
         )
-        raise ValueError
+        logging.error(msg)
+        raise ValueError(msg)
 
     total_decrease = starting_count - ending_count
     number_of_decrease_rows = total_decrease // decrease_per_row
@@ -478,6 +481,17 @@ def raglan_increases(
     # Work backwards and see if you get the collar number
     calculated_neck = working_stitches - neck_to_bust_rows * increase_per_increase_row
 
+    # The marker setup below distributes stitches around the body and each
+    # arm; validate that these stay positive so we never emit "k-5 (arm)".
+    body_start = bust_stitches / 2 - neck_to_bust_rows * 2 - armpit_stitches
+    arm = arm_stitches - armpit_stitches - neck_to_bust_rows * 2
+    if body_start < 1 or arm < 1:
+        raise ValueError(
+            "The stitch counts or row counts are too small for a raglan "
+            "with this many neck-to-bust rows. Try fewer neck_to_bust_rows, "
+            "a larger arm_stitches/bust_stitches, or a smaller armpit_stitches."
+        )
+
     # if calculated_neck and neck_stitches don't match, make adjustments
 
     if calculated_neck > neck_stitches:
@@ -494,13 +508,9 @@ def raglan_increases(
 
     # generate some standard raglan instructions
     # we're assuming the beginning of row is the middle of the back here
-    body_start = bust_stitches / 2 - neck_to_bust_rows * 2 - armpit_stitches
-
     # in case our count is uneven
     front = math.ceil(body_start)
     back = math.floor(body_start)
-
-    arm = arm_stitches - armpit_stitches - neck_to_bust_rows * 2
 
     instruction_string += f"Marker setup: k{math.floor(back/2)}, pm, k{arm} (arm), pm, "
     instruction_string += f"k{front}, pm, k{arm} (arm), pm k{math.ceil(back/2)}"
