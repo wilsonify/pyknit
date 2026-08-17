@@ -241,6 +241,48 @@ def check_rendered(page, spec):
         chart_html = page.eval_on_selector("#chart-output", INNER_HTML) or ""
         if "<svg" not in chart_html:
             fails.append("gauge-conversion: chart-output has no <svg> after render")
+            return fails
+
+        # Ensure symbols are concise and visually distinct (not verbose black text).
+        gauge_svg_info = page.evaluate(
+            """
+() => {
+  const svg = document.querySelector('#chart-output svg');
+  if (!svg) {
+    return {missing: true};
+  }
+  const labels = [...svg.querySelectorAll('text.stitch-label')];
+  const styleTag = svg.querySelector('style');
+  const labelTexts = labels.map(el => (el.textContent || '').trim()).filter(Boolean);
+  const uniqTexts = [...new Set(labelTexts)];
+  const fills = [...new Set(labels.map(el => getComputedStyle(el).fill))];
+    const hasVerboseNames = labels.some(el => /\\s/.test((el.textContent || '').trim()));
+  return {
+    missing: false,
+    labelCount: labels.length,
+    uniqTextCount: uniqTexts.length,
+    hasVerboseNames,
+    fills,
+    styleText: styleTag ? styleTag.textContent : "",
+  };
+}
+            """
+        )
+
+        if gauge_svg_info.get("missing"):
+            fails.append("gauge-conversion: chart svg missing from DOM")
+            return fails
+        if gauge_svg_info.get("labelCount", 0) == 0:
+            fails.append("gauge-conversion: svg has no stitch-label text nodes")
+        if gauge_svg_info.get("uniqTextCount", 0) < 3:
+            fails.append("gauge-conversion: expected >=3 distinct stitch symbols")
+        if gauge_svg_info.get("hasVerboseNames"):
+            fails.append("gauge-conversion: stitch labels are verbose names, expected concise symbols")
+        if len(gauge_svg_info.get("fills", [])) < 2:
+            fails.append("gauge-conversion: expected >=2 distinct computed text fill colors")
+        style_text = gauge_svg_info.get("styleText", "")
+        if "{{" in style_text or "}}" in style_text:
+            fails.append("gauge-conversion: invalid double-brace CSS found in inline SVG style")
         return fails
     out_id = spec["outputs"][0]
     out_html = page.eval_on_selector(f"#{out_id}", INNER_HTML) or ""
