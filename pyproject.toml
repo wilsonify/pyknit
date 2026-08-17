@@ -30,5 +30,7 @@ my-script = "pyknit.pyknit:main"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages.find = {where = ["."]}
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyknit*"]
+exclude = ["build*", "test*", "documentation*", "demos*", "openspec*"]
