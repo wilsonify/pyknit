@@ -36,7 +36,7 @@ def to_html(result):
         "</style>"
         f"<div class='output-box'>{result['svg']}</div>"
         "<div class='button-row'><button class='btn-secondary send-to-estimator' "
-        f"data-stitches='{result['stitches']}' data-type='hat'>"
+        "data-type='hat'>"
         "Send to Yarn Estimator &rarr;</button></div>"
         "<div class='output-box hat-layout'>"
         "<h3>Crown shaping strategy</h3>"
@@ -108,7 +108,6 @@ def compute(inputs):
         "assumptions": assumptions,
         "svg": _crown_svg(repeats, [stitches] + transitions),
         "_estimator_data": {
-            "stitch_count": stitches,
             "project_type": "hat",
             "source": "hat_crown_planner",
         },
