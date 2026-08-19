@@ -274,6 +274,8 @@
 
     # Check sessionStorage for prefill data from other planners
     def _check_prefill():
+        applied = False
+        count = None
         try:
             from js import sessionStorage
             raw = sessionStorage.getItem("estimator_prefill")
@@ -282,13 +284,14 @@
                 data = json.loads(raw)
                 if "stitch_count" in data:
                     shared.set_value("project_stitches", data["stitch_count"])
+                    count = int(data["stitch_count"])
                 if "project_type" in data:
                     shared.set_value("project_type", data["project_type"])
                 sessionStorage.removeItem("estimator_prefill")
-                shared.set_status("ready", "Loaded data from planner",
-                                  "Click 'Estimate Project' to calculate.")
+                applied = True
         except Exception:
             pass
+        return applied, count
 
     shared.bind_click("run", run_friendly)
     shared.bind_click("run-advanced", run_advanced)
@@ -300,8 +303,23 @@
     )
 
     shared.set_status("ready", "pyknit loaded", "Edit inputs, then click 'Estimate Project'.")
-    _check_prefill()
-    run_friendly()
+    applied, stitch_count = _check_prefill()
+    if stitch_count:
+        # A planner sent a stitch workload, which only the advanced mode uses.
+        run_advanced()
+        shared.set_status(
+            "ready",
+            f"Loaded {stitch_count:,} stitches from planner",
+            "Estimate calculated from planner data (advanced mode).",
+        )
+    else:
+        run_friendly()
+        if applied:
+            shared.set_status(
+                "ready",
+                "Loaded project type from planner",
+                "Estimate calculated from planner data (friendly mode).",
+            )
 </script>
 </body>
 </html>
