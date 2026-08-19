@@ -335,6 +335,15 @@ def _check_no_error(page, eids):
     return fails
 
 
+def _error_visible(page, eid):
+    """True when the error element exists and is displayed."""
+    el = page.query_selector(f"#{eid}")
+    if el is None:
+        return False
+    style = el.get_attribute("style") or ""
+    return BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style
+
+
 def exercise(page, button_id):
     """Click with current inputs and check output non-blank + changed on input change."""
     bid = button_id
@@ -380,6 +389,8 @@ def change_input_and_compare(page, oids, bid):
         page.query_selector(target).fill(
             "k2 yo k2tog yo k1\np1 k2 yo k2tog p2"
         )
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
         return after != before and bool(after.strip())
 
     out_id = oids[0]
@@ -394,6 +405,20 @@ def change_input_and_compare(page, oids, bid):
         time.sleep(1.2)
         after = out_text(page, out_id)
         ta.fill(original)
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        return after != before and bool(after.strip())
+
+    # hat-crown: cast-on must stay divisible by repeats, so bump to a
+    # value that is still a valid combination (80 -> 72 with repeats 8).
+    if page.query_selector("#stitches") is not None:
+        target, out_id = "#stitches", "demo-output"
+        before = out_text(page, out_id)
+        page.query_selector(target).fill("72")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        page.query_selector(target).fill("80")
         return after != before and bool(after.strip())
 
     # numeric demos: bump numeric inputs until output changes
@@ -415,6 +440,11 @@ def change_input_and_compare(page, oids, bid):
         el.fill(old)
         if after != before and bool(after.strip()):
             return True
+        # input was rejected as invalid (validation error shown): the demo is
+        # behaving correctly, so keep looking rather than treating the
+        # unchanged output as an interactivity failure.
+        if any(_error_visible(page, eid) for eid in eids):
+            continue
     return False
 
 
