@@ -113,3 +113,44 @@ def test_svg_renders_without_pil(monkeypatch):
     monkeypatch.setattr(Chart, "ImageFont", NoPilImage, raising=False)
     root = ET.fromstring(Chart.render_chart_svg(_pattern_3_rows()))
     assert root.tag.endswith("svg")
+
+
+def test_svg_stitch_labels_have_class():
+    pattern = [
+        [
+            Chart.Stitch("knit", symbol="V", width=1),
+            Chart.Stitch("purl", symbol="o", width=1),
+            Chart.Stitch("k2tog", symbol="/", width=1),
+        ]
+    ]
+    root = ET.fromstring(Chart.render_chart_svg(pattern))
+    labels = [e for e in root.iter() if e.tag.endswith("text")]
+    stitch_labels = [e for e in labels if e.attrib.get("class") == "stitch-label"]
+    assert len(stitch_labels) == 3
+    assert {e.text for e in stitch_labels} == {"V", "o", "/"}
+
+
+def test_svg_stitch_labels_have_distinct_colors():
+    pattern = Chart.parse_chart("k2 yo k2tog\np1 yo k2tog")
+    root = ET.fromstring(Chart.render_chart_svg(pattern))
+    fills = {
+        e.attrib["fill"]
+        for e in root.iter()
+        if e.tag.endswith("text")
+        and e.attrib.get("class") == "stitch-label"
+    }
+    assert len(fills) >= 3
+    assert "blue" not in fills
+
+
+def test_stitch_label_fill_distinct_per_category():
+    distinct = {
+        Chart._stitch_label_fill(Chart.stitch_legend["k"]),
+        Chart._stitch_label_fill(Chart.stitch_legend["p"]),
+        Chart._stitch_label_fill(Chart.stitch_legend["yo"]),
+        Chart._stitch_label_fill(Chart.stitch_legend["k2tog"]),
+    }
+    assert len(distinct) >= 4
+    # unknown categories keep the default blue rather than crashing
+    unknown = Chart.Stitch("mystery", symbol="?", width=1)
+    assert Chart._stitch_label_fill(unknown) == "#2b6cb0"
