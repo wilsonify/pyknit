@@ -559,7 +559,8 @@ class TestPlannerIntegration:
         result = module.DEMO["compute"]({"stitches": 72, "repeats": 8})
         assert "_estimator_data" in result
         est = result["_estimator_data"]
-        assert est["stitch_count"] == 72
+        # cast-on is not a workload; the estimator must not receive it
+        assert "stitch_count" not in est
         assert est["project_type"] == "hat"
         assert est["source"] == "hat_crown_planner"
 
@@ -568,7 +569,7 @@ class TestPlannerIntegration:
         result = module.DEMO["compute"]({"stitches": 72, "repeats": 8})
         html = module.DEMO["to_html"](result)
         assert "send-to-estimator" in html
-        assert "data-stitches='72'" in html
+        assert "data-stitches" not in html
         assert "data-type='hat'" in html
 
     def test_pi_shawl_has_estimator_data(self):
