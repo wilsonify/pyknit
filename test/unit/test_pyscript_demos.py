@@ -184,6 +184,29 @@ class TestDemoSpecifics:
         with pytest.raises(ValueError, match="at least 2 stitches per repeat"):
             module.DEMO["compute"]({"stitches": 8, "repeats": 8})
 
+    def test_estimator_data_sends_real_workloads_only(self):
+        """Planner demos must only send a stitch workload to the estimator.
+
+        hat_crown only knows its cast-on count (the crown plan covers just the
+        shaping), so sending it as a workload would make the estimator report
+        absurdly low yardage.  raglan and pi_shawl compute a real workload.
+        """
+        hat = load_demo("hat_crown").DEMO["compute"]({"stitches": 80, "repeats": 8})
+        assert "stitch_count" not in hat.get("_estimator_data", {})
+        assert hat.get("_estimator_data", {}).get("project_type") == "hat"
+
+        for name, expected_type, key in (
+            ("raglan", "sweater", "stitch_count"),
+            ("pi_shawl", "shawl_triangle", "estimated_stitches"),
+        ):
+            module = load_demo(name)
+            result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+            data = result.get("_estimator_data", {})
+            assert data.get("project_type") == expected_type
+            assert data.get(key, 0) > 1000, (
+                f"{name} must send a plausible workload, got {data.get(key)}"
+            )
+
     def test_sock_counts(self):
         module = load_demo("sock_calculator")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
