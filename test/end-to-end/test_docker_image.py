@@ -164,3 +164,47 @@ def test_demo_boots_and_computes_in_browser(demo_url, browser, demo):
     bad = [f"{s} {u}" for s, u in failed_requests if s >= 400]
     assert not bad, f"{demo} had failed requests: {bad[:5]}"
     assert not console_errors, f"{demo} had python tracebacks: {console_errors[:3]}"
+
+
+@pytest.mark.parametrize(
+    "planner,expected_mode,status_contains",
+    [
+        ("raglan-sweater", "advanced", "stitches from planner"),
+        ("hat-crown", "friendly", "project type from planner"),
+    ],
+)
+def test_send_to_estimator_flow(demo_url, browser, planner, expected_mode, status_contains):
+    """Send-to-Estimator must run the mode that uses the planner's data.
+
+    A raglan workload is used by the advanced estimator, while a hat planner
+    (which only knows cast-on stitches) falls back to the friendly estimator
+    instead of reporting absurdly low yardage.
+    """
+    page = browser.new_page()
+    try:
+        page.goto(f"{demo_url}/{planner}/demo.html", wait_until="domcontentloaded", timeout=30000)
+        _wait_ready(page)
+        page.wait_for_timeout(500)
+        send = page.query_selector(".send-to-estimator")
+        assert send is not None, f"{planner} has no send-to-estimator button"
+        send.click()
+        page.wait_for_load_state("domcontentloaded", timeout=30000)
+        _wait_ready(page)
+        page.wait_for_timeout(1500)
+
+        status = page.evaluate(
+            "[...document.querySelectorAll('#status-message, #status-detail')].map(e => e.textContent)"
+        )
+        joined = " / ".join(status)
+        assert status_contains in joined, f"unexpected status after {planner} prefill: {status}"
+
+        out = page.evaluate(
+            "(document.querySelector('#demo-output') || {textContent:''}).textContent"
+        )
+        assert out.strip(), f"{planner} flow produced blank estimator output"
+        if expected_mode == "advanced":
+            assert "yd/st" in out, "advanced estimate must use per-stitch yardage"
+        else:
+            assert "yd/st" not in out, "friendly estimate must not use per-stitch yardage"
+    finally:
+        page.close()
