@@ -689,7 +689,7 @@ def _draw_single_stitch(draw, stitch, chart_image, cur_x, cur_y, cell_width,
                 ),
                 stitch.symbol,
                 font=fnt,
-                fill="blue",
+                fill=_stitch_label_fill(stitch),
                 align="center",
                 anchor="mm",
             )
@@ -856,6 +856,27 @@ def _add_svg_gridlines(elements: List[str], top: int, bottom: int, left: int, ri
         )
 
 
+_STITCH_LABEL_COLORS = {
+    "knit": "#2b6cb0",
+    "purl": "#805ad5",
+    "increase": "#2f855a",
+    "decrease": "#c53030",
+    "yarn-over": "#b7791f",
+    "cable": "#4c51bf",
+}
+
+
+def _stitch_label_fill(stitch) -> str:
+    """Pick a distinct text color for a stitch label.
+
+    Colors are grouped by stitch category (or instruction name as a
+    fallback) so increases, decreases, yarn overs and cables are easy to
+    tell apart at a glance in rendered charts.
+    """
+    key = (stitch.category or stitch.instruction or "").lower()
+    return _STITCH_LABEL_COLORS.get(key, "#2b6cb0")
+
+
 def _add_svg_stitches(elements: List[str], pattern_to_plot, cell_width: int, cell_height: int,
                      lr_direction: str, tb_direction: str, color_st_pattern) -> None:
     """Add stitch elements to SVG."""
@@ -894,9 +915,10 @@ def _add_svg_image_stitch(elements: List[str], stitch, cur_x: int, cur_y: int,
     else:
         label = os.path.basename(stitch.symbol)
         elements.append(
-            f'<text x="{cur_x + span / 2}" y="{cur_y + cell_height / 2}" '
+            f'<text class="stitch-label" x="{cur_x + span / 2}" y="{cur_y + cell_height / 2}" '
             f'text-anchor="middle" dominant-baseline="central" '
-            f'font-size="14">{_xml_escape(label)}</text>'
+            f'font-size="14" fill="{_stitch_label_fill(stitch)}">'
+            f'{_xml_escape(label)}</text>'
         )
 
 
@@ -912,9 +934,9 @@ def _add_svg_colored_stitch(elements: List[str], stitch, cur_x: int, cur_y: int,
     )
     if not colored:
         elements.append(
-            f'<text x="{center_x}" y="{center_y}" '
+            f'<text class="stitch-label" x="{center_x}" y="{center_y}" '
             f'text-anchor="middle" dominant-baseline="central" '
-            f'font-size="20" fill="blue">'
+            f'font-size="20" fill="{_stitch_label_fill(stitch)}">'
             f'{_xml_escape(stitch.symbol)}</text>'
         )
 
