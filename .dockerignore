@@ -1,0 +1,36 @@
+# VCS / tooling
+.git
+.github
+.gitignore
+.pre-commit-config.yaml
+.pytest_cache
+.mypy_cache
+
+# local dev environments
+.venv
+
+# build artifacts
+build
+dist
+*.egg-info
+demos/_wheel
+
+# the full Pyodide distribution is not shipped: the Docker build downloads
+# only the runtime files it needs from the pinned Pyodide release
+demos/_assets/pyodide
+
+# tests, docs and aux content are not needed at runtime
+test
+documentation
+openspec
+pyknit-logolong.png
+.readthedocs.yml
+.flake8
+
+# bytecode / editor cruft
+__pycache__
+*.pyc
+*.pyo
+*.swp
+*~
+.DS_Store
