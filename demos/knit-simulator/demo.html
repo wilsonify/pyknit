@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Knit Simulator</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+  <style>
+    .sim-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.8rem 0;
+    }
+    .sim-controls button {
+      min-width: 60px;
+    }
+    .sim-controls .step-counter {
+      font-size: 0.9rem;
+      color: #6b6572;
+      margin: 0 0.5rem;
+    }
+    .sim-controls .speed-select {
+      margin-left: auto;
+    }
+    .sim-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 700px) {
+      .sim-view { grid-template-columns: 1fr; }
+    }
+    .sim-view .view-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      background: white;
+      min-height: 120px;
+    }
+    .sim-view .view-box h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      color: var(--primary-dark);
+    }
+    .sim-view .view-box svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .step-highlight {
+      background: #fff3cd;
+      border-color: #ffc107;
+    }
+  </style>
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Knit Simulator</h1>
+    <p>Watch knitting happen step by step. Enter simple instructions, then
+    play, pause, or step through to see how fabric builds up.</p>
+    <div class="linkbar">
+      <a href="/index.html">&larr; all tools</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.1-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Instructions</h2>
+    <p class="form-help">Type simple knitting instructions, one per line. Use: co (cast on), k (knit), p (purl), * (repeat row), k2tog, ssk, yo, bo (bind off). Put * before a row to repeat it.</p>
+    <div class="form-group">
+      <label for="instructions">Knitting instructions</label>
+      <textarea id="instructions" rows="8" style="font-family:ui-monospace,Consolas,monospace;font-size:0.95rem">co 20
+* k2 p2 across
+* k2 p2 across
+* k2 p2 across
+k all</textarea>
+      <span class="field-hint">Example: cast on 20, work 3 rows of k2p2 ribbing, then 1 row knit.</span>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Build Simulation</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+  </section>
+
+  <section id="sim-section" class="card" style="display:none">
+    <h2>Simulation controls</h2>
+    <div class="sim-controls">
+      <button id="sim-reset" class="btn-secondary" title="Reset to start">&laquo; Reset</button>
+      <button id="sim-prev" class="btn-secondary" title="Previous step">&lsaquo; Prev</button>
+      <button id="sim-play" class="btn-primary" title="Play / Pause">Play</button>
+      <button id="sim-next" class="btn-secondary" title="Next step">Next &rsaquo;</button>
+      <span class="step-counter">Step <span id="sim-step-num">0</span> / <span id="sim-step-total">0</span></span>
+      <div class="speed-select">
+        <label for="sim-speed" style="display:inline;font-weight:600;font-size:0.85rem">Speed:</label>
+        <select id="sim-speed" style="width:auto;padding:0.3rem 0.5rem;font-size:0.85rem">
+          <option value="slow">Slow motion</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Fast</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sim-view">
+      <div class="view-box" id="stitch-view-box">
+        <h4>Current stitches on needle</h4>
+        <div id="stitch-view"></div>
+      </div>
+      <div class="view-box" id="fabric-view-box">
+        <h4>Fabric growing</h4>
+        <div id="fabric-view"></div>
+      </div>
+    </div>
+
+    <div class="view-box" style="margin-top:0.8rem">
+      <h4>Step log</h4>
+      <div id="step-log" style="max-height:200px;overflow-y:auto;font-size:0.88rem"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>This is an instructional visualization showing how stitches build fabric.
+    For physical yarn animation, see a video tutorial.</p>
+  </footer>
+
+  <script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import knit_simulator as DEMO
+    shared.bootstrap_demo(DEMO, action_label="Build Simulation")
+  </script>
+
+  <script>
+  (function() {
+    var steps = [];
+    var currentStep = 0;
+    var playing = false;
+    var timer = null;
+    var speedMs = 400;
+
+    var speedMap = {slow: 800, normal: 400, fast: 150};
+
+    function $(id) { return document.getElementById(id); }
+
+    function updateView() {
+      if (!steps.length) return;
+      var step = steps[currentStep];
+      $("sim-step-num").textContent = currentStep + 1;
+      $("step-log").innerHTML = steps.map(function(s, i) {
+        var cls = i === currentStep ? 'style="background:#fff3cd;padding:2px 4px;border-radius:3px"' : '';
+        return '<div ' + cls + '><strong>' + (i+1) + '.</strong> ' + s.op + ' — ' + s.detail + '</div>';
+      }).join("");
+
+      var stitchSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (step.stitches.length * 22 + 20) + '" height="50">';
+      step.stitches.forEach(function(s, i) {
+        var x = 10 + i * 22;
+        var isHL = step.highlight.indexOf(i) >= 0;
+        var fill = isHL ? '#e74c3c' : (s === 0 ? '#f3ecf7' : '#7b3fa0');
+        var stroke = isHL ? '#c0392b' : (s === 0 ? '#dcc8e8' : '#5a2a75');
+        stitchSvg += '<rect x="' + x + '" y="10" width="18" height="18" fill="' + fill + '" stroke="' + stroke + '" rx="3" stroke-width="2"/>';
+        stitchSvg += '<text x="' + (x+9) + '" y="24" font-size="10" fill="white" text-anchor="middle" font-weight="600">' + s + '</text>';
+      });
+      stitchSvg += '</svg>';
+      $("stitch-view").innerHTML = stitchSvg;
+
+      var fabricSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="' + (Math.min(currentStep + 1, 12) * 16 + 20) + '">';
+      var startRow = Math.max(0, currentStep - 10);
+      for (var r = startRow; r <= currentStep && r < steps.length; r++) {
+        var y = 10 + (r - startRow) * 16;
+        var sts = steps[r].stitches;
+        var xOff = 10 + (20 - sts.length) * 8;
+        sts.forEach(function(s, c) {
+          var x = xOff + c * 16;
+          var fill = r % 2 === 0 ? '#7b3fa0' : '#b38fd4';
+          if (s === 0) fill = '#f3ecf7';
+          fabricSvg += '<rect x="' + x + '" y="' + y + '" width="14" height="14" fill="' + fill + '" stroke="#5a2a75" rx="2"/>';
+        });
+      }
+      fabricSvg += '</svg>';
+      $("fabric-view").innerHTML = fabricSvg;
+    }
+
+    function stepForward() {
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateView();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function stepBack() {
+      if (currentStep > 0) {
+        currentStep--;
+        updateView();
+      }
+    }
+
+    function startPlay() {
+      playing = true;
+      $("sim-play").textContent = "Pause";
+      timer = setInterval(function() {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          updateView();
+        } else {
+          stopPlay();
+        }
+      }, speedMs);
+    }
+
+    function stopPlay() {
+      playing = false;
+      $("sim-play").textContent = "Play";
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    function resetSim() {
+      stopPlay();
+      currentStep = 0;
+      updateView();
+    }
+
+    $("sim-play").addEventListener("click", function() {
+      if (playing) stopPlay();
+      else startPlay();
+    });
+    $("sim-next").addEventListener("click", function() { stopPlay(); stepForward(); });
+    $("sim-prev").addEventListener("click", function() { stopPlay(); stepBack(); });
+    $("sim-reset").addEventListener("click", resetSim);
+    $("sim-speed").addEventListener("change", function() {
+      speedMs = speedMap[this.value] || 400;
+      if (playing) { stopPlay(); startPlay(); }
+    });
+
+    var origCompute = null;
+    var observer = new MutationObserver(function() {
+      var out = $("demo-output");
+      if (!out) return;
+      var pyResult = out.__pyResult;
+      if (pyResult && pyResult.steps && pyResult.steps.length) {
+        steps = pyResult.steps;
+        currentStep = 0;
+        $("sim-step-total").textContent = steps.length;
+        $("sim-section").style.display = "";
+        updateView();
+      }
+    });
+
+    var _origSetHtml = shared.set_html;
+    shared.set_html = function(id, content) {
+      _origSetHtml(id, content);
+      if (id === "demo-output") {
+        setTimeout(function() {
+          var lastResult = shared._lastResult;
+          if (lastResult && lastResult.steps) {
+            steps = lastResult.steps;
+            currentStep = 0;
+            $("sim-step-total").textContent = steps.length;
+            $("sim-section").style.display = "";
+            updateView();
+          }
+        }, 100);
+      }
+    };
+  })();
+  </script>
+</body>
+</html>
