@@ -235,11 +235,106 @@ class TestDemoSpecifics:
         module = load_demo("shawl_shapes")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         assert "instructions" in result
+        assert len(result["instructions"]) > 0
+        assert "assumptions" in result
+        assert len(result["assumptions"]) > 0
+        assert result["_estimator_data"]["stitch_count"] > 0
+
+    def test_shawl_shapes_all_shapes(self):
+        module = load_demo("shawl_shapes")
+        for shape in ("crescent", "triangle", "square", "rectangle"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["shape"] = shape
+            result = module.DEMO["compute"](inputs)
+            assert result["shape"] == shape
+            assert len(result["instructions"]) > 0
+            assert len(result["assumptions"]) > 0
+
+    def test_shawl_shapes_html_renders_assumptions(self):
+        module = load_demo("shawl_shapes")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        html = module.DEMO["to_html"](result)
+        assert "plan-assumptions" in html
+        assert "plan-section" in html
+        assert "<svg" in html
 
     def test_sleeve_schedule(self):
         module = load_demo("sleeve_decreases")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         assert len(result["schedule"]) > 0
+        assert result["starting"] == 59
+        assert result["ending"] == 43
+        assert result["summary"]["total_decrease"] == 16
+        assert result["summary"]["number_of_decrease_rows"] == 8
+
+    def test_sleeve_plan_has_required_keys(self):
+        module = load_demo("sleeve_decreases")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert "plan" in result
+        assert "math" in result
+        assert "assumptions" in result
+        assert "warnings" in result
+        assert "summary" in result
+        assert len(result["plan"]) == 8
+        assert all("round" in r for r in result["plan"])
+        assert all("kind" in r for r in result["plan"])
+        assert all("transition" in r for r in result["plan"])
+
+    def test_sleeve_math_explains_derivation(self):
+        module = load_demo("sleeve_decreases")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        math_text = " ".join(result["math"]).lower()
+        assert "59 - 43 = 16" in math_text
+        assert "16 / 2 = 8" in math_text
+        assert "spacing" in math_text
+
+    def test_sleeve_html_renders_table_and_pills(self):
+        module = load_demo("sleeve_decreases")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        html = module.DEMO["to_html"](result)
+        assert "<table" in html
+        assert "sleeve-pills" in html
+        assert "<svg" in html
+        assert "plan-section" in html
+
+    def test_sleeve_warning_steep_taper(self):
+        module = load_demo("sleeve_decreases")
+        inputs = {"number_of_rows": 20, "starting_count": 60, "ending_count": 40,
+                  "decrease_per_row": 2, "padding_mode": "after"}
+        result = module.DEMO["compute"](inputs)
+        assert len(result["warnings"]) > 0
+        assert "steep" in result["warnings"][0].lower() or "apart" in result["warnings"][0].lower()
+
+    def test_sleeve_error_start_not_greater_than_end(self):
+        module = load_demo("sleeve_decreases")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["starting_count"] = 40
+        inputs["ending_count"] = 50
+        with pytest.raises(ValueError, match="must be greater"):
+            module.DEMO["compute"](inputs)
+
+    def test_sleeve_error_not_enough_rows(self):
+        module = load_demo("sleeve_decreases")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["number_of_rows"] = 2
+        with pytest.raises(ValueError, match="not enough rows"):
+            module.DEMO["compute"](inputs)
+
+    def test_sleeve_all_padding_modes(self):
+        module = load_demo("sleeve_decreases")
+        for mode in ("after", "before", "both", "none"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["padding_mode"] = mode
+            result = module.DEMO["compute"](inputs)
+            assert len(result["plan"]) > 0
+            assert result["summary"]["total_decrease"] == 16
+
+    def test_sleeve_estimator_data(self):
+        module = load_demo("sleeve_decreases")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        est = result.get("_estimator_data", {})
+        assert est.get("stitch_count", 0) > 0
+        assert est.get("project_type") == "sweater"
 
     def test_shaping_instruction(self):
         module = load_demo("shaping")
@@ -250,6 +345,12 @@ class TestDemoSpecifics:
         module = load_demo("raglan")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         assert result["result"]
+        assert "plan" in result
+        assert "sections" in result["plan"]
+        assert len(result["plan"]["sections"]) > 0
+        assert result["meta"]["neck"] > 0
+        assert result["meta"]["bust"] > 0
+        assert result["meta"]["arm"] > 0
 
     def test_yarn_estimator_numbers(self):
         module = load_demo("yarn_estimator")
