@@ -12,7 +12,7 @@
   <header class="demo-header">
     <div class="eyebrow">pyKnit · PyScript demo</div>
     <h1>Sleeve Decreases</h1>
-    <p>Plan evenly-spaced decrease rows for a tapered sleeve.</p>
+    <p>Plan evenly-spaced decrease rows for a tapered sleeve. Enter your stitch counts and how many rows you have available, and the planner will schedule where to place each decrease.</p>
     <div class="linkbar">
       <a href="/index.html">← all demos</a>
     </div>
@@ -36,29 +36,34 @@
     <h2>Sleeve</h2>
     <div class="grid-2">
       <div class="form-group">
-        <label for="number_of_rows">Total rows</label>
+        <label for="number_of_rows">Total rows available for shaping</label>
         <input id="number_of_rows" type="number" value="61" min="1" step="1" />
+        <span class="field-hint">How many rows you have between the upper arm and the start of the cuff ribbing.</span>
       </div>
       <div class="form-group">
-        <label for="starting_count">Starting stitches</label>
+        <label for="starting_count">Upper arm stitches</label>
         <input id="starting_count" type="number" value="59" min="2" step="1" />
+        <span class="field-hint">Stitch count at the widest part of the sleeve (after picking up underarm stitches).</span>
       </div>
       <div class="form-group">
-        <label for="ending_count">Ending stitches</label>
+        <label for="ending_count">Cuff stitches</label>
         <input id="ending_count" type="number" value="43" min="1" step="1" />
+        <span class="field-hint">Stitch count at the wrist where the cuff ribbing begins.</span>
       </div>
       <div class="form-group">
-        <label for="decrease_per_row">Decreases per decrease row</label>
+        <label for="decrease_per_row">Stitches removed per decrease row</label>
         <input id="decrease_per_row" type="number" value="2" min="1" step="1" />
+        <span class="field-hint">2 is standard (one k2tog at each side of the underarm seam).</span>
       </div>
       <div class="form-group">
-        <label for="padding_mode">Padding mode</label>
+        <label for="padding_mode">Spacing</label>
         <select id="padding_mode">
-          <option value="after" selected>After</option>
-          <option value="before">Before</option>
-          <option value="both">Both</option>
-          <option value="none">None</option>
+          <option value="after" selected>After each decrease (default)</option>
+          <option value="before">Before each decrease</option>
+          <option value="both">Split evenly around each decrease</option>
+          <option value="none">No plain rows between decreases</option>
         </select>
+        <span class="field-hint">Where to put the plain knit rows between decrease rows.</span>
       </div>
     </div>
     <div class="button-row">
@@ -77,6 +82,15 @@
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import sleeve_decreases as DEMO
     shared.bootstrap_demo(DEMO, action_label="Plan Decreases", export_button_id="export-pattern")
+</script>
+<script>
+document.addEventListener("click", function(e) {
+    var btn = e.target.closest(".send-to-estimator");
+    if (!btn) return;
+    var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
+    sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
+    window.location.href = "/yarn-estimator/demo.html";
+});
 </script>
 </body>
 </html>
