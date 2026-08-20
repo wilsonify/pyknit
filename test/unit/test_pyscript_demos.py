@@ -480,6 +480,7 @@ class TestDemoSpecifics:
         assert "Shape Your Knitting" in html
         assert "Calculate" in html
         assert "Patterns" in html
+        assert "Choose Your Materials" in html
 
     def test_demo_index_featured_tools_present(self):
         index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
