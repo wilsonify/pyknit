@@ -34,6 +34,7 @@
 
   <section class="card">
     <h2>Shape</h2>
+    <p class="form-help">Choose a shawl shape and enter your finished dimensions. The gauge converts these into stitch and row counts so you can cast on with confidence.</p>
     <div class="grid-2">
       <div class="form-group">
         <label for="shape">Shawl shape</label>
@@ -45,12 +46,14 @@
         </select>
       </div>
       <div class="form-group">
-        <label for="width">Width</label>
+        <label for="width">Width (inches)</label>
         <input id="width" type="number" value="24" min="1" step="0.5" />
+        <span class="field-hint">How wide you want the finished shawl.</span>
       </div>
       <div class="form-group">
-        <label for="length">Length</label>
+        <label for="length">Length (inches)</label>
         <input id="length" type="number" value="30" min="1" step="0.5" />
+        <span class="field-hint">How long from centre back to edge (or top to bottom for a triangle).</span>
       </div>
     </div>
 
@@ -59,18 +62,22 @@
       <div class="form-group">
         <label for="stitch_count">Stitches in swatch</label>
         <input id="stitch_count" type="number" value="16" min="1" step="1" />
+        <span class="field-hint">Number of stitches you counted in your swatch.</span>
       </div>
       <div class="form-group">
         <label for="stitch_measure">Swatch measure</label>
         <input id="stitch_measure" type="number" value="4" min="0.1" step="0.1" />
+        <span class="field-hint">The width of the swatch in the same units (inches or cm).</span>
       </div>
       <div class="form-group">
         <label for="row_count">Rows in swatch</label>
         <input id="row_count" type="number" value="20" min="1" step="1" />
+        <span class="field-hint">Number of rows you counted in your swatch.</span>
       </div>
       <div class="form-group">
         <label for="row_measure">Row measure</label>
         <input id="row_measure" type="number" value="4" min="0.1" step="0.1" />
+        <span class="field-hint">The height of the swatch in the same units.</span>
       </div>
     </div>
     <div class="button-row">

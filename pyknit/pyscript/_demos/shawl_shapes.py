@@ -18,18 +18,29 @@ TITLE = "Shawl Shapes"
 
 
 def to_html(result):
-    """Render the shape silhouette plus the instruction list."""
+    """Render the shape silhouette plus the instruction list and assumptions."""
     steps = "".join(
         f"<tr><td class='mono'>{_esc(step)}</td></tr>"
         for step in result["instructions"]
     )
     est = result.get("_estimator_data", {})
+    assumptions = result.get("assumptions", [])
+    assumption_html = ""
+    if assumptions:
+        items = "".join(f"<li>{_esc(a)}</li>" for a in assumptions)
+        assumption_html = (
+            "<section class='plan-section'>"
+            "<h4>How this shawl is constructed</h4>"
+            f"<ul class='plan-assumptions'>{items}</ul>"
+            "</section>"
+        )
     return (
         f"<div class='output-box'>{result['svg']}</div>"
         "<div class='button-row'><button class='btn-secondary send-to-estimator' "
         f"data-stitches='{est.get('stitch_count', 0)}' "
         f"data-type='{est.get('project_type', 'custom')}'>"
         "Send to Yarn Estimator &rarr;</button></div>"
+        f"{assumption_html}"
         "<h3>Instructions</h3>"
         f"<div class='output-box'><table class='instructions'><tbody>{steps}</tbody></table></div>"
     )
@@ -78,6 +89,7 @@ def compute(inputs):
         "length": length,
         "instructions": instructions,
         "svg": _shape_svg(shape),
+        "assumptions": _build_assumptions(shape, width, length, gauge),
         "_estimator_data": {
             "stitch_count": est_stitches,
             "project_type": f"shawl_{shape}" if shape in ("triangle", "crescent", "rectangle") else "custom",
@@ -91,6 +103,37 @@ def _measure(inputs):
         if float(inputs[key]) <= 0:
             raise ValueError("gauge values must be positive")
     return {key: float(inputs[key]) for key in inputs if key.startswith(("stitch_", "row_"))}
+
+
+def _build_assumptions(shape, width, length, gauge):
+    sps = gauge.measurement_to_stitches(width)
+    rps = gauge.measurement_to_rows(length)
+    assumptions = [
+        f"Gauge: {gauge.stitch_count} stitches per {gauge.stitch_measure} "
+        f"({sps:.1f} stitches/in) x {gauge.row_count} rows per "
+        f"{gauge.row_measure} ({rps:.1f} rows/in).",
+    ]
+    if shape == "crescent":
+        assumptions.append(
+            "Crescent shawls are worked top-down with short rows to create "
+            "the curved shape, then worked straight to the edge."
+        )
+    elif shape == "triangle":
+        assumptions.append(
+            "Triangle shawls are worked top-down from the centre back "
+            "with increases along the centre and both edges."
+        )
+    elif shape == "square":
+        assumptions.append(
+            "Square shawls are worked from the centre outward, with "
+            "increases at four corners each round."
+        )
+    elif shape == "rectangle":
+        assumptions.append(
+            "Rectangle shawls are worked flat from one end to the other "
+            "(or from the centre outward), with no shaping."
+        )
+    return assumptions
 
 
 def _shape_svg(shape):
