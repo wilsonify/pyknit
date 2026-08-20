@@ -467,7 +467,8 @@ class TestDemoSpecifics:
         demos = [
             "gauge-conversion", "chart-renderer", "even-shaping", "hat-crown",
             "pi-shawl", "raglan-sweater", "shawl-shapes", "sleeve-decreases",
-            "sock-calculator", "yarn-estimator",
+            "sock-calculator", "yarn-estimator", "yarn-advisor", "needle-advisor",
+            "knit-simulator",
         ]
         for demo in demos:
             assert f"{demo}/demo.html" in html, f"Missing link to {demo}"
@@ -722,6 +723,224 @@ class TestDemoSpecifics:
         assert "common.css" in text
         assert "all demos" in text
         assert "export-calc" in text
+
+
+class TestYarnAdvisor:
+    def test_default_compute(self):
+        module = load_demo("yarn_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert result["best_fiber"] is not None
+        assert result["best_score"] > 0
+        assert len(result["recommendations"]) > 0
+        assert result["yarn_weight"] == "dk"
+
+    def test_all_project_types(self):
+        module = load_demo("yarn_advisor")
+        for pt in ("scarf", "hat", "sock", "sweater", "shawl", "blanket", "mittens", "baby"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["project_type"] = pt
+            result = module.DEMO["compute"](inputs)
+            assert result["project_type"] == pt
+            assert len(result["recommendations"]) > 0
+
+    def test_all_gauge_categories(self):
+        module = load_demo("yarn_advisor")
+        for g in ("lace", "fingering", "sport", "dk", "worsted", "aran", "bulky", "super_bulky"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["target_gauge"] = g
+            result = module.DEMO["compute"](inputs)
+            expected = "super bulky" if g == "super_bulky" else g
+            assert result["yarn_weight"] == expected
+
+    def test_html_renders(self):
+        module = load_demo("yarn_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        html = module.DEMO["to_html"](result)
+        assert "stat-pill" in html
+        assert "plan-section" in html
+        assert "Best match" in html
+
+    def test_warnings_for_conflicts(self):
+        module = load_demo("yarn_advisor")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["project_type"] = "sock"
+        inputs["fabric_drape"] = "very_drapey"
+        result = module.DEMO["compute"](inputs)
+        assert len(result["warnings"]) > 0
+
+    def test_fiber_preference(self):
+        module = load_demo("yarn_advisor")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["fiber_pref"] = "merino"
+        result = module.DEMO["compute"](inputs)
+        assert any(r["fiber"] == "merino" for r in result["recommendations"])
+
+    def test_estimator_data(self):
+        module = load_demo("yarn_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert "drape_score" in result
+        assert "warmth_score" in result
+        assert 0 <= result["drape_score"] <= 1
+        assert 0 <= result["warmth_score"] <= 1
+
+
+class TestNeedleAdvisor:
+    def test_default_compute(self):
+        module = load_demo("needle_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert result["recommended_mm"] > 0
+        assert result["recommended_us"] != "?"
+        assert len(result["needle_types"]) > 0
+
+    def test_all_yarn_weights(self):
+        module = load_demo("needle_advisor")
+        for w in ("lace", "fingering", "sport", "dk", "worsted", "aran", "bulky", "super_bulky"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["yarn_weight"] = w
+            result = module.DEMO["compute"](inputs)
+            assert result["yarn_weight"] == w
+            assert result["recommended_mm"] > 0
+
+    def test_all_project_types(self):
+        module = load_demo("needle_advisor")
+        for pt in ("scarf", "hat", "sock", "sweater", "shawl", "blanket", "mittens", "baby"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["project_type"] = pt
+            result = module.DEMO["compute"](inputs)
+            assert result["project_label"]
+            assert len(result["needle_types"]) > 0
+
+    def test_all_construction_types(self):
+        module = load_demo("needle_advisor")
+        for ct in ("flat", "round_seamless", "round_dpns", "small_circumference"):
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["construction"] = ct
+            result = module.DEMO["compute"](inputs)
+            assert result["construction_label"]
+            assert len(result["needle_types"]) > 0
+
+    def test_html_renders(self):
+        module = load_demo("needle_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        html = module.DEMO["to_html"](result)
+        assert "stat-pill" in html
+        assert "Starting needle size" in html
+        assert "Needle types to consider" in html
+        assert "Cable length" in html
+
+    def test_warnings_for_fine_gauge(self):
+        module = load_demo("needle_advisor")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["yarn_weight"] = "lace"
+        inputs["target_gauge"] = 8
+        result = module.DEMO["compute"](inputs)
+        assert len(result["warnings"]) > 0
+
+    def test_cable_length_for_hat(self):
+        module = load_demo("needle_advisor")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["project_type"] = "hat"
+        inputs["construction"] = "round_seamless"
+        result = module.DEMO["compute"](inputs)
+        assert "16 in" in result["cable_length"]["label"]
+
+    def test_assumptions_present(self):
+        module = load_demo("needle_advisor")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert len(result["assumptions"]) > 0
+        assert any("swatch" in a.lower() for a in result["assumptions"])
+
+
+class TestKnitSimulator:
+    def test_default_compute(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert result["total_steps"] > 0
+        assert len(result["final_stitches"]) > 0
+        assert result["speed_ms"] == 400
+
+    def test_cast_on_only(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 10"
+        result = module.DEMO["compute"](inputs)
+        assert result["total_steps"] == 1
+        assert len(result["final_stitches"]) == 10
+
+    def test_knit_and_purl(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 12\nk all\np all"
+        result = module.DEMO["compute"](inputs)
+        assert result["total_steps"] == 3
+        assert len(result["final_stitches"]) == 12
+
+    def test_k2tog_decreases(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 10\nk2tog across"
+        result = module.DEMO["compute"](inputs)
+        assert len(result["final_stitches"]) < 10
+
+    def test_yo_increases(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 8\nyo k1 across"
+        result = module.DEMO["compute"](inputs)
+        assert len(result["final_stitches"]) >= 8
+
+    def test_speed_presets(self):
+        module = load_demo("knit_simulator")
+        for speed, expected_ms in [("slow", 800), ("normal", 400), ("fast", 150)]:
+            inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+            inputs["speed"] = speed
+            result = module.DEMO["compute"](inputs)
+            assert result["speed_ms"] == expected_ms
+
+    def test_html_renders(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        html = module.DEMO["to_html"](result)
+        assert "stat-pill" in html
+        assert "Current stitch view" in html
+        assert "Fabric so far" in html
+        assert "Step-by-step log" in html
+
+    def test_step_log_entries(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        for step in result["steps"]:
+            assert "op" in step
+            assert "detail" in step
+            assert "stitches" in step
+            assert "highlight" in step
+
+    def test_empty_instructions_raises(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = ""
+        with pytest.raises(ValueError, match="No valid instructions"):
+            module.DEMO["compute"](inputs)
+
+    def test_invalid_instructions_warns(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 20\nk2 p2"
+        result = module.DEMO["compute"](inputs)
+        assert len(result["warnings"]) > 0
+
+    def test_bind_off(self):
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 10\nbo 5"
+        result = module.DEMO["compute"](inputs)
+        assert len(result["final_stitches"]) == 5
+
+    def test_fabric_svg_generated(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert "<svg" in result["fabric_svg"]
+        assert "<svg" in result["svg"]
 
 
 def _load_gauge_conversion():
