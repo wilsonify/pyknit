@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Yarn Advisor</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Yarn Advisor</h1>
+    <p>Tell us about your project and preferences, and we'll recommend the
+    best yarn weight, fiber type, and what to watch out for.</p>
+    <div class="linkbar">
+      <a href="/index.html">&larr; all tools</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.1-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Tell us about your project</h2>
+    <p class="form-help">There's no single right yarn — this tool gives recommendations, tradeoffs, and things to consider. The more specific your inputs, the more tailored the advice.</p>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="project_type">What are you making?</label>
+        <select id="project_type">
+          <option value="scarf">Scarf / Cowl</option>
+          <option value="hat">Hat / Beanie</option>
+          <option value="sock">Socks</option>
+          <option value="sweater">Sweater</option>
+          <option value="shawl">Shawl / Wrap</option>
+          <option value="blanket">Blanket</option>
+          <option value="mittens">Mittens / Gloves</option>
+          <option value="baby">Baby garment</option>
+        </select>
+        <span class="field-hint">Different projects need different yarn properties.</span>
+      </div>
+      <div class="form-group">
+        <label for="target_gauge">Target gauge</label>
+        <select id="target_gauge">
+          <option value="lace">Lace (30+ sts/in)</option>
+          <option value="fingering">Fingering (27-32 sts/in)</option>
+          <option value="sport">Sport (23-26 sts/in)</option>
+          <option value="dk">DK (21-24 sts/in)</option>
+          <option value="worsted" selected>Worsted (18-20 sts/in)</option>
+          <option value="aran">Aran (16-18 sts/in)</option>
+          <option value="bulky">Bulky (14-17 sts/in)</option>
+          <option value="super_bulky">Super Bulky (9-12 sts/in)</option>
+        </select>
+        <span class="field-hint">How fine or thick do you want to knit?</span>
+      </div>
+      <div class="form-group">
+        <label for="fabric_drape">Fabric character</label>
+        <select id="fabric_drape">
+          <option value="very_drapey">Very drapey (flowing)</option>
+          <option value="drapey">Drapey (soft drape)</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="structured">Structured (firm)</option>
+          <option value="very_structured">Very structured (stiff)</option>
+        </select>
+        <span class="field-hint">How should the fabric feel and behave?</span>
+      </div>
+      <div class="form-group">
+        <label for="warmth">Warmth level</label>
+        <select id="warmth">
+          <option value="warmest">Warmest</option>
+          <option value="warm">Warm</option>
+          <option value="medium" selected>Medium</option>
+          <option value="light">Light</option>
+          <option value="cool">Cool / breathable</option>
+        </select>
+        <span class="field-hint">How warm should the finished project be?</span>
+      </div>
+      <div class="form-group">
+        <label for="fiber_pref">Fiber preference</label>
+        <select id="fiber_pref">
+          <option value="any" selected>No preference</option>
+          <option value="merino">Merino Wool</option>
+          <option value="wool">Non-superwash Wool</option>
+          <option value="alpaca">Alpaca</option>
+          <option value="cotton">Cotton</option>
+          <option value="silk">Silk blend</option>
+          <option value="acrylic">Acrylic</option>
+          <option value="linen">Linen</option>
+          <option value="blends">Wool blends</option>
+        </select>
+        <span class="field-hint">Pick a fiber if you have one in mind, or leave as "no preference".</span>
+      </div>
+      <div class="form-group">
+        <label for="intended_use">How will it be used?</label>
+        <select id="intended_use">
+          <option value="everyday" selected>Everyday wear</option>
+          <option value="gift">Gift</option>
+          <option value="luxury">Luxury / heirloom</option>
+          <option value="baby">Baby / child</option>
+          <option value="outdoor">Outdoor / active</option>
+          <option value="home">Home decor</option>
+        </select>
+        <span class="field-hint">This affects durability and care recommendations.</span>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Get Recommendations</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+  </section>
+
+  <div id="demo-output"></div>
+
+  <footer>
+    <p>Recommendations are based on fiber properties and project requirements.
+    Always swatch to confirm.</p>
+  </footer>
+
+  <script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import yarn_advisor as DEMO
+    shared.bootstrap_demo(DEMO, action_label="Get Recommendations")
+  </script>
+</body>
+</html>
