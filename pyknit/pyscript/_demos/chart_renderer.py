@@ -77,6 +77,11 @@ def compute(inputs):
             ("produced", sum(stitches_produced(row) for row in pattern)),
             ("chart width", max(chart_width(r) for r in pattern)),
         ],
+        "_estimator_data": {
+            "stitch_count": sum(stitch_operations(row) for row in pattern) * len(pattern),
+            "project_type": "scarf",
+            "source": "chart_renderer",
+        },
     }
 
 
@@ -99,7 +104,16 @@ def to_html(result):
     pills = []
     for label, count in result["report"]:
         pills.append(f"<span class='stat-pill'>{label}: <em>{count}</em></span>")
+    est = result.get("_estimator_data", {})
+    send_to = ""
+    if est.get("stitch_count"):
+        send_to = (
+            "<div class='button-row'><button class='btn-secondary send-to-estimator' "
+            f"data-stitches='{est['stitch_count']}' data-type='{est.get('project_type', 'scarf')}'>"
+            "Send to Yarn Estimator &rarr;</button></div>"
+        )
     return (
+        f"{send_to}"
         "<div class='stat-row'>" + "".join(pills) + "</div>"
         f"<div class='output-box'>{svg}</div>"
     )

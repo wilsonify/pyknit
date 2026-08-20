@@ -34,6 +34,7 @@
 
   <section class="card">
     <h2>Pattern</h2>
+    <p class="form-help">Type your knitting instructions, one row per line. Use standard abbreviations: k (knit), p (purl), yo (yarn over), k2tog (knit 2 together), ssk (slip slip knit). Separate stitch instructions with spaces.</p>
     <div class="form-group">
       <label for="pattern">Knitting instructions (one row per line):</label>
       <textarea id="pattern" rows="5">k2 yo k2tog yo k1
@@ -48,6 +49,7 @@ p3 k2tog yo p1</textarea>
           <option value="default" selected>Default</option>
           <option value="japanese">Japanese</option>
         </select>
+        <span class="field-hint">Japanese uses traditional knot symbols; default uses letter abbreviations.</span>
       </div>
       <div class="form-group">
         <label for="lr">Horizontal direction</label>
@@ -55,6 +57,7 @@ p3 k2tog yo p1</textarea>
           <option value="lr" selected>Left to right</option>
           <option value="rl">Right to left</option>
         </select>
+        <span class="field-hint">Match how you read the chart: left-to-right for flat, right-to-left for in-the-round.</span>
       </div>
       <div class="form-group">
         <label for="tb">Vertical direction</label>
@@ -62,6 +65,7 @@ p3 k2tog yo p1</textarea>
           <option value="tb" selected>Top to bottom</option>
           <option value="bt">Bottom to top</option>
         </select>
+        <span class="field-hint">Top-to-bottom matches how most charts are read.</span>
       </div>
     </div>
     <div class="button-row">
@@ -80,6 +84,15 @@ p3 k2tog yo p1</textarea>
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import chart_renderer as DEMO
     shared.bootstrap_demo(DEMO, action_label="Render Chart", export_button_id="export-pattern")
+</script>
+<script>
+document.addEventListener("click", function(e) {
+    var btn = e.target.closest(".send-to-estimator");
+    if (!btn) return;
+    var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
+    sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
+    window.location.href = "/yarn-estimator/demo.html";
+});
 </script>
 </body>
 </html>
