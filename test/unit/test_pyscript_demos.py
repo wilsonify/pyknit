@@ -454,6 +454,77 @@ class TestDemoSpecifics:
         index_text = index_path.read_text(encoding="utf-8")
         assert "Pattern I/O" not in index_text
 
+    def test_demo_index_title_and_meta(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "Interactive Knitting Tools" in html
+        assert '<meta name="description"' in html
+        assert "pyKnit" in html
+
+    def test_demo_index_links_all_demos(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        demos = [
+            "gauge-conversion", "chart-renderer", "even-shaping", "hat-crown",
+            "pi-shawl", "raglan-sweater", "shawl-shapes", "sleeve-decreases",
+            "sock-calculator", "yarn-estimator",
+        ]
+        for demo in demos:
+            assert f"{demo}/demo.html" in html, f"Missing link to {demo}"
+
+    def test_demo_index_has_category_headings(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "Plan a Project" in html
+        assert "Shape Your Knitting" in html
+        assert "Calculate" in html
+        assert "Patterns" in html
+
+    def test_demo_index_featured_tools_present(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "Sock Calculator" in html
+        assert "Raglan Sweater" in html
+        assert "featured-card" in html
+
+    def test_demo_index_raglan_description_accurate(self):
+        """Raglan description must reflect full top-down sweater capability."""
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8").lower()
+        assert "seamless" in html
+        assert "top-down" in html
+        assert "increase" in html
+        assert "sleeve" in html
+        assert "hem" in html or "cuff" in html
+
+    def test_demo_index_no_console_debug_instructions(self):
+        """Landing page should not tell users to open browser console."""
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8").lower()
+        assert "console" not in html or "f12" not in html
+
+    def test_demo_index_links_correct_repo(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "github.com/wilsonify/pyknit" in html
+
+    def test_demo_index_has_loading_banner(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "loading-banner" in html
+        assert "30" in html and "60" in html
+
+    def test_demo_index_svg_illustrations_present(self):
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert html.count("<svg") >= 10, "Expected at least 10 inline SVGs for illustrations and icons"
+
+    def test_demo_index_no_pyscript_branding_in_header(self):
+        """The main heading should focus on knitting, not PyScript."""
+        index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
+        html = index_path.read_text(encoding="utf-8")
+        assert "PyScript" not in html.split("</header>")[0] if "</header>" in html else True
+
     def test_chart_renderer_direction_selects_change_the_chart(self):
         """The lr/tb direction selects must affect the rendered SVG."""
         module = load_demo("chart_renderer")

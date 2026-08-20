@@ -3,138 +3,597 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>pyKnit · Interactive Demos</title>
-  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
-  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <title>pyKnit — Interactive Knitting Tools</title>
+  <meta name="description" content="Free interactive knitting calculators and planners. Plan socks, sweaters, shawls, and more — all running in your browser." />
   <link rel="stylesheet" href="/_assets/common.css" />
   <style>
-    .demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 1.5rem;
+    /* ── Landing page layout ───────────────────────────── */
+    .landing-hero {
+      text-align: center;
+      padding: 2.5rem 1rem 1.8rem;
+      max-width: 42rem;
+      margin: 0 auto;
     }
-    .demo-card {
-      border: 1px solid var(--border, #ddd);
-      border-radius: 10px;
-      padding: 1.25rem;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    .landing-hero h1 {
+      font-size: 2.2rem;
+      color: var(--primary-dark);
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
     }
-    .demo-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    .landing-hero .tagline {
+      font-size: 1.1rem;
+      color: #6b6572;
+      margin: 0 auto 1.2rem;
+      max-width: 34rem;
+      line-height: 1.6;
     }
-    .demo-card h3 {
-      margin: 0 0 0.4rem;
-      color: #5a2a75;
+    .landing-hero .cta-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
     }
-    .demo-card p {
-      margin: 0 0 1rem;
-      color: #555;
-      font-size: 0.92rem;
+    .landing-hero .cta-row a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
-    .demo-card a {
-      display: inline-block;
-      color: #7b3fa0;
+    .cta-primary {
+      background: var(--primary);
+      color: white;
+      padding: 0.65rem 1.3rem;
+      border-radius: 8px;
       font-weight: 600;
       text-decoration: none;
+      transition: background 0.15s;
     }
-    .demo-card a:hover {
+    .cta-primary:hover { background: var(--primary-dark); }
+    .cta-secondary {
+      background: var(--light);
+      color: var(--dark);
+      border: 1px solid var(--border);
+      padding: 0.65rem 1.3rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .cta-secondary:hover { background: #e7e4ee; }
+
+    /* ── Featured tools ─────────────────────────────────── */
+    .featured {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 0 auto 2rem;
+      max-width: 54rem;
+      padding: 0 1rem;
+    }
+    @media (max-width: 640px) {
+      .featured { grid-template-columns: 1fr; }
+    }
+    .featured-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 4px 16px rgba(43,35,51,0.07);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .featured-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(43,35,51,0.13);
+    }
+    .featured-card .card-visual {
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.4rem 1.2rem;
+      min-height: 120px;
+    }
+    .featured-card .card-visual svg {
+      width: 100%;
+      max-width: 260px;
+      height: auto;
+    }
+    .featured-card .card-body {
+      padding: 1.2rem 1.4rem 1.3rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .featured-card .card-body h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1.2rem;
+      color: var(--primary-dark);
+    }
+    .featured-card .card-body p {
+      margin: 0 0 0.9rem;
+      color: #555;
+      font-size: 0.93rem;
+      line-height: 1.55;
+      flex: 1;
+    }
+    .featured-card .card-body .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .featured-card .card-body .card-tags span {
+      background: var(--light);
+      color: #6b6572;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .featured-card .card-body a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .featured-card .card-body a:hover {
       text-decoration: underline;
     }
-    .demo-header {
-      border-bottom: 2px solid #f0e9f5;
-      padding-bottom: 1rem;
-      margin-bottom: 1rem;
+
+    /* ── Category sections ──────────────────────────────── */
+    .tool-section {
+      margin: 0 auto 2rem;
+      max-width: 54rem;
+      padding: 0 1rem;
     }
-    .eyebrow {
-      color: #7b3fa0;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 700;
+    .tool-section h2 {
+      font-size: 1.15rem;
+      color: var(--primary-dark);
+      margin: 0 0 0.7rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    footer {
-      margin-top: 2.5rem;
+    .tool-section h2 .section-icon {
+      width: 22px;
+      height: 22px;
+      opacity: 0.7;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.9rem;
+    }
+    .tool-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.2rem;
+      background: white;
+      box-shadow: 0 2px 8px rgba(43,35,51,0.05);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .tool-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(43,35,51,0.11);
+    }
+    .tool-card .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-bottom: 0.4rem;
+    }
+    .tool-card .card-icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .tool-card h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--primary-dark);
+    }
+    .tool-card p {
+      margin: 0 0 0.7rem;
+      color: #555;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      flex: 1;
+    }
+    .tool-card a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .tool-card a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Loading banner ─────────────────────────────────── */
+    .loading-banner {
+      border: 1px solid var(--info);
+      background: #e3f2fd;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      margin: 0 auto 1.5rem;
+      max-width: 54rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      color: #1a5276;
+    }
+    .loading-banner .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--info);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-banner.hidden { display: none; }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .landing-footer {
+      text-align: center;
+      margin: 2rem auto 0;
+      padding: 1.2rem 1rem;
+      max-width: 54rem;
+      border-top: 1px solid #eee;
       color: #888;
       font-size: 0.85rem;
-      border-top: 1px solid #eee;
-      padding-top: 1rem;
+      line-height: 1.6;
+    }
+    .landing-footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .landing-footer a:hover {
+      text-decoration: underline;
+    }
+    .landing-footer .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.4rem;
+    }
+
+    /* ── Section icons (inline SVGs) ────────────────────── */
+    .icon-plan, .icon-shape, .icon-calc, .icon-pattern {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* ── Responsive tweaks ──────────────────────────────── */
+    @media (max-width: 480px) {
+      .landing-hero h1 { font-size: 1.7rem; }
+      .landing-hero .tagline { font-size: 1rem; }
+      .featured-card .card-visual { padding: 1rem; min-height: 90px; }
+      .tool-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <header class="demo-header">
-    <div class="eyebrow">pyKnit · PyScript</div>
-    <h1>Interactive Knitting Demos</h1>
-    <p>
-      pyKnit running entirely in your browser via PyScript — no server, no build step.
-      Pick a demo, tweak the numbers, and click the button. First visit downloads the
-      runtime (~30-60 s), later visits are fast.
-    </p>
-  </header>
 
-  <section class="demo-grid">
-    <div class="demo-card">
-      <h3>Gauge Conversion</h3>
-      <p>Convert stitch and row counts between different gauges.</p>
-      <a href="gauge-conversion/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Chart Renderer</h3>
-      <p>Type instructions and render a stitch chart as SVG.</p>
-      <a href="chart-renderer/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Even Shaping</h3>
-      <p>Space increases or decreases evenly across a round or row.</p>
-      <a href="even-shaping/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Hat Crown Planner</h3>
-      <p>Plan the decrease rounds for a hat crown.</p>
-      <a href="hat-crown/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Pi Shawl Planner</h3>
-      <p>Find the doubling rounds for a pi shawl.</p>
-      <a href="pi-shawl/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Raglan Sweater</h3>
-      <p>Calculate marker setup for a top-down raglan.</p>
-      <a href="raglan-sweater/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Shawl Shapes</h3>
-      <p>Generate instructions for crescent, triangle, square &amp; rectangle shawls.</p>
-      <a href="shawl-shapes/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Sleeve Decreases</h3>
-      <p>Plan evenly-spaced decrease rows for a tapered sleeve.</p>
-      <a href="sleeve-decreases/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Sock Calculator</h3>
-      <p>Made-to-measure sock from your gauge and foot size.</p>
-      <a href="sock-calculator/demo.html">Open demo →</a>
-    </div>
-    <div class="demo-card">
-      <h3>Yarn &amp; Time Estimator</h3>
-      <p>Estimate yarn and knitting time for a project.</p>
-      <a href="yarn-estimator/demo.html">Open demo →</a>
+  <!-- ── Hero ─────────────────────────────────────────── -->
+  <section class="landing-hero">
+    <h1>pyKnit Knitting Tools</h1>
+    <p class="tagline">
+      Plan garments, calculate shaping, and generate stitch charts — all running
+      right in your browser. No install needed.
+    </p>
+    <div class="cta-row">
+      <a href="#featured" class="cta-primary">Explore Tools</a>
+      <a href="https://github.com/wilsonify/pyknit" class="cta-secondary" rel="noopener">View on GitHub</a>
     </div>
   </section>
 
-  <footer>
-    <p>
-      Powered by <a href="https://github.com/terriko/pyknit">pyknit</a> ·
-      <a href="https://pyscript.com">PyScript</a>. Open the browser console (F12) for
-      tracebacks if something breaks.
-    </p>
+  <!-- ── Loading banner (hidden once runtime is ready) ── -->
+  <div id="loading-banner" class="loading-banner">
+    <div class="spinner"></div>
+    <span>First visit? Tools load in your browser — this takes about 30–60 seconds the first time, then it's instant.</span>
+  </div>
+
+  <!-- ── Featured tools ────────────────────────────────── -->
+  <section id="featured" class="featured" aria-label="Featured tools">
+
+    <!-- Sock Calculator -->
+    <a href="sock-calculator/demo.html" class="featured-card" aria-label="Open Sock Calculator">
+      <div class="card-visual">
+        <svg viewBox="0 0 220 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sock diagram showing cuff, leg, heel, and toe sections">
+          <!-- sock outline -->
+          <path d="M50 15 h30 a8 8 0 0 1 8 8 v25 a12 12 0 0 0 12 12 h8 a12 12 0 0 1 12 12 v8 a25 25 0 0 1-50 0 v-8 a8 8 0 0 0-8-8 h-12" fill="none" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- cuff ribbing lines -->
+          <line x1="55" y1="22" x2="75" y2="22" stroke="#b38fd4" stroke-width="1.5"/>
+          <line x1="55" y1="26" x2="75" y2="26" stroke="#b38fd4" stroke-width="1.5"/>
+          <line x1="55" y1="30" x2="75" y2="30" stroke="#b38fd4" stroke-width="1.5"/>
+          <!-- labels -->
+          <text x="60" y="10" font-size="9" fill="#6b6572" text-anchor="middle">cuff</text>
+          <text x="60" y="46" font-size="9" fill="#6b6572" text-anchor="middle">leg</text>
+          <text x="90" y="55" font-size="9" fill="#6b6572" text-anchor="middle">heel</text>
+          <text x="65" y="82" font-size="9" fill="#6b6572" text-anchor="middle">toe</text>
+          <!-- stitch count pills -->
+          <rect x="110" y="14" rx="4" width="60" height="18" fill="#f3ecf7"/>
+          <text x="140" y="27" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">54 sts cast-on</text>
+          <rect x="110" y="38" rx="4" width="60" height="18" fill="#f3ecf7"/>
+          <text x="140" y="51" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">27 sts toe</text>
+          <rect x="110" y="62" rx="4" width="60" height="18" fill="#e8f5e9"/>
+          <text x="140" y="75" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">step-by-step</text>
+        </svg>
+      </div>
+      <div class="card-body">
+        <h3>Sock Calculator</h3>
+        <p>
+          Enter your gauge and foot measurements to get a complete, custom-fit
+          sock plan: cast-on count, heel flap, gusset, foot length, and toe
+          decreases — every stitch count calculated for your yarn.
+        </p>
+        <div class="card-tags">
+          <span>custom fit</span>
+          <span>heel flap &amp; gusset</span>
+          <span>step-by-step</span>
+        </div>
+        <span>Open Sock Calculator &rarr;</span>
+      </div>
+    </a>
+
+    <!-- Raglan Sweater -->
+    <a href="raglan-sweater/demo.html" class="featured-card" aria-label="Open Raglan Sweater Planner">
+      <div class="card-visual">
+        <svg viewBox="0 0 220 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raglan sweater diagram showing body and sleeve sections">
+          <!-- body outline -->
+          <path d="M70 30 h60 a12 12 0 0 1 12 12 v50 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-20 h-20 v20 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-50 a12 12 0 0 1 12-12z" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- raglan lines -->
+          <line x1="82" y1="30" x2="72" y2="58" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <line x1="138" y1="30" x2="148" y2="58" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <!-- left sleeve -->
+          <path d="M72 58 h-20 a6 6 0 0 0-6 6 v18 a4 4 0 0 0 4 4 h18" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- right sleeve -->
+          <path d="M148 58 h20 a6 6 0 0 1 6 6 v18 a4 4 0 0 1-4 4 h-18" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- neck -->
+          <path d="M80 30 h40" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
+          <!-- marker dots -->
+          <circle cx="82" cy="38" r="3" fill="#e74c3c"/>
+          <circle cx="138" cy="38" r="3" fill="#e74c3c"/>
+          <!-- labels -->
+          <text x="100" y="18" font-size="9" fill="#6b6572" text-anchor="middle">neck cast-on</text>
+          <text x="65" y="50" font-size="8" fill="#6b6572" text-anchor="middle">raglan</text>
+          <text x="45" y="78" font-size="9" fill="#6b6572" text-anchor="middle">sleeve</text>
+          <text x="175" y="78" font-size="9" fill="#6b6572" text-anchor="middle">sleeve</text>
+          <text x="100" y="80" font-size="9" fill="#6b6572" text-anchor="middle">body</text>
+          <!-- stitch counts -->
+          <rect x="8" y="6" rx="4" width="65" height="18" fill="#f3ecf7"/>
+          <text x="40" y="19" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">80 sts neck</text>
+          <rect x="148" y="6" rx="4" width="65" height="18" fill="#e8f5e9"/>
+          <text x="180" y="19" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">full plan</text>
+        </svg>
+      </div>
+      <div class="card-body">
+        <h3>Raglan Sweater Planner</h3>
+        <p>
+          Plan a complete seamless top-down raglan sweater from your gauge and
+          body measurements. Get the cast-on, raglan increase schedule, sleeve
+          separation, body length, sleeve taper, and cuff — a full knitting plan
+          from neck to hem.
+        </p>
+        <div class="card-tags">
+          <span>top-down seamless</span>
+          <span>increase schedule</span>
+          <span>sleeve taper</span>
+        </div>
+        <span>Open Raglan Sweater Planner &rarr;</span>
+      </div>
+    </a>
+
+  </section>
+
+  <!-- ── Plan a Project ────────────────────────────────── -->
+  <section class="tool-section" aria-label="Plan a Project">
+    <h2>
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Plan a Project
+    </h2>
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="14" cy="14" r="12" stroke="#7b3fa0" stroke-width="2"/>
+            <circle cx="14" cy="14" r="6" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <circle cx="14" cy="14" r="1.5" fill="#7b3fa0"/>
+          </svg>
+          <h3>Pi Shawl Planner</h3>
+        </div>
+        <p>
+          Find the exact increase rounds for a pi shawl. Enter your radius and
+          row gauge to see where stitch counts double, with a visual ring diagram.
+        </p>
+        <a href="pi-shawl/demo.html">Open Pi Shawl Planner &rarr;</a>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M4 22 L14 6 L24 22 Z" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linejoin="round"/>
+            <path d="M8 22 L14 10 L20 22" stroke="#b38fd4" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-dasharray="3 2"/>
+          </svg>
+          <h3>Shawl Shapes</h3>
+        </div>
+        <p>
+          Generate row-by-row instructions for crescent, triangle, square, or
+          rectangle shawls with your gauge and desired dimensions.
+        </p>
+        <a href="shawl-shapes/demo.html">Open Shawl Shapes &rarr;</a>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M8 24 C8 24 8 14 14 8 C20 14 20 24 20 24" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 24 C10 24 10 16 14 11 C18 16 18 24 18 24" stroke="#b38fd4" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 2"/>
+            <circle cx="14" cy="6" r="2" fill="#7b3fa0"/>
+          </svg>
+          <h3>Hat Crown Planner</h3>
+        </div>
+        <p>
+          Plan the decrease rounds for a hat crown. See exactly which rounds to
+          decrease, how many stitches remain, and a visual crown diagram.
+        </p>
+        <a href="hat-crown/demo.html">Open Hat Crown Planner &rarr;</a>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M14 4 v16" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 20 C8 20 6 24 6 24 h16 C22 24 20 20 14 20" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 8 h8" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+            <path d="M9 12 h10" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+          </svg>
+          <h3>Sleeve Decreases</h3>
+        </div>
+        <p>
+          Plan evenly-spaced decrease rows for a tapered sleeve. Enter your
+          stitch counts and desired taper to get a round-by-round schedule with
+          a stitch-transition diagram.
+        </p>
+        <a href="sleeve-decreases/demo.html">Open Sleeve Decreases &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Shape Your Knitting ───────────────────────────── -->
+  <section class="tool-section" aria-label="Shape Your Knitting">
+    <h2>
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Shape Your Knitting
+    </h2>
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line x1="4" y1="14" x2="24" y2="14" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="8" cy="14" r="2" fill="#e74c3c"/>
+            <circle cx="14" cy="14" r="2" fill="#2ecc71"/>
+            <circle cx="20" cy="14" r="2" fill="#e74c3c"/>
+            <path d="M8 10 v-4 M14 10 v-4 M20 10 v-4" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+          </svg>
+          <h3>Even Shaping</h3>
+        </div>
+        <p>
+          Space increases or decreases evenly across a round or flat row.
+          See the spacing pattern as a visual diagram plus a written instruction
+          you can follow row by row.
+        </p>
+        <a href="even-shaping/demo.html">Open Even Shaping &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Calculate & Convert ───────────────────────────── -->
+  <section class="tool-section" aria-label="Calculate and Convert">
+    <h2>
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
+      Calculate &amp; Convert
+    </h2>
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="4" width="20" height="20" rx="3" stroke="#7b3fa0" stroke-width="2"/>
+            <line x1="4" y1="14" x2="24" y2="14" stroke="#7b3fa0" stroke-width="1.5"/>
+            <line x1="14" y1="4" x2="14" y2="24" stroke="#7b3fa0" stroke-width="1.5"/>
+            <text x="9" y="11" font-size="7" fill="#5a2a75" text-anchor="middle" font-weight="700">20</text>
+            <text x="19" y="11" font-size="7" fill="#5a2a75" text-anchor="middle" font-weight="700">24</text>
+          </svg>
+          <h3>Gauge Conversion</h3>
+        </div>
+        <p>
+          Convert stitch and row counts between different gauges. Switch a
+          pattern from worsted to fingering weight, or adapt a design to your
+          personal gauge — the math handled for you.
+        </p>
+        <a href="gauge-conversion/demo.html">Open Gauge Conversion &rarr;</a>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M6 22 C6 22 10 6 14 6 C18 6 22 22 22 22" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="6" y1="22" x2="22" y2="22" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <text x="14" y="18" font-size="8" fill="#5a2a75" text-anchor="middle" font-weight="600">yards</text>
+          </svg>
+          <h3>Yarn &amp; Time Estimator</h3>
+        </div>
+        <p>
+          Estimate how much yarn and time a project will need. Enter your
+          project dimensions, gauge, and yarn weight to get yardage, grams,
+          and hours — with realistic ranges.
+        </p>
+        <a href="yarn-estimator/demo.html">Open Yarn Estimator &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Patterns & Charts ─────────────────────────────── -->
+  <section class="tool-section" aria-label="Patterns and Charts">
+    <h2>
+      <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Patterns &amp; Charts
+    </h2>
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="4" width="20" height="20" rx="2" stroke="#7b3fa0" stroke-width="2"/>
+            <rect x="6" y="6" width="4" height="4" fill="#7b3fa0"/>
+            <rect x="12" y="6" width="4" height="4" fill="#b38fd4"/>
+            <rect x="18" y="6" width="4" height="4" fill="#7b3fa0"/>
+            <rect x="6" y="12" width="4" height="4" fill="#b38fd4"/>
+            <rect x="12" y="12" width="4" height="4" fill="#7b3fa0"/>
+            <rect x="18" y="12" width="4" height="4" fill="#b38fd4"/>
+            <rect x="6" y="18" width="4" height="4" fill="#7b3fa0"/>
+            <rect x="12" y="18" width="4" height="4" fill="#b38fd4"/>
+            <rect x="18" y="18" width="4" height="4" fill="#7b3fa0"/>
+          </svg>
+          <h3>Chart Renderer</h3>
+        </div>
+        <p>
+          Type knitting abbreviations and see a stitch chart rendered instantly.
+          Choose your preferred legend and chart direction. Export as text or
+          image for your pattern notes.
+        </p>
+        <a href="chart-renderer/demo.html">Open Chart Renderer &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────── -->
+  <footer class="landing-footer">
+    <nav class="footer-links" aria-label="Footer links">
+      <a href="https://github.com/wilsonify/pyknit" rel="noopener">pyknit on GitHub</a>
+      <a href="https://github.com/wilsonify/pyknit/blob/main/README.md" rel="noopener">Documentation</a>
+      <a href="https://github.com/wilsonify/pyknit/issues" rel="noopener">Report an Issue</a>
+    </nav>
+    <p>pyknit is free and open source. All tools run locally in your browser — no data leaves your device.</p>
   </footer>
+
 </body>
 </html>
