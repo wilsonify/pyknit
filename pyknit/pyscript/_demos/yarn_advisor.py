@@ -34,6 +34,7 @@ GAUGE_CATEGORIES = {
     "sport": {"label": "Sport (23-26 sts/in)", "sts_per_in": 24, "weight": "sport"},
     "dk": {"label": "DK (21-24 sts/in)", "sts_per_in": 22, "weight": "dk"},
     "worsted": {"label": "Worsted (18-20 sts/in)", "sts_per_in": 19, "weight": "worsted"},
+    "aran": {"label": "Aran (16-18 sts/in)", "sts_per_in": 17, "weight": "aran"},
     "bulky": {"label": "Bulky (14-17 sts/in)", "sts_per_in": 15, "weight": "bulky"},
     "super_bulky": {"label": "Super Bulky (9-12 sts/in)", "sts_per_in": 10, "weight": "super bulky"},
 }
