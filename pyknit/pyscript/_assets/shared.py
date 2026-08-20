@@ -136,6 +136,7 @@ def set_buttons_enabled(enabled: bool) -> None:
 
 
 _BOUND_PROXIES = []
+_last_result = None
 
 
 def bind_click(button_id: str, handler) -> None:
@@ -609,10 +610,12 @@ def bootstrap_demo(
 
     def run(event=None):
         nonlocal latest_result
+        global _last_result
         try:
             inputs = collect_inputs(demo["DEFAULT_INPUTS"])
             result = demo["compute"](inputs)
             latest_result = result
+            _last_result = result
         except Exception as exc:
             if isinstance(exc, ValueError):
                 set_status("ready", "Please check your inputs", str(exc))
