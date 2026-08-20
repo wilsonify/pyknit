@@ -34,6 +34,7 @@
 
   <section class="card">
     <h2>Shaping</h2>
+    <p class="form-help">Space increases or decreases evenly across a round or row. Enter how many stitches you have and how many to add or remove, and the planner tells you exactly where to place each one.</p>
     <div class="grid-2">
       <div class="form-group">
         <label for="operation">Operation</label>
@@ -48,14 +49,17 @@
           <option value="true" selected>Yes (round)</option>
           <option value="false">No (flat)</option>
         </select>
+        <span class="field-hint">In-the-round uses whole-number symmetry; flat may differ at edges.</span>
       </div>
       <div class="form-group">
         <label for="starting_count">Starting stitches</label>
         <input id="starting_count" type="number" value="20" min="2" step="1" />
+        <span class="field-hint">Current stitch count on your needles before shaping.</span>
       </div>
       <div class="form-group">
         <label for="number">Number of increases / decreases</label>
         <input id="number" type="number" value="5" min="1" step="1" />
+        <span class="field-hint">How many stitches to add (increase) or remove (decrease) total.</span>
       </div>
     </div>
     <div class="button-row">
