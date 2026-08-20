@@ -81,6 +81,16 @@ def compute(inputs):
     data["warnings"] = plan["warnings"]
     data["plan"] = plan
     data["svg"] = _sock_svg(data)
+    avg_leg_stitches = (data["cast_on_stitches"] + data["ankle_stitches"]) / 2
+    leg_rounds = data["length_from_sock_top_to_heel_flap"] * data["rows_per_inch"]
+    foot_stitches = data["ankle_stitches"] * data["foot_rounds"]
+    leg_stitches = avg_leg_stitches * leg_rounds
+    total_stitches = round(leg_stitches + foot_stitches)
+    data["_estimator_data"] = {
+        "stitch_count": max(1, total_stitches),
+        "project_type": "sweater",
+        "source": "sock_calculator",
+    }
     return data
 
 
@@ -353,8 +363,18 @@ def to_html(result):
             f"<td class='mono'>{value}</td><td class='mono unit'>{unit}</td></tr>"
         )
 
+    est = result.get("_estimator_data", {})
+    send_to = ""
+    if est.get("stitch_count"):
+        send_to = (
+            "<div class='button-row'><button class='btn-secondary send-to-estimator' "
+            f"data-stitches='{est['stitch_count']}' data-type='{est.get('project_type', 'sweater')}'>"
+            "Send to Yarn Estimator &rarr;</button></div>"
+        )
+
     return "\n".join([
         f"<div class='output-box'>{result['svg']}</div>",
+        send_to,
         warnings,
         "<section class='plan-section'>",
         "<h4>How this sock is built</h4>",
