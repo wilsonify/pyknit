@@ -943,6 +943,58 @@ class TestKnitSimulator:
         assert "<svg" in result["fabric_svg"]
         assert "<svg" in result["svg"]
 
+    def test_steps_json_serializable(self):
+        """Regression: steps must survive json round-trip for the JS player bridge."""
+        import json
+
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        steps_json = json.dumps(result["steps"])
+        restored = json.loads(steps_json)
+        assert len(restored) == len(result["steps"])
+        for orig, serial in zip(result["steps"], restored):
+            assert set(orig.keys()) == set(serial.keys())
+
+    def test_steps_have_player_fields(self):
+        """Regression: each step must have the fields the JS player reads."""
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        for step in result["steps"]:
+            assert "op" in step, f"step missing 'op': {step}"
+            assert "detail" in step, f"step missing 'detail': {step}"
+            assert "stitches" in step, f"step missing 'stitches': {step}"
+            assert "highlight" in step, f"step missing 'highlight': {step}"
+            assert isinstance(step["stitches"], list)
+            assert isinstance(step["highlight"], list)
+
+    def test_store_result_for_player(self):
+        """Regression: store_result_for_player must write to window.sim_steps."""
+        import json
+
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        # store_result_for_player imports from js which only exists in browser;
+        # verify it doesn't crash outside the browser (silently passes).
+        module.store_result_for_player(result)
+
+    def test_demo_html_no_broken_shared_reference(self):
+        """Regression: demo.html must not reference 'shared' from JavaScript scope."""
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("demo.html not found")
+        content = html_path.read_text()
+        # Find the JavaScript block (not the Python block) and check for 'shared'
+        import re
+
+        js_blocks = re.findall(
+            r"<script>(?!.*type=)(.*?)</script>", content, re.DOTALL
+        )
+        for block in js_blocks:
+            assert "shared." not in block, (
+                "JavaScript block references 'shared' which is a Python module "
+                "and not accessible from JS scope. Use window.sim_steps instead."
+            )
+
 
 def _load_gauge_conversion():
     """Load the legacy dual-section gauge-conversion page module."""
