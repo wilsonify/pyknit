@@ -15,46 +15,30 @@
       align-items: center;
       margin: 0.8rem 0;
     }
-    .sim-controls button {
-      min-width: 60px;
-    }
+    .sim-controls button { min-width: 60px; }
     .sim-controls .step-counter {
       font-size: 0.9rem;
       color: #6b6572;
       margin: 0 0.5rem;
     }
-    .sim-controls .speed-select {
-      margin-left: auto;
-    }
+    .sim-controls .speed-select { margin-left: auto; }
     .sim-view {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
       margin: 1rem 0;
     }
-    @media (max-width: 700px) {
-      .sim-view { grid-template-columns: 1fr; }
-    }
-    .sim-view .view-box {
+    @media (max-width: 700px) { .sim-view { grid-template-columns: 1fr; } }
+    .view-box {
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 0.8rem;
       background: white;
-      min-height: 120px;
+      min-height: 100px;
     }
-    .sim-view .view-box h4 {
-      margin: 0 0 0.5rem;
-      font-size: 0.9rem;
-      color: var(--primary-dark);
-    }
-    .sim-view .view-box svg {
-      max-width: 100%;
-      height: auto;
-    }
-    .step-highlight {
-      background: #fff3cd;
-      border-color: #ffc107;
-    }
+    .view-box h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--primary-dark); }
+    .view-box svg { max-width: 100%; height: auto; display: block; }
+    .step-active { background: #fff3cd; border-color: #ffc107; }
   </style>
 </head>
 <body>
@@ -63,9 +47,7 @@
     <h1>Knit Simulator</h1>
     <p>Watch knitting happen step by step. Enter simple instructions, then
     play, pause, or step through to see how fabric builds up.</p>
-    <div class="linkbar">
-      <a href="/index.html">&larr; all tools</a>
-    </div>
+    <div class="linkbar"><a href="/index.html">&larr; all tools</a></div>
   </header>
 
   <div id="status-banner" class="status-banner loading">
@@ -84,34 +66,32 @@
 
   <section class="card">
     <h2>Instructions</h2>
-    <p class="form-help">Type simple knitting instructions, one per line. Use: co (cast on), k (knit), p (purl), * (repeat row), k2tog, ssk, yo, bo (bind off). Put * before a row to repeat it.</p>
+    <p class="form-help">One instruction per line. Use: co (cast on), k (knit), p (purl), yo (yarn over), k2tog, ssk, bo (bind off). Put * before a row to repeat it.</p>
     <div class="form-group">
       <label for="instructions">Knitting instructions</label>
-      <textarea id="instructions" rows="8" style="font-family:ui-monospace,Consolas,monospace;font-size:0.95rem">co 20
-* k2 p2 across
+      <textarea id="instructions" rows="6" style="font-family:ui-monospace,Consolas,monospace;font-size:0.95rem">co 10
 * k2 p2 across
 * k2 p2 across
 k all</textarea>
-      <span class="field-hint">Example: cast on 20, work 3 rows of k2p2 ribbing, then 1 row knit.</span>
     </div>
     <div class="button-row">
       <button id="run" class="btn-primary">Build Simulation</button>
     </div>
-    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-error" class="error-message" style="display:none;"></div>
   </section>
 
   <section id="sim-section" class="card" style="display:none">
-    <h2>Simulation controls</h2>
+    <h2>Simulation</h2>
     <div class="sim-controls">
-      <button id="sim-reset" class="btn-secondary" title="Reset to start">&laquo; Reset</button>
-      <button id="sim-prev" class="btn-secondary" title="Previous step">&lsaquo; Prev</button>
-      <button id="sim-play" class="btn-primary" title="Play / Pause">Play</button>
-      <button id="sim-next" class="btn-secondary" title="Next step">Next &rsaquo;</button>
+      <button id="sim-reset" class="btn-secondary">&laquo; Reset</button>
+      <button id="sim-prev" class="btn-secondary">&lsaquo; Prev</button>
+      <button id="sim-play" class="btn-primary">Play</button>
+      <button id="sim-next" class="btn-secondary">Next &rsaquo;</button>
       <span class="step-counter">Step <span id="sim-step-num">0</span> / <span id="sim-step-total">0</span></span>
       <div class="speed-select">
-        <label for="sim-speed" style="display:inline;font-weight:600;font-size:0.85rem">Speed:</label>
-        <select id="sim-speed" style="width:auto;padding:0.3rem 0.5rem;font-size:0.85rem">
-          <option value="slow">Slow motion</option>
+        <label for="sim-speed" style="font-weight:600;font-size:0.85rem">Speed:</label>
+        <select id="sim-speed" style="width:auto;padding:0.3rem;font-size:0.85rem">
+          <option value="slow">Slow</option>
           <option value="normal" selected>Normal</option>
           <option value="fast">Fast</option>
         </select>
@@ -119,56 +99,55 @@ k all</textarea>
     </div>
 
     <div class="sim-view">
-      <div class="view-box" id="stitch-view-box">
-        <h4>Current stitches on needle</h4>
-        <div id="stitch-view"></div>
+      <div class="view-box">
+        <h4>Needle</h4>
+        <div id="needle-view"></div>
       </div>
-      <div class="view-box" id="fabric-view-box">
-        <h4>Fabric growing</h4>
+      <div class="view-box">
+        <h4>Fabric</h4>
         <div id="fabric-view"></div>
       </div>
     </div>
 
     <div class="view-box" style="margin-top:0.8rem">
       <h4>Step log</h4>
-      <div id="step-log" style="max-height:200px;overflow-y:auto;font-size:0.88rem"></div>
+      <div id="step-log" style="max-height:180px;overflow-y:auto;font-size:0.88rem"></div>
     </div>
   </section>
 
   <footer>
-    <p>This is an instructional visualization showing how stitches build fabric.
-    For physical yarn animation, see a video tutorial.</p>
+    <p>Instructional visualization. Each stitch is shown as a simple loop on the needle.</p>
   </footer>
 
   <script type="py">
     from pyknit.pyscript._assets import shared
-    from pyknit.pyscript._demos import knit_simulator as DEMO
-
+    from pyknit.pyscript._demos import knit_simulator as mod
     import json as _json
+
+    _DEMO = mod.DEMO
+
     try:
         from js import window as _win
     except Exception:
         _win = None
 
     def _bridge_run(event=None):
-        inputs = shared.collect_inputs(DEMO["DEFAULT_INPUTS"])
-        result = DEMO["compute"](inputs)
+        inputs = shared.collect_inputs(_DEMO["DEFAULT_INPUTS"])
+        result = _DEMO["compute"](inputs)
         shared._last_result = result
         shared.hide_error("demo-error")
-        to_html = DEMO.get("to_html")
-        if to_html is not None:
-            shared.set_html("demo-output", to_html(result))
-        else:
-            shared.set_html("demo-output", str(result))
-        shared.set_status("ready", "Simulation ready", "Use the controls below to play through the steps.")
+        to_html = _DEMO.get("to_html")
+        html_out = to_html(result) if to_html else str(result)
+        shared.set_html("demo-output", html_out)
+        shared.set_status("ready", "Simulation ready", "Use the controls to step through.")
         if _win is not None:
             try:
-                _win.sim_steps = _json.loads(_json.dumps(result.get("steps", [])))
+                _win.sim_steps = _json.loads(_json.dumps(result["steps"]))
             except Exception:
                 pass
 
     shared.bind_click("run", _bridge_run)
-    shared.set_status("loading", "Loading pyknit runtime...", "First load can take 30-60 seconds.")
+    shared.set_status("loading", "Loading pyknit...", "First load takes 30-60 seconds.")
     try:
         _bridge_run()
     except Exception:
@@ -178,20 +157,101 @@ k all</textarea>
 
   <script>
   (function() {
-    var steps = [];
-    var currentStep = 0;
-    var playing = false;
-    var timer = null;
-    var speedMs = 400;
-
+    var steps = [], cur = 0, playing = false, timer = null, speedMs = 400;
     var speedMap = {slow: 800, normal: 400, fast: 150};
-
     function $(id) { return document.getElementById(id); }
+
+    /* ── SVG primitives ─────────────────────────────────────────── */
+
+    function stitchLoop(cx, cy, r, fill, stroke) {
+      /* A single knit stitch: a simple loop (two arcs forming a U shape). */
+      var d = "M" + (cx - r) + "," + (cy + r)
+            + " Q" + (cx - r) + "," + (cy - r) + " " + cx + "," + (cy - r)
+            + " Q" + (cx + r) + "," + (cy - r) + " " + (cx + r) + "," + (cy + r);
+      return '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/>'
+           + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.4) + '" fill="' + fill + '"/>';
+    }
+
+    function purlBump(cx, cy, r, fill, stroke) {
+      /* Purl: a small bump (arc curving downward). */
+      var d = "M" + (cx - r) + "," + cy
+            + " Q" + cx + "," + (cy + r * 1.5) + " " + (cx + r) + "," + cy;
+      return '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/>'
+           + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.35) + '" fill="' + fill + '"/>';
+    }
+
+    function yarnOver(cx, cy, r) {
+      /* Yarn over: an open circle. */
+      return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#2ecc71" stroke-width="2"/>';
+    }
+
+    /* ── Needle view ───────────────────────────────────────────── */
+
+    function renderNeedle(stitches, activeIdx) {
+      if (!stitches || !stitches.length) return '<svg width="100" height="50"><text x="10" y="30" font-size="12" fill="#888">No stitches</text></svg>';
+      var r = 10, gap = 28, pad = 20;
+      var w = pad * 2 + stitches.length * gap;
+      var h = 60;
+      var s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">';
+      /* needle bar */
+      s += '<line x1="' + (pad - 5) + '" y1="28" x2="' + (pad + stitches.length * gap) + '" y2="28" stroke="#aaa" stroke-width="3" stroke-linecap="round"/>';
+      for (var i = 0; i < stitches.length; i++) {
+        var cx = pad + i * gap + gap / 2;
+        var cy = 22;
+        var v = stitches[i];
+        var active = i === activeIdx;
+        if (v === 0) {
+          s += yarnOver(cx, cy, r);
+        } else {
+          var fill = active ? "#e74c3c" : "#7b3fa0";
+          var stroke = active ? "#c0392b" : "#5a2a75";
+          s += stitchLoop(cx, cy, r, fill, stroke);
+        }
+      }
+      s += '</svg>';
+      return s;
+    }
+
+    /* ── Fabric view ───────────────────────────────────────────── */
+
+    function renderFabric(fabricRows, currentStitches) {
+      var rows = fabricRows.slice();
+      if (currentStitches && currentStitches.length) rows.push(currentStitches);
+      if (!rows.length) return '<svg width="100" height="40"><text x="10" y="25" font-size="12" fill="#888">Empty needle</text></svg>';
+      var maxW = 0;
+      for (var i = 0; i < rows.length; i++) if (rows[i].length > maxW) maxW = rows[i].length;
+      var cell = 18, pad = 10;
+      var w = pad * 2 + maxW * cell;
+      var h = pad * 2 + rows.length * cell;
+      var s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">';
+      for (var r = 0; r < rows.length; r++) {
+        var row = rows[r];
+        var xOff = pad + (maxW - row.length) * cell / 2;
+        for (var c = 0; c < row.length; c++) {
+          var cx = xOff + c * cell + cell / 2;
+          var cy = pad + r * cell + cell / 2;
+          var v = row[c];
+          if (v === 0) {
+            s += yarnOver(cx, cy, 5);
+          } else {
+            var fill = r % 2 === 0 ? "#7b3fa0" : "#b38fd4";
+            s += stitchLoop(cx, cy, 6, fill, "#5a2a75");
+          }
+        }
+      }
+      s += '</svg>';
+      return s;
+    }
+
+    /* ── Player logic ──────────────────────────────────────────── */
+
+    var fabricRows = [];
 
     function captureSteps() {
       if (window.sim_steps && window.sim_steps.length) {
         steps = window.sim_steps;
-        currentStep = 0;
+        cur = 0;
+        fabricRows = [];
         $("sim-step-total").textContent = steps.length;
         $("sim-section").style.display = "";
         updateView();
@@ -202,54 +262,30 @@ k all</textarea>
 
     function updateView() {
       if (!steps.length) return;
-      var step = steps[currentStep];
-      $("sim-step-num").textContent = currentStep + 1;
-      $("step-log").innerHTML = steps.map(function(s, i) {
-        var cls = i === currentStep ? 'style="background:#fff3cd;padding:2px 4px;border-radius:3px"' : '';
-        return '<div ' + cls + '><strong>' + (i+1) + '.</strong> ' + s.op + ' — ' + s.detail + '</div>';
-      }).join("");
-
-      var stitchSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (step.stitches.length * 22 + 20) + '" height="50">';
-      step.stitches.forEach(function(s, i) {
-        var x = 10 + i * 22;
-        var isHL = step.highlight.indexOf(i) >= 0;
-        var fill = isHL ? '#e74c3c' : (s === 0 ? '#f3ecf7' : '#7b3fa0');
-        var stroke = isHL ? '#c0392b' : (s === 0 ? '#dcc8e8' : '#5a2a75');
-        stitchSvg += '<rect x="' + x + '" y="10" width="18" height="18" fill="' + fill + '" stroke="' + stroke + '" rx="3" stroke-width="2"/>';
-        stitchSvg += '<text x="' + (x+9) + '" y="24" font-size="10" fill="white" text-anchor="middle" font-weight="600">' + s + '</text>';
-      });
-      stitchSvg += '</svg>';
-      $("stitch-view").innerHTML = stitchSvg;
-
-      var fabricSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="' + (Math.min(currentStep + 1, 12) * 16 + 20) + '">';
-      var startRow = Math.max(0, currentStep - 10);
-      for (var r = startRow; r <= currentStep && r < steps.length; r++) {
-        var y = 10 + (r - startRow) * 16;
-        var sts = steps[r].stitches;
-        var xOff = 10 + (20 - sts.length) * 8;
-        sts.forEach(function(s, c) {
-          var x = xOff + c * 16;
-          var fill = r % 2 === 0 ? '#7b3fa0' : '#b38fd4';
-          if (s === 0) fill = '#f3ecf7';
-          fabricSvg += '<rect x="' + x + '" y="' + y + '" width="14" height="14" fill="' + fill + '" stroke="#5a2a75" rx="2"/>';
-        });
+      var step = steps[cur];
+      $("sim-step-num").textContent = cur + 1;
+      $("needle-view").innerHTML = renderNeedle(step.stitches, -1);
+      $("fabric-view").innerHTML = renderFabric(fabricRows, step.stitches);
+      var logHtml = "";
+      for (var i = 0; i < steps.length; i++) {
+        var cls = i === cur ? ' class="step-active"' : '';
+        logHtml += '<div' + cls + '><strong>' + (i + 1) + '.</strong> ' + steps[i].op + ' &mdash; ' + steps[i].n + ' stitches</div>';
       }
-      fabricSvg += '</svg>';
-      $("fabric-view").innerHTML = fabricSvg;
+      $("step-log").innerHTML = logHtml;
     }
 
     function stepForward() {
-      if (currentStep < steps.length - 1) {
-        currentStep++;
+      if (cur < steps.length - 1) {
+        fabricRows.push(steps[cur].stitches.slice());
+        cur++;
         updateView();
-      } else {
-        stopPlay();
-      }
+      } else { stopPlay(); }
     }
 
     function stepBack() {
-      if (currentStep > 0) {
-        currentStep--;
+      if (cur > 0) {
+        cur--;
+        if (fabricRows.length) fabricRows.pop();
         updateView();
       }
     }
@@ -258,12 +294,8 @@ k all</textarea>
       playing = true;
       $("sim-play").textContent = "Pause";
       timer = setInterval(function() {
-        if (currentStep < steps.length - 1) {
-          currentStep++;
-          updateView();
-        } else {
-          stopPlay();
-        }
+        if (cur < steps.length - 1) { cur++; fabricRows.push(steps[cur - 1].stitches.slice()); updateView(); }
+        else stopPlay();
       }, speedMs);
     }
 
@@ -273,16 +305,9 @@ k all</textarea>
       if (timer) { clearInterval(timer); timer = null; }
     }
 
-    function resetSim() {
-      stopPlay();
-      currentStep = 0;
-      updateView();
-    }
+    function resetSim() { stopPlay(); cur = 0; fabricRows = []; updateView(); }
 
-    $("sim-play").addEventListener("click", function() {
-      if (playing) stopPlay();
-      else startPlay();
-    });
+    $("sim-play").addEventListener("click", function() { playing ? stopPlay() : startPlay(); });
     $("sim-next").addEventListener("click", function() { stopPlay(); stepForward(); });
     $("sim-prev").addEventListener("click", function() { stopPlay(); stepBack(); });
     $("sim-reset").addEventListener("click", resetSim);
@@ -292,10 +317,8 @@ k all</textarea>
     });
 
     var pollCount = 0;
-    var pollTimer = setInterval(function() {
-      if (captureSteps() || pollCount > 120) {
-        clearInterval(pollTimer);
-      }
+    var poll = setInterval(function() {
+      if (captureSteps() || pollCount > 120) clearInterval(poll);
       pollCount++;
     }, 500);
   })();

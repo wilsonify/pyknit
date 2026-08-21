@@ -903,18 +903,16 @@ class TestKnitSimulator:
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         html = module.DEMO["to_html"](result)
         assert "stat-pill" in html
-        assert "Current stitch view" in html
-        assert "Fabric so far" in html
-        assert "Step-by-step log" in html
+        assert "Steps" in html
 
     def test_step_log_entries(self):
         module = load_demo("knit_simulator")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         for step in result["steps"]:
             assert "op" in step
-            assert "detail" in step
+            assert "n" in step
             assert "stitches" in step
-            assert "highlight" in step
+            assert isinstance(step["stitches"], list)
 
     def test_empty_instructions_raises(self):
         module = load_demo("knit_simulator")
@@ -923,12 +921,12 @@ class TestKnitSimulator:
         with pytest.raises(ValueError, match="No valid instructions"):
             module.DEMO["compute"](inputs)
 
-    def test_invalid_instructions_warns(self):
+    def test_missing_cast_on_warns(self):
         module = load_demo("knit_simulator")
         inputs = dict(module.DEMO["DEFAULT_INPUTS"])
-        inputs["instructions"] = "co 20\nk2 p2"
+        inputs["instructions"] = "k 10\np 10"
         result = module.DEMO["compute"](inputs)
-        assert len(result["warnings"]) > 0
+        assert any("cast-on" in w.lower() for w in result["warnings"])
 
     def test_bind_off(self):
         module = load_demo("knit_simulator")
@@ -937,62 +935,63 @@ class TestKnitSimulator:
         result = module.DEMO["compute"](inputs)
         assert len(result["final_stitches"]) == 5
 
-    def test_fabric_svg_generated(self):
-        module = load_demo("knit_simulator")
-        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
-        assert "<svg" in result["fabric_svg"]
-        assert "<svg" in result["svg"]
-
     def test_steps_json_serializable(self):
-        """Regression: steps must survive json round-trip for the JS player bridge."""
+        """Steps must survive json round-trip for the JS player bridge."""
         import json
 
         module = load_demo("knit_simulator")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
-        steps_json = json.dumps(result["steps"])
-        restored = json.loads(steps_json)
+        restored = json.loads(json.dumps(result["steps"]))
         assert len(restored) == len(result["steps"])
         for orig, serial in zip(result["steps"], restored):
             assert set(orig.keys()) == set(serial.keys())
 
     def test_steps_have_player_fields(self):
-        """Regression: each step must have the fields the JS player reads."""
+        """Each step must have op, n, stitches — what the JS player reads."""
         module = load_demo("knit_simulator")
         result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
         for step in result["steps"]:
-            assert "op" in step, f"step missing 'op': {step}"
-            assert "detail" in step, f"step missing 'detail': {step}"
-            assert "stitches" in step, f"step missing 'stitches': {step}"
-            assert "highlight" in step, f"step missing 'highlight': {step}"
+            assert "op" in step
+            assert "n" in step
+            assert "stitches" in step
             assert isinstance(step["stitches"], list)
-            assert isinstance(step["highlight"], list)
-
-    def test_store_result_for_player(self):
-        """Regression: store_result_for_player must write to window.sim_steps."""
-        import json
-
-        module = load_demo("knit_simulator")
-        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
-        # store_result_for_player imports from js which only exists in browser;
-        # verify it doesn't crash outside the browser (silently passes).
-        module.store_result_for_player(result)
 
     def test_demo_html_no_broken_shared_reference(self):
-        """Regression: demo.html must not reference 'shared' from JavaScript scope."""
+        """demo.html JS block must not reference the Python 'shared' module."""
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("demo.html not found")
+        import re
+        content = html_path.read_text()
+        js_blocks = re.findall(r"<script>(?!.*type=)(.*?)</script>", content, re.DOTALL)
+        for block in js_blocks:
+            assert "shared." not in block, (
+                "JS block references 'shared' (a Python module). "
+                "Use window.sim_steps instead."
+            )
+
+    def test_demo_html_has_sim_steps_bridge(self):
+        """demo.html must bridge steps to window.sim_steps for the JS player."""
         html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
         if not html_path.exists():
             pytest.skip("demo.html not found")
         content = html_path.read_text()
-        # Find the JavaScript block (not the Python block) and check for 'shared'
-        import re
+        assert "window.sim_steps" in content
+        assert "sim_steps" in content
 
-        js_blocks = re.findall(
-            r"<script>(?!.*type=)(.*?)</script>", content, re.DOTALL
-        )
-        for block in js_blocks:
-            assert "shared." not in block, (
-                "JavaScript block references 'shared' which is a Python module "
-                "and not accessible from JS scope. Use window.sim_steps instead."
+    def test_demo_html_python_uses_module_dict(self):
+        """Python script must access the DEMO dict via mod.DEMO, not the module directly."""
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("demo.html not found")
+        import re
+        content = html_path.read_text()
+        py_blocks = re.findall(r'<script type="py">(.*?)</script>', content, re.DOTALL)
+        for block in py_blocks:
+            # Must extract dict from module before subscripting
+            assert "mod.DEMO" in block or "_DEMO" in block, (
+                "Python block never extracts DEMO dict from module. "
+                "Use: _DEMO = mod.DEMO"
             )
 
 
