@@ -146,12 +146,12 @@ k all</textarea>
 
     _run = shared.bootstrap_demo(DEMO, action_label="Build Simulation")
 
-    def _bridged_run(event=None):
-        result = _run(event)
-        if result is not None:
-            DEMO.store_result_for_player(result)
-
-    shared.bind_click("run", _bridged_run)
+    import json as _json
+    try:
+        from js import window as _win
+        _win.sim_steps = _json.loads(_json.dumps(shared._last_result.get("steps", []) if shared._last_result else []))
+    except Exception:
+        pass
   </script>
 
   <script>
