@@ -143,7 +143,15 @@ k all</textarea>
   <script type="py">
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import knit_simulator as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Build Simulation")
+
+    _run = shared.bootstrap_demo(DEMO, action_label="Build Simulation")
+
+    def _bridged_run(event=None):
+        result = _run(event)
+        if result is not None:
+            DEMO.store_result_for_player(result)
+
+    shared.bind_click("run", _bridged_run)
   </script>
 
   <script>
