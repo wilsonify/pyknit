@@ -7,7 +7,7 @@ JavaScript player renders as SVG stitch loops on a needle.
 import json
 
 DEFAULT_INPUTS = {
-    "instructions": "co 10\n* k2 p2 across\nk all",
+    "instructions": "co 10\nk 10\np 10\nk 10\np 10\nk 10",
 }
 
 TITLE = "Knit Simulator"
@@ -26,7 +26,6 @@ def compute(inputs):
         raise ValueError("No valid instructions. Use: co, k, p, k2tog, ssk, yo, bo")
 
     stitches = []
-    row_type = None
     log = []
 
     for step in steps:
@@ -38,11 +37,9 @@ def compute(inputs):
             log.append({"op": "cast on", "n": len(stitches), "stitches": list(stitches)})
 
         elif op == "knit":
-            row_type = "knit"
             log.append({"op": "knit", "n": len(stitches), "stitches": list(stitches)})
 
         elif op == "purl":
-            row_type = "purl"
             log.append({"op": "purl", "n": len(stitches), "stitches": list(stitches)})
 
         elif op == "yo":
@@ -89,26 +86,34 @@ def _parse(raw):
         parts = line.lower().split()
         if not parts:
             continue
+
         repeat = parts[0] == "*"
         if repeat:
             parts = parts[1:]
             if not parts:
                 continue
-        op = parts[0]
-        count = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
-        if op in ("co", "cast", "caston"):
+
+        token = parts[0]
+        # Strip trailing digits to get the operation name: "k2" → "k", "p10" → "p"
+        op_name = token.rstrip("0123456789")
+        suffix_count = token[len(op_name):]
+        count = int(suffix_count) if suffix_count.isdigit() else (
+            int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
+        )
+
+        if op_name in ("co", "cast", "caston"):
             ops.append({"op": "co", "count": count})
-        elif op in ("knit", "k"):
+        elif op_name in ("knit", "k"):
             ops.append({"op": "knit", "count": count, "repeat": repeat})
-        elif op in ("purl", "p"):
+        elif op_name in ("purl", "p"):
             ops.append({"op": "purl", "count": count, "repeat": repeat})
-        elif op == "yo":
+        elif op_name == "yo":
             ops.append({"op": "yo"})
-        elif op == "k2tog":
+        elif op_name == "k2tog":
             ops.append({"op": "k2tog"})
-        elif op == "ssk":
+        elif op_name == "ssk":
             ops.append({"op": "ssk"})
-        elif op in ("bo", "bindoff", "bind off"):
+        elif op_name in ("bo", "bindoff", "bind off"):
             ops.append({"op": "bo", "count": count})
     return ops
 
@@ -119,7 +124,7 @@ def _validate(raw):
     if not lines:
         return ["No instructions provided."]
     first = lines[0].lower().split()
-    if not first or first[0] not in ("co", "cast", "caston"):
+    if not first or first[0].rstrip("0123456789") not in ("co", "cast", "caston"):
         warnings.append("Instructions should start with a cast-on (co 20).")
     return warnings
 

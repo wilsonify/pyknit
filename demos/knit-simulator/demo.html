@@ -139,7 +139,6 @@ k all</textarea>
         to_html = _DEMO.get("to_html")
         html_out = to_html(result) if to_html else str(result)
         shared.set_html("demo-output", html_out)
-        shared.set_status("ready", "Simulation ready", "Use the controls to step through.")
         if _win is not None:
             try:
                 _win.sim_steps = _json.loads(_json.dumps(result["steps"]))
@@ -249,12 +248,18 @@ k all</textarea>
 
     function captureSteps() {
       if (window.sim_steps && window.sim_steps.length) {
-        steps = window.sim_steps;
+        steps = JSON.parse(JSON.stringify(window.sim_steps));
         cur = 0;
         fabricRows = [];
         $("sim-step-total").textContent = steps.length;
         $("sim-section").style.display = "";
         updateView();
+        var banner = $("status-banner");
+        if (banner) {
+          banner.className = "status-banner ready";
+          $("status-message").textContent = "Simulation ready";
+          $("status-detail").textContent = "Step " + (cur+1) + " of " + steps.length + ". Use controls to play.";
+        }
         return true;
       }
       return false;
