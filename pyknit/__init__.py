@@ -46,7 +46,7 @@ logging_config_dict = {
     "root": {"handlers": ["console"], "level": logging.DEBUG},
 }
 
-VERSION = "pyKnit 0.1.1"
+VERSION = "pyKnit 0.1.2"
 
 # Increase and decrease functions
 

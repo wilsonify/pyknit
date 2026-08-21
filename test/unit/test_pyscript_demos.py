@@ -431,7 +431,7 @@ class TestDemoSpecifics:
 
         wheel = (
             pathlib.Path(__file__).resolve().parents[2]
-            / "demos" / "_wheel" / "pyknit-0.1.1-py3-none-any.whl"
+            / "demos" / "_wheel" / "pyknit-0.1.2-py3-none-any.whl"
         )
         with zipfile.ZipFile(wheel) as zf:
             names = zf.namelist()

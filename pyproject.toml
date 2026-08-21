@@ -1,6 +1,6 @@
 [project]
 name = "pyknit"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   { name="Terri Oda", email="terri@toybox.ca" },
 ]

@@ -17,7 +17,7 @@ CENTIMETERS_PER_INCH = 2.54
 
 
 def test_version_string():
-    assert VERSION == "pyKnit 0.1.1"
+    assert VERSION == "pyKnit 0.1.2"
 
 
 def test_convert_measurement_units_in_to_cm():

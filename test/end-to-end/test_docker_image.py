@@ -37,7 +37,7 @@ REQUIRED_ASSETS = [
     "_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl",
     "_assets/wheels/pydantic-1.10.7-py3-none-any.whl",
     "_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl",
-    "_wheel/pyknit-0.1.1-py3-none-any.whl",
+    "_wheel/pyknit-0.1.2-py3-none-any.whl",
 ]
 
 OUTPUT_SELECTORS = {
