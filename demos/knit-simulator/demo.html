@@ -275,27 +275,25 @@ k all</textarea>
     }
 
     function stepForward() {
-      if (cur < steps.length - 1) {
-        fabricRows.push(steps[cur].stitches.slice());
-        cur++;
-        updateView();
-      } else { stopPlay(); }
+      if (!steps.length || cur >= steps.length - 1) { stopPlay(); return; }
+      fabricRows.push(steps[cur].stitches.slice());
+      cur++;
+      updateView();
     }
 
     function stepBack() {
-      if (cur > 0) {
-        cur--;
-        if (fabricRows.length) fabricRows.pop();
-        updateView();
-      }
+      if (cur > 0) { cur--; fabricRows.pop(); updateView(); }
     }
 
     function startPlay() {
+      if (!steps.length || cur >= steps.length - 1) { stopPlay(); return; }
       playing = true;
       $("sim-play").textContent = "Pause";
       timer = setInterval(function() {
-        if (cur < steps.length - 1) { cur++; fabricRows.push(steps[cur - 1].stitches.slice()); updateView(); }
-        else stopPlay();
+        if (cur >= steps.length - 1) { stopPlay(); return; }
+        fabricRows.push(steps[cur].stitches.slice());
+        cur++;
+        updateView();
       }, speedMs);
     }
 
