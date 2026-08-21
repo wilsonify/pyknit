@@ -132,6 +132,6 @@ def test_main_prints_version(monkeypatch, capsys):
     )
     main()
     captured = capsys.readouterr().out
-    assert "pyKnit 0.1.1" in captured
+    assert "pyKnit 0.1.2" in captured
 
 
