@@ -404,3 +404,19 @@ DEMO = {
     "compute": compute,
     "to_html": to_html,
 }
+
+
+def store_result_for_player(result):
+    """Store simulation steps in a JS global so the JavaScript player can
+    read them without depending on the Python ``shared`` module."""
+    try:
+        from js import window  # noqa: F401
+
+        steps = result.get("steps", [])
+        # JS needs a plain list of plain dicts — pyodide proxies work but
+        # converting via JSON is safest for deep nested structures.
+        import json
+
+        window.sim_steps = json.loads(json.dumps(steps))
+    except Exception:
+        pass
