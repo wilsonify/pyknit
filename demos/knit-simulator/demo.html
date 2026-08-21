@@ -166,6 +166,18 @@ k all</textarea>
 
     function $(id) { return document.getElementById(id); }
 
+    function captureSteps() {
+      if (window.sim_steps && window.sim_steps.length) {
+        steps = window.sim_steps;
+        currentStep = 0;
+        $("sim-step-total").textContent = steps.length;
+        $("sim-section").style.display = "";
+        updateView();
+        return true;
+      }
+      return false;
+    }
+
     function updateView() {
       if (!steps.length) return;
       var step = steps[currentStep];
@@ -257,36 +269,13 @@ k all</textarea>
       if (playing) { stopPlay(); startPlay(); }
     });
 
-    var origCompute = null;
-    var observer = new MutationObserver(function() {
-      var out = $("demo-output");
-      if (!out) return;
-      var pyResult = out.__pyResult;
-      if (pyResult && pyResult.steps && pyResult.steps.length) {
-        steps = pyResult.steps;
-        currentStep = 0;
-        $("sim-step-total").textContent = steps.length;
-        $("sim-section").style.display = "";
-        updateView();
+    var pollCount = 0;
+    var pollTimer = setInterval(function() {
+      if (captureSteps() || pollCount > 120) {
+        clearInterval(pollTimer);
       }
-    });
-
-    var _origSetHtml = shared.set_html;
-    shared.set_html = function(id, content) {
-      _origSetHtml(id, content);
-      if (id === "demo-output") {
-        setTimeout(function() {
-          var lastResult = shared._lastResult;
-          if (lastResult && lastResult.steps) {
-            steps = lastResult.steps;
-            currentStep = 0;
-            $("sim-step-total").textContent = steps.length;
-            $("sim-section").style.display = "";
-            updateView();
-          }
-        }, 100);
-      }
-    };
+      pollCount++;
+    }, 500);
   })();
   </script>
 </body>
