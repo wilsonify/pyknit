@@ -11,11 +11,26 @@ WORKDIR /site
 COPY demos ./
 COPY build/ /tmp/build/
 RUN rm -rf README.md Makefile _assets/japanese-symbols && \
-    mkdir -p _wheel _assets/pyodide _assets/wheels && \
+    mkdir -p _wheel _assets/pyscript _assets/pyodide _assets/wheels && \
     cp /wheel/pyknit-*.whl _wheel/ && \
+    if [ -d /tmp/build/pyscript ]; then cp -a /tmp/build/pyscript/. _assets/pyscript/; fi && \
     if [ -d /tmp/build/pyodide ]; then cp -a /tmp/build/pyodide/. _assets/pyodide/; fi && \
     if [ -d /tmp/build/wheels ]; then cp -a /tmp/build/wheels/. _assets/wheels/; fi && \
     PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full && \
+    PYSCRIPT=https://pyscript.net/releases/2024.10.1 && \
+    for f in core.css core.js core.js.map core-DHft4mQJ.js \
+             core-DHft4mQJ.js.map \
+             toml-CvAfdf9_.js toml-DiUM0_qs.js \
+             zip-Bf48tRr5.js \
+             deprecations-manager-BDRw2fed.js \
+             donkey-c355Wa24.js \
+             error-CdZsd8BO.js \
+             py-editor-BRZBRs2T.js \
+             py-terminal-D_z3jMz-.js; do \
+        if [ ! -f "_assets/pyscript/$f" ]; then \
+            curl -fsSL -o "_assets/pyscript/$f" "$PYSCRIPT/$f"; \
+        fi; \
+    done && \
     for f in pyodide.mjs pyodide.asm.js pyodide.asm.wasm pyodide-lock.json \
              python_stdlib.zip micropip-0.5.0-py3-none-any.whl \
              packaging-23.1-py3-none-any.whl; do \
