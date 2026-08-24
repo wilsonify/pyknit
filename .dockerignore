@@ -10,14 +10,20 @@
 .venv
 
 # build artifacts
-build
+# Keep the repo-level build cache available to Docker so downloaded runtime
+# bundles can be reused instead of re-downloaded on every build.
 dist
 *.egg-info
 demos/_wheel
+!build/
+!build/**
 
 # the full Pyodide distribution is not shipped: the Docker build downloads
-# only the runtime files it needs from the pinned Pyodide release
+# only the runtime files it needs from the pinned Pyodide release.
+# Keep the generated runtime bundles out of the build context so the image
+# stays minimal and does not cache the full upstream distribution.
 demos/_assets/pyodide
+demos/_assets/wheels
 
 # tests, docs and aux content are not needed at runtime
 test
