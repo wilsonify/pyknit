@@ -4,6 +4,7 @@ BUILD_DIR := build
 WHEEL_DIR := $(BUILD_DIR)/wheel
 PYODIDE_DIR := $(BUILD_DIR)/pyodide
 WHEELS_DIR := $(BUILD_DIR)/wheels
+PYSCRIPT_DIR := $(BUILD_DIR)/pyscript
 DOCKER ?= docker
 IMAGE ?= pyknit-demos
 
@@ -38,8 +39,9 @@ wheel:
 	mkdir -p $(BUILD_DIR) $(WHEEL_DIR)
 	$(PYTHON) -m pip wheel . -w $(WHEEL_DIR) --no-deps
 
-runtime-cache: $(PYODIDE_DIR) $(WHEELS_DIR)
+runtime-cache: $(PYODIDE_DIR) $(WHEELS_DIR) $(PYSCRIPT_DIR)
 	@PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full; \
+	PYSCRIPT=https://pyscript.net/releases/2024.10.1; \
 	for f in pyodide.mjs pyodide.asm.js pyodide.asm.wasm pyodide-lock.json \
 	         python_stdlib.zip micropip-0.5.0-py3-none-any.whl \
 	         packaging-23.1-py3-none-any.whl; do \
@@ -49,6 +51,17 @@ runtime-cache: $(PYODIDE_DIR) $(WHEELS_DIR)
 	         pydantic-1.10.7-py3-none-any.whl \
 	         Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; do \
 		curl -fsSL -o "$(WHEELS_DIR)/$$f" "$$PYODIDE/$$f"; \
+	done; \
+	for f in core.css core.js core.js.map core-DHft4mQJ.js \
+	         core-DHft4mQJ.js.map \
+	         toml-CvAfdf9_.js toml-DiUM0_qs.js \
+	         zip-Bf48tRr5.js \
+	         deprecations-manager-BDRw2fed.js \
+	         donkey-c355Wa24.js \
+	         error-CdZsd8BO.js \
+	         py-editor-BRZBRs2T.js \
+	         py-terminal-D_z3jMz-.js; do \
+		curl -fsSL -o "$(PYSCRIPT_DIR)/$$f" "$$PYSCRIPT/$$f"; \
 	done
 
 $(PYODIDE_DIR):
@@ -56,6 +69,9 @@ $(PYODIDE_DIR):
 
 $(WHEELS_DIR):
 	mkdir -p $(WHEELS_DIR)
+
+$(PYSCRIPT_DIR):
+	mkdir -p $(PYSCRIPT_DIR)
 
 favicon:
 	test -f demos/favicon.ico || : > demos/favicon.ico
@@ -68,7 +84,7 @@ run: setup serve
 clean:
 	rm -rf $(BUILD_DIR)
 
-docker-build:
+docker-build: runtime-cache
 	$(DOCKER) build -t $(IMAGE):latest -f Dockerfile .
 
 docker-test:
