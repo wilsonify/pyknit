@@ -350,8 +350,11 @@ k all</textarea>
 
     var pollCount = 0;
     var poll = setInterval(function() {
-      if (captureSteps() || pollCount > 120) clearInterval(poll);
+      captureSteps();
       pollCount++;
+      if (pollCount > 120) {
+        clearInterval(poll);
+      }
     }, 500);
   })();
   </script>

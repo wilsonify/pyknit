@@ -123,6 +123,18 @@ class TestDemoErrors:
             module.DEMO["compute"](inputs)
 
 
+class TestKnitSimulatorBrowserBehavior:
+    """The simulator must keep polling for fresh instruction updates."""
+
+    def test_poll_loop_keeps_listening_after_first_capture(self):
+        html = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator" / "demo.html"
+        text = html.read_text(encoding="utf-8")
+        assert "if (captureSteps() || pollCount > 120) clearInterval(poll);" not in text
+        assert "captureSteps();" in text
+        assert "pollCount > 120" in text
+        assert "clearInterval(poll);" in text
+
+
 class TestDemoSpecifics:
     """Spot checks on the values each demo actually produces."""
 
