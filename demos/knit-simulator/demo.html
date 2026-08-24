@@ -141,9 +141,12 @@ k all</textarea>
         shared.set_html("demo-output", html_out)
         if _win is not None:
             try:
-                _win.sim_steps = _json.loads(_json.dumps(result["steps"]))
+                steps_json = _json.dumps(result["steps"])
+                _win.sim_steps_json = steps_json
+                _win.sim_steps = _json.loads(steps_json)
             except Exception:
-                pass
+                _win.sim_steps_json = "[]"
+                _win.sim_steps = []
 
     shared.bind_click("run", _bridge_run)
     shared.set_status("loading", "Loading pyknit...", "First load takes 30-60 seconds.")
@@ -246,23 +249,49 @@ k all</textarea>
 
     var fabricRows = [];
 
-    function captureSteps() {
-      if (window.sim_steps && window.sim_steps.length) {
-        steps = JSON.parse(JSON.stringify(window.sim_steps));
-        cur = 0;
-        fabricRows = [];
-        $("sim-step-total").textContent = steps.length;
-        $("sim-section").style.display = "";
-        updateView();
-        var banner = $("status-banner");
-        if (banner) {
-          banner.className = "status-banner ready";
-          $("status-message").textContent = "Simulation ready";
-          $("status-detail").textContent = "Step " + (cur+1) + " of " + steps.length + ". Use controls to play.";
+    function normalizeSteps(raw) {
+      if (!raw) return [];
+      if (typeof raw === 'string') {
+        try {
+          raw = JSON.parse(raw);
+        } catch (e) {
+          return [];
         }
-        return true;
       }
-      return false;
+      if (typeof raw.toJs === 'function') {
+        try {
+          raw = raw.toJs();
+        } catch (e) {
+          raw = [];
+        }
+      }
+      if (!Array.isArray(raw)) {
+        try {
+          raw = JSON.parse(JSON.stringify(raw));
+        } catch (e) {
+          raw = [];
+        }
+      }
+      return Array.isArray(raw) ? raw : [];
+    }
+
+    function captureSteps() {
+      var parsedSteps = normalizeSteps(window.sim_steps_json || window.sim_steps);
+      if (!parsedSteps.length) return false;
+
+      steps = JSON.parse(JSON.stringify(parsedSteps));
+      cur = 0;
+      fabricRows = [];
+      $("sim-step-total").textContent = steps.length;
+      $("sim-section").style.display = "";
+      updateView();
+      var banner = $("status-banner");
+      if (banner) {
+        banner.className = "status-banner ready";
+        $("status-message").textContent = "Simulation ready";
+        $("status-detail").textContent = "Step " + (cur+1) + " of " + steps.length + ". Use controls to play.";
+      }
+      return true;
     }
 
     function updateView() {
