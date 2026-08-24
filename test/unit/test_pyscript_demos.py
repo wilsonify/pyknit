@@ -979,6 +979,16 @@ class TestKnitSimulator:
         assert "window.sim_steps" in content
         assert "sim_steps" in content
 
+    def test_demo_html_uses_json_roundtrip_for_sim_steps(self):
+        """The JS bridge must hand the browser a JSON string that it parses into a real array."""
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("demo.html not found")
+        content = html_path.read_text()
+        assert "sim_steps_json" in content
+        assert "JSON.parse(raw)" in content
+        assert "window.sim_steps_json" in content
+
     def test_demo_html_python_uses_module_dict(self):
         """Python script must access the DEMO dict via mod.DEMO, not the module directly."""
         html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
