@@ -947,6 +947,86 @@ class TestKnitSimulator:
         result = module.DEMO["compute"](inputs)
         assert len(result["final_stitches"]) == 5
 
+    # ── Regression: the simulator must never invent operations ──
+
+    def test_across_rows_never_invent_operations(self):
+        """'co 10 / k2 p2 across / k2 p2 across / k all' must produce exactly
+        the requested operations and keep the stitch count at 10."""
+        module = load_demo("knit_simulator")
+        inputs = dict(module.DEMO["DEFAULT_INPUTS"])
+        inputs["instructions"] = "co 10\nk2 p2 across\nk2 p2 across\nk all"
+        result = module.DEMO["compute"](inputs)
+
+        ops = [step["op"] for step in result["steps"]]
+        assert ops == [
+            "cast on 10",
+            "k2 p2 k2 p2 k2 across",
+            "k2 p2 k2 p2 k2 across",
+            "knit all",
+        ]
+        # no k2tog / bind off / other operations were requested
+        for op in ops:
+            assert "k2tog" not in op
+            assert "bind off" not in op
+
+        # stitch count never changes across the whole simulation
+        assert [step["n"] for step in result["steps"]] == [10, 10, 10, 10]
+        assert len(result["final_stitches"]) == 10
+        assert result["total_rows"] == 3
+
+        # the ribbed rows really contain the k2/p2 sequence (0 knit, 1 purl)
+        rib = result["steps"][1]["row_ops"]
+        assert rib == [0, 0, 1, 1, 0, 0, 1, 1, 0, 0]
+        assert result["steps"][3]["row_ops"] == [0] * 10
+
+    def test_across_expands_to_row_width(self):
+        """'k2 p2 across' tiles the sequence across the whole row; a plain
+        'k2 p2' only works the stitches it names."""
+        module = load_demo("knit_simulator")
+        across = module.DEMO["compute"](
+            {"instructions": "co 10\nk2 p2 across"}
+        )
+        assert across["steps"][1]["worked"] == 10
+        assert across["steps"][1]["row_ops"] == [0, 0, 1, 1, 0, 0, 1, 1, 0, 0]
+
+        plain = module.DEMO["compute"]({"instructions": "co 10\nk2 p2"})
+        assert plain["steps"][1]["worked"] == 4
+        assert plain["steps"][1]["row_ops"] == [0, 0, 1, 1, -1, -1, -1, -1, -1, -1]
+        assert plain["steps"][1]["n"] == 10  # unworked stitches stay on the needle
+
+    def test_star_repeat_matches_across(self):
+        module = load_demo("knit_simulator")
+        star = module.DEMO["compute"]({"instructions": "co 10\n* k2 p2"})
+        across = module.DEMO["compute"]({"instructions": "co 10\nk2 p2 across"})
+        assert star["steps"][1]["row_ops"] == across["steps"][1]["row_ops"]
+        assert star["steps"][1]["worked"] == 10
+
+    def test_k2tog_across_halves_the_row(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"instructions": "co 10\nk2tog across"})
+        assert result["steps"][1]["n"] == 5
+        assert result["steps"][1]["decreases"] == 5
+        assert len(result["final_stitches"]) == 5
+
+    def test_progress_is_monotonic_and_bounded(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"instructions": "co 10\nk all\np all"})
+        progresses = [step["progress"] for step in result["steps"]]
+        assert progresses[0] == 0.0
+        assert progresses[-1] == 1.0
+        assert all(a <= b for a, b in zip(progresses, progresses[1:]))
+        assert all(0.0 <= p <= 1.0 for p in progresses)
+
+    def test_steps_carry_garment_fields(self):
+        """The JS sweater renderer needs kind/row/worked/row_ops/progress."""
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"instructions": "co 10\nk all\nbo 5"})
+        for step in result["steps"]:
+            for key in ("kind", "row", "worked", "row_ops", "increases", "decreases", "progress"):
+                assert key in step, f"step missing {key}"
+        assert result["steps"][0]["kind"] == "cast_on"
+        assert result["steps"][2]["kind"] == "bind_off"
+
     def test_steps_json_serializable(self):
         """Steps must survive json round-trip for the JS player bridge."""
         import json
