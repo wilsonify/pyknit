@@ -399,6 +399,7 @@ def compute(inputs):
         "sim_instructions": (_sim_txt := _sim_instructions(_meta))[0],
         "sim_plan": {
             "source": "raglan_planner",
+            "garment": "raglan",
             "instructions": _sim_txt[0],
             "sections": _sim_txt[1],
             "counts": {
