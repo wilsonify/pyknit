@@ -17,7 +17,7 @@ CENTIMETERS_PER_INCH = 2.54
 
 
 def test_version_string():
-    assert VERSION == "pyKnit 0.1.3"
+    assert VERSION == "pyKnit 0.1.4"
 
 
 def test_convert_measurement_units_in_to_cm():
@@ -132,6 +132,6 @@ def test_main_prints_version(monkeypatch, capsys):
     )
     main()
     captured = capsys.readouterr().out
-    assert "pyKnit 0.1.3" in captured
+    assert "pyKnit 0.1.4" in captured
 
 

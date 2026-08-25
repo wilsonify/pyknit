@@ -468,7 +468,7 @@ class TestDemoSpecifics:
 
         wheel = (
             pathlib.Path(__file__).resolve().parents[2]
-            / "demos" / "_wheel" / "pyknit-0.1.3-py3-none-any.whl"
+            / "demos" / "_wheel" / "pyknit-0.1.4-py3-none-any.whl"
         )
         with zipfile.ZipFile(wheel) as zf:
             names = zf.namelist()
@@ -557,7 +557,7 @@ class TestDemoSpecifics:
         assert "/_assets/pyscript/core.js" in html
         assert "/_assets/pyscript/core.css" in html
         assert "<py-config>" in html
-        assert "pyknit-0.1.3-py3-none-any.whl" in html
+        assert "pyknit-0.1.4-py3-none-any.whl" in html
         assert "import pyknit" in html
         # live status banner driven by shared.set_status, not a static banner
         assert "status-banner" in html
