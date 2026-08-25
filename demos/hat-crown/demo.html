@@ -28,7 +28,7 @@
 
   <py-config>
     interpreter = "/_assets/pyodide/pyodide.mjs"
-    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.2-py3-none-any.whl"]
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.3-py3-none-any.whl"]
     terminal = false
   </py-config>
 
@@ -49,6 +49,7 @@
     </div>
     <div class="button-row">
       <button id="run" class="btn-primary">Plan Crown</button>
+      <button id="simulate-hat" class="btn-secondary">Simulate hat &rarr;</button>
       <button id="export-pattern" class="btn-secondary">Export Pattern</button>
     </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
@@ -61,8 +62,45 @@
 
 <script type="py">
     from pyknit.pyscript._assets import shared
-    from pyknit.pyscript._demos import hat_crown as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Plan Crown", export_button_id="export-pattern")
+    from pyknit.pyscript._demos import hat_crown as mod
+    import json as _json
+
+    _DEMO = mod
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Keep the demo behaviour identical; on top of it, publish the computed
+    # simulation pattern to the JS side after every successful run so the
+    # "Simulate hat" button can hand it to the Knit Simulator.
+    _ORIG_COMPUTE = _DEMO.DEMO["compute"]
+
+    def _compute_and_publish(inputs):
+        try:
+            result = _ORIG_COMPUTE(inputs)
+        except Exception:
+            if _win is not None:
+                _win.hat_sim_instructions = ""
+                _win.hat_sim_ready = False
+            raise
+        try:
+            instr = result.get("sim_instructions") or ""
+            plan = result.get("sim_plan")
+            if _win is not None:
+                # serialize here: a raw Python dict becomes a JSProxy the
+                # page's JS cannot enumerate, so hand over a JSON string
+                _win.hat_sim_instructions = instr
+                _win.hat_sim_plan = _json.dumps(plan) if isinstance(plan, dict) else ""
+                _win.hat_sim_ready = bool(instr and _win.hat_sim_plan)
+        except Exception:
+            pass
+        return result
+
+    _DEMO.DEMO["compute"] = _compute_and_publish
+
+    shared.bootstrap_demo(_DEMO, action_label="Plan Crown", export_button_id="export-pattern")
 </script>
 <script>
 document.addEventListener("click", function(e) {
@@ -74,6 +112,24 @@ document.addEventListener("click", function(e) {
     }
     sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
     window.location.href = "/yarn-estimator/demo.html";
+});
+
+document.addEventListener("click", function (e) {
+    var btn = e.target.closest("#simulate-hat");
+    if (!btn) return;
+    var raw = window.hat_sim_instructions;
+    var planJson = window.hat_sim_plan;
+    if (!raw || !planJson) {
+        var err = document.getElementById("demo-error");
+        if (err) {
+            err.textContent = "Error: Run the Planner first (Plan Crown), then try again.";
+            err.style.display = "block";
+        }
+        return;
+    }
+    sessionStorage.setItem("knit_sim_instructions", raw);
+    sessionStorage.setItem("knit_sim_plan", planJson);
+    window.location.href = "/knit-simulator/demo.html";
 });
 </script>
 </body>
