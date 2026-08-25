@@ -71,18 +71,85 @@
       margin-right: 0.4rem;
     }
 
+    .sim-summary {
+      margin-bottom: 0.7rem;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f6effa;
+      font-size: 0.88rem;
+    }
+    .sim-summary-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .sim-pill {
+      background: #e6d7f0;
+      color: #5a2a75;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .sim-summary-hint { margin: 0.45rem 0 0.3rem; color: #6b6572; font-size: 0.82rem; }
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
     .step-active { background: #fff3cd; border-color: #ffc107; }
     .step-log div { padding: 0.15rem 0.3rem; border-left: 3px solid transparent; }
     .step-log .step-active { border-left-color: #ffc107; }
+    #sock-plan-note { margin-top: 0.4rem; display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+
+    /* ── Knitter's status line + compact section progress ── */
+    .sim-phase-line {
+      margin: 0.1rem 0 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #4a3557;
+      background: #f6effa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+    }
+    .section-progress {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.5rem;
+      margin: 0 0 0.6rem;
+      font-size: 0.88rem;
+    }
+    .sec-mark {
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: #f1eaf7;
+      color: #8a7a97;
+      border: 1px solid #e3d5f2;
+    }
+    .sec-done { background: #dff0e2; color: #2e7d32; border-color: #bfe3c6; }
+    .sec-active { background: #e3d5f2; color: #5a2a75; border-color: #c9aee3; font-weight: 700; }
+    details.step-details { margin-top: 0.3rem; }
+    details.step-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--primary-dark);
+    }
   </style>
 </head>
 <body>
   <header class="demo-header">
     <div class="eyebrow">pyKnit · PyScript demo</div>
     <h1>Knit Simulator</h1>
-    <p>Type simple instructions and watch a sweater grow row by row. Each
-    knitted row builds one band of the garment — play, pause, or step through
-    to see the fabric construct itself.</p>
+    <p>Type simple instructions and watch a sweater grow row by row — or send
+    a sock plan from the Sock Calculator, or a sweater plan from the Raglan
+    Sweater Planner, and watch the garment construct itself. Play, pause, or
+    step through to see the fabric build up.</p>
     <div class="linkbar"><a href="/index.html">&larr; all tools</a></div>
   </header>
 
@@ -113,6 +180,14 @@ k all</textarea>
     <div class="button-row">
       <button id="run" class="btn-primary">Build Simulation</button>
     </div>
+    <div id="sock-plan-note" class="sim-summary-hint" style="display:none">
+      Using the sock plan from the Sock Calculator &mdash; the instructions below are ignored for this build.
+      <button id="clear-sock-plan" class="btn-link" type="button">Clear it and use manual instructions</button>
+    </div>
+    <div id="raglan-plan-note" class="sim-summary-hint" style="display:none">
+      Instructions loaded from the Raglan Sweater Planner.
+      <button id="clear-raglan-plan" class="btn-link" type="button">Clear it and use the default pattern</button>
+    </div>
     <div id="demo-error" class="error-message" style="display:none;"></div>
   </section>
 
@@ -134,9 +209,13 @@ k all</textarea>
       </div>
     </div>
 
+    <div id="sim-phase-line" class="sim-phase-line" style="display:none"></div>
+    <div id="section-progress" class="section-progress" style="display:none"></div>
+
     <div class="sim-view">
       <div class="view-box">
-        <h4>Garment</h4>
+        <h4 id="garment-title">Garment</h4>
+        <div id="sim-summary" class="sim-summary" style="display:none"></div>
         <div class="garment-stage" id="garment-view">
           <p style="color:#888;font-size:0.9rem;padding:2rem 0">Build the simulation to see the sweater.</p>
         </div>
@@ -145,14 +224,17 @@ k all</textarea>
     </div>
 
     <div class="view-box" style="margin-top:0.8rem">
-      <h4>Step log</h4>
-      <div id="step-log" class="step-log" style="max-height:180px;overflow-y:auto;font-size:0.88rem"></div>
+      <details class="step-details">
+        <summary>Step log &mdash; every row, expanded</summary>
+        <div id="step-log" class="step-log" style="max-height:180px;overflow-y:auto;font-size:0.88rem"></div>
+      </details>
     </div>
   </section>
 
   <footer>
     <p>Instructional visualization. Each row of knitting adds one band of the garment;
-    stitch counts only change when an instruction (yo, k2tog, ssk, bo) changes them.</p>
+    stitch counts only change when an instruction (yo, k2tog, ssk, bo) — or the Sock
+    Calculator / Raglan Sweater Planner pattern — changes them.</p>
   </footer>
 
   <script type="py">
@@ -171,13 +253,80 @@ k all</textarea>
     # when the produced steps are identical to the previous build.
     _REVISION = [0]
 
+    # The Raglan Sweater Planner's canonical plan (instructions + sections),
+    # read once on load.  The plan is passed to compute only while the
+    # instructions field still contains its exact text, so any user edit
+    # silently drops the sections and runs the edited instructions instead.
+    _PENDING_PLAN = [None]
+
+    def _read_sock_plan():
+        """Return the Sock Calculator pattern saved by the sock page, if any."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("sock_sim_plan")
+            if raw:
+                return _json.loads(str(raw))
+        except Exception:
+            pass
+        return None
+
+    def _read_raglan_plan():
+        """One-shot read of the Raglan Sweater Planner's canonical plan
+        (instructions + sections + counts).  The key is consumed on read, so
+        a later Build uses whatever the user has in the instructions field."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("knit_sim_plan")
+            if raw:
+                plan = _json.loads(str(raw))
+                if isinstance(plan, dict) and plan.get("instructions"):
+                    _win.sessionStorage.removeItem("knit_sim_plan")
+                    return plan
+        except Exception:
+            return None
+        return None
+
+    def _read_instruction_prefill():
+        """Fallback prefill (instructions text only, no sections), kept for
+        direct links that stored only the instruction text."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("knit_sim_instructions")
+            if raw:
+                _win.sessionStorage.removeItem("knit_sim_instructions")
+                return str(raw)
+        except Exception:
+            return None
+        return None
+
     def _publish(result):
         steps_json = _json.dumps(result["steps"])
+        construction = (
+            "top_down"
+            if getattr(_win, "raglan_orientation", False)
+            else "bottom_up"
+        )
+        plan = None
+        if result.get("sections"):
+            plan = {
+                "sections": result["sections"],
+                "counts": result.get("counts"),
+            }
+        meta_json = _json.dumps({
+            "garment": result.get("garment", "sweater"),
+            "sock": result.get("sock_summary"),
+            "construction": construction,
+            "plan": plan,
+        })
         if _win is not None:
             _REVISION[0] += 1
             _win.sim_revision = _REVISION[0]
             _win.sim_steps_json = steps_json
             _win.sim_steps = _json.loads(steps_json)
+            _win.sim_meta_json = meta_json
 
     def _invalidate():
         if _win is not None:
@@ -185,10 +334,20 @@ k all</textarea>
             _win.sim_revision = _REVISION[0]
             _win.sim_steps_json = "[]"
             _win.sim_steps = []
+            _win.sim_meta_json = "null"
 
     def _bridge_run(event=None):
         try:
             inputs = shared.collect_inputs(_DEMO["DEFAULT_INPUTS"])
+            sock_plan = _read_sock_plan()
+            if sock_plan is not None:
+                inputs["sock_plan"] = sock_plan
+            pending = _PENDING_PLAN[0]
+            if pending is not None:
+                field = _win.document.getElementById("instructions").value \
+                    if _win is not None else ""
+                if str(field).strip() == str(pending["instructions"]).strip():
+                    inputs["plan"] = pending
             result = _DEMO["compute"](inputs)
         except Exception as exc:
             _invalidate()
@@ -201,6 +360,24 @@ k all</textarea>
 
     shared.bind_click("run", _bridge_run)
     shared.set_status("loading", "Loading pyknit...", "First load takes 30-60 seconds.")
+
+    _plan = _read_raglan_plan()
+    if _plan is not None:
+        _PENDING_PLAN[0] = _plan
+        try:
+            _win.document.getElementById("instructions").value = _plan["instructions"]
+            _win.raglan_orientation = True
+        except Exception:
+            pass
+    else:
+        _prefill = _read_instruction_prefill()
+        if _prefill:
+            try:
+                _win.document.getElementById("instructions").value = _prefill
+                _win.raglan_orientation = True
+            except Exception:
+                pass
+
     try:
         _bridge_run()
     except Exception:
@@ -211,6 +388,11 @@ k all</textarea>
   <script>
   (function() {
     var steps = [], cur = 0, playing = false, timer = null, speedMs = 400;
+    var sockMode = false;
+    var raglanMode = false;
+    var metaSections = [];
+    var metaCounts = null;
+    var topDown = false;
     var speedMap = {slow: 800, normal: 400, fast: 150};
     var lastSig = null, lastRevision = null, animRaf = null;
     function $(id) { return document.getElementById(id); }
@@ -288,7 +470,8 @@ k all</textarea>
     }
 
     function bandHtml(i, step) {
-      var top = (HEM_Y - (i + 1) * garment.bandH).toFixed(2);
+      var origin = topDown ? TOP_Y : HEM_Y;
+      var top = (origin + (topDown ? 1 : -1) * (i + 1) * garment.bandH).toFixed(2);
       var h = garment.bandH.toFixed(2);
       var html = '';
       if (isRib(step)) {
@@ -314,13 +497,15 @@ k all</textarea>
       }
       var seps = '';
       for (var i = 1; i < steps.length - 1; i++) {
-        var y = (HEM_Y - i * garment.bandH).toFixed(2);
+        var origin = topDown ? TOP_Y : HEM_Y;
+        var y = (origin + (topDown ? 1 : -1) * i * garment.bandH).toFixed(2);
         seps += '<line x1="0" y1="' + y + '" x2="320" y2="' + y + '" stroke="rgba(43,35,51,0.12)" stroke-width="1"/>';
       }
+      var stripOrigin = topDown ? TOP_Y : (HEM_Y - MIN_REVEAL);
       var strip =
-        '<rect x="0" y="' + (HEM_Y - MIN_REVEAL) + '" width="320" height="' + MIN_REVEAL +
+        '<rect x="0" y="' + stripOrigin + '" width="320" height="' + MIN_REVEAL +
         '" fill="rgba(90,42,117,0.18)"/>' +
-        '<rect x="0" y="' + (HEM_Y - MIN_REVEAL) + '" width="320" height="' + MIN_REVEAL +
+        '<rect x="0" y="' + stripOrigin + '" width="320" height="' + MIN_REVEAL +
         '" fill="url(#ribPat)"/>';
       var svg = sweaterSvg();
       $('garment-view').innerHTML = svg;
@@ -333,9 +518,14 @@ k all</textarea>
     /* ── Reveal ─────────────────────────────────────────────── */
 
     function revealFor(i) {
-      /* The clip rect always reaches the floor (y 340); the height includes
-         the empty space below the hem, so the initial sliver anchors on the
-         hem itself (MIN_REVEAL pixels of fabric), not the void below it. */
+      /* Bottom-up (manual sweaters): the clip rect reaches the floor (y 340)
+         and the height includes the empty space below the hem, so the sliver
+         anchors on the hem itself.  Top-down (raglan plans): the fabric is
+         exposed from the shoulders down, starting with the cast-on collar. */
+      if (topDown) {
+        if (i <= 0) return TOP_Y + MIN_REVEAL;
+        return TOP_Y + MIN_REVEAL + i * garment.bandH;
+      }
       if (i <= 0) return (340 - HEM_Y) + MIN_REVEAL;
       return (340 - HEM_Y) + i * garment.bandH;
     }
@@ -344,10 +534,11 @@ k all</textarea>
       var rect = $('revealRect');
       if (!rect) return;
       var curH = parseFloat(rect.getAttribute('height')) || 0;
+      var targetY = topDown ? 0 : (340 - h);
       if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
       if (!animate || Math.abs(curH - h) < 0.5) {
         rect.setAttribute('height', String(h));
-        rect.setAttribute('y', String(340 - h));
+        rect.setAttribute('y', String(targetY));
         return;
       }
       var t0 = null;
@@ -357,7 +548,7 @@ k all</textarea>
         var e = 1 - Math.pow(1 - k, 3); /* ease-out cubic */
         var v = curH + (h - curH) * e;
         rect.setAttribute('height', String(v));
-        rect.setAttribute('y', String(340 - v));
+        rect.setAttribute('y', String(topDown ? 0 : (340 - v)));
         if (k < 1) animRaf = requestAnimationFrame(frame);
       }
       animRaf = requestAnimationFrame(frame);
@@ -378,6 +569,429 @@ k all</textarea>
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    /* ── Sock geometry (bent schematic, cuff top-left -> toe right) ── */
+
+    var sock = {totalLen: 1, minSliver: 18};
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    function readMeta() {
+      try {
+        var raw = window.sim_meta_json;
+        if (!raw) return null;
+        if (typeof raw === 'string') return JSON.parse(raw);
+        if (typeof raw.toJs === 'function') return raw.toJs();
+        return raw;
+      } catch (e) { return null; }
+    }
+
+    function sockGeometry(castOn, ankleSts) {
+      var bx = 26, ty = 26, soleY = 192, ankleY = 152;
+      var toeStartX = 204, toeEndX = 268, toeTipY = 160;
+      var cuffDepth = clamp(16 + castOn * 0.5, 26, 64);
+      var ankleDepth = clamp(14 + ankleSts * 0.45, 24, 58);
+      return {
+        bx: bx, ty: ty, soleY: soleY, ankleY: ankleY,
+        toeStartX: toeStartX, toeEndX: toeEndX, toeTipY: toeTipY,
+        cuffFrontX: bx + cuffDepth, ankleFrontX: bx + ankleDepth
+      };
+    }
+
+    function sockSilhouette(g) {
+      return 'M' + g.bx + ',' + g.ty +
+        ' L' + g.bx + ',' + g.soleY +
+        ' L' + g.toeStartX + ',' + g.soleY +
+        ' Q' + g.toeEndX + ',' + g.soleY + ' ' + g.toeEndX + ',' + g.toeTipY +
+        ' L' + g.ankleFrontX + ',' + g.ankleY +
+        ' L' + g.cuffFrontX + ',' + g.ty + ' Z';
+    }
+
+    /* Knitting direction: cast-on edge (top of the cuff), down the leg,
+       around the heel, along the sole and up the toe curve. */
+    function sockCenterline(g) {
+      return 'M' + g.bx + ',' + g.ty +
+        ' L' + g.cuffFrontX + ',' + g.ty +
+        ' L' + g.ankleFrontX + ',' + g.ankleY +
+        ' L' + g.ankleFrontX + ',' + g.soleY +
+        ' L' + (g.bx + 8) + ',' + g.soleY +
+        ' L' + g.toeStartX + ',' + g.soleY +
+        ' Q' + g.toeEndX + ',' + g.soleY + ' ' + g.toeEndX + ',' + g.toeTipY;
+    }
+
+    function sockSvg(g) {
+      var sil = sockSilhouette(g);
+      return '' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" role="img" aria-label="Knitted sock being constructed">' +
+        '<defs>' +
+          '<linearGradient id="sockGrad" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0" stop-color="#eef0fa"/>' +
+            '<stop offset="0.55" stop-color="#dbe0f3"/>' +
+            '<stop offset="1" stop-color="#c2cbe9"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="sockShade" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0" stop-color="rgba(43,35,51,0.14)"/>' +
+            '<stop offset="0.5" stop-color="rgba(43,35,51,0)"/>' +
+            '<stop offset="1" stop-color="rgba(43,35,51,0.12)"/>' +
+          '</linearGradient>' +
+          '<pattern id="sockKnit" width="11" height="8" patternUnits="userSpaceOnUse">' +
+            '<path d="M2.6,7 L5.5,1.6 L8.4,7" fill="none" stroke="rgba(90,42,117,0.15)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</pattern>' +
+          '<pattern id="sockRib" width="6" height="6" patternUnits="userSpaceOnUse">' +
+            '<path d="M1.6,0 L1.6,6 M4.4,0 L4.4,6" stroke="rgba(90,42,117,0.14)" stroke-width="1"/>' +
+          '</pattern>' +
+          '<pattern id="sockHeel" width="8" height="8" patternUnits="userSpaceOnUse">' +
+            '<path d="M0,8 L8,0" stroke="rgba(90,42,117,0.13)" stroke-width="1.2"/>' +
+          '</pattern>' +
+          '<clipPath id="sockSilClip"><path d="' + sil + '"/></clipPath>' +
+          '<mask id="sockRevealMask" maskUnits="userSpaceOnUse">' +
+            '<path id="sockRevealPath" d="' + sockCenterline(g) + '" fill="none" stroke="#fff" stroke-width="112" stroke-linecap="butt"/>' +
+          '</mask>' +
+          '<filter id="sockShadow" x="-25%" y="-25%" width="150%" height="150%">' +
+            '<feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#2b2333" flood-opacity="0.25"/>' +
+          '</filter>' +
+        '</defs>' +
+        '<ellipse cx="150" cy="212" rx="132" ry="8" fill="rgba(43,35,51,0.10)"/>' +
+        '<g filter="url(#sockShadow)">' +
+          '<g clip-path="url(#sockSilClip)" mask="url(#sockRevealMask)">' +
+            '<rect x="0" y="0" width="360" height="230" fill="url(#sockGrad)"/>' +
+            '<rect x="0" y="0" width="360" height="230" fill="url(#sockKnit)"/>' +
+            '<g id="sock-regions"></g>' +
+            '<rect x="0" y="0" width="360" height="230" fill="url(#sockShade)"/>' +
+          '</g>' +
+        '</g>' +
+        '<g clip-path="url(#sockSilClip)" mask="url(#sockRevealMask)">' +
+          '<path d="' + sil + '" fill="none" stroke="rgba(90,42,117,0.32)" stroke-width="2" stroke-linejoin="round"/>' +
+        '</g>' +
+      '</svg>';
+    }
+
+    function buildSock() {
+      if (!steps || !steps.length) throw new Error('no simulation steps');
+      var meta = readMeta();
+      var s = meta && meta.sock ? meta.sock : {};
+      var castOn = s.cast_on_stitches || steps[0].n || 64;
+      var ankle = s.ankle_stitches || castOn;
+      var g = sockGeometry(castOn, ankle);
+      $('garment-view').innerHTML = sockSvg(g);
+
+      var path = $('sockRevealPath');
+      sock.totalLen = path.getTotalLength() || 1;
+      path.setAttribute('stroke-dasharray', String(sock.totalLen));
+      path.setAttribute('stroke-dashoffset', String(sock.totalLen));
+
+      /* region overlays: rib cuff, heel patch, decrease markers — every
+         round comes from the calculator pattern, nothing is invented */
+      var regions = '';
+      var total = steps.length;
+      var ribN = 0, heelN = 0, decPts = [];
+      for (var i = 0; i < total; i++) {
+        var st = steps[i];
+        if (st.texture === 'rib') ribN++;
+        if (st.texture === 'heel' || st.texture === 'gusset') heelN++;
+        if (st.decreases > 0) decPts.push(i);
+      }
+      var legLen = g.soleY - g.ty;
+      var cuffH = clamp(ribN / total * legLen, 16, 92);
+      var heelH = clamp(heelN / total * legLen + 10, 14, 70);
+      if (ribN > 0) {
+        regions += '<rect x="' + (g.bx - 2) + '" y="' + (g.ty - 2) + '" width="' + (g.cuffFrontX - g.bx + 4) + '" height="' + cuffH.toFixed(1) + '" fill="rgba(123,63,160,0.10)"/>';
+        regions += '<rect x="' + (g.bx - 2) + '" y="' + (g.ty - 2) + '" width="' + (g.cuffFrontX - g.bx + 4) + '" height="' + cuffH.toFixed(1) + '" fill="url(#sockRib)"/>';
+      }
+      if (heelN > 0) {
+        regions += '<rect x="' + (g.bx - 2) + '" y="' + (g.soleY - heelH).toFixed(1) + '" width="' + (g.ankleFrontX - g.bx + 4) + '" height="' + heelH.toFixed(1) + '" fill="rgba(123,63,160,0.08)"/>';
+        regions += '<rect x="' + (g.bx - 2) + '" y="' + (g.soleY - heelH).toFixed(1) + '" width="' + (g.ankleFrontX - g.bx + 4) + '" height="' + heelH.toFixed(1) + '" fill="url(#sockHeel)"/>';
+      }
+      for (var d = 0; d < decPts.length; d++) {
+        var frac = decPts[d] / Math.max(total - 1, 1);
+        var pt = path.getPointAtLength(sock.minSliver + frac * (sock.totalLen - sock.minSliver));
+        regions += '<circle cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="2.2" fill="rgba(90,42,117,0.55)"/>';
+      }
+      $('garment-view').querySelector('#sock-regions').innerHTML = regions;
+      return true;
+    }
+
+    function sockRevealFor(i) {
+      var f = steps[i].progress != null ? steps[i].progress : (i / Math.max(steps.length - 1, 1));
+      return sock.minSliver + f * (sock.totalLen - sock.minSliver);
+    }
+
+    /* ── Raglan sweater (top-down, section-aware) ──────────── */
+
+    /* The garment is drawn as three independent pieces so the construction
+       is honest: the torso (collar -> widening yoke -> body -> hem) is
+       revealed top-down while the neckline/yoke/body sections run, and each
+       sleeve only appears once its own section starts (the pattern knits
+       each sleeve after the body).  The yoke is a wedge that visibly widens
+       from the neckline to the underarms as the reveal grows past it. */
+    var raglan = {topY: 64, underarmY: 152, hemY: 318, sleeveLen: 166, minSliver: 12};
+
+    function raglanSvg() {
+      var T = raglan.topY, U = raglan.underarmY, H = raglan.hemY;
+      var torso = 'M108,' + T + ' C130,108 190,108 212,' + T +
+        ' L220,' + T + ' L228,' + U + ' L228,' + H +
+        ' L92,' + H + ' L92,' + U + ' L100,' + T + ' Z';
+      var wedge = '100,' + T + ' 220,' + T + ' 228,' + U + ' 92,' + U;
+      var sleeveL = 'M62,' + U + ' L98,' + U + ' L98,' + (H - 6) +
+        ' Q98,' + H + ' 92,' + H + ' L68,' + H + ' Q62,' + H + ' 62,' + (H - 6) + ' Z';
+      var sleeveR = 'M222,' + U + ' L258,' + U + ' L258,' + (H - 6) +
+        ' Q258,' + H + ' 252,' + H + ' L228,' + H + ' Q222,' + H + ' 222,' + (H - 6) + ' Z';
+      return '' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 340" role="img" aria-label="Raglan sweater being constructed top-down">' +
+        '<defs>' +
+          '<linearGradient id="raglanGrad" x1="0" y1="0" x2="1" y2="0">' +
+            '<stop offset="0" stop-color="#c4a8d8"/>' +
+            '<stop offset="0.5" stop-color="#e8dbf1"/>' +
+            '<stop offset="1" stop-color="#c4a8d8"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="raglanShade" x1="0" y1="0" x2="1" y2="0">' +
+            '<stop offset="0" stop-color="rgba(43,35,51,0.20)"/>' +
+            '<stop offset="0.28" stop-color="rgba(43,35,51,0)"/>' +
+            '<stop offset="0.72" stop-color="rgba(43,35,51,0)"/>' +
+            '<stop offset="1" stop-color="rgba(43,35,51,0.20)"/>' +
+          '</linearGradient>' +
+          '<pattern id="raglanKnit" width="12" height="8" patternUnits="userSpaceOnUse">' +
+            '<path d="M3,7.2 L6,1.8 L9,7.2" fill="none" stroke="rgba(90,42,117,0.16)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</pattern>' +
+          '<pattern id="raglanRib" width="7" height="7" patternUnits="userSpaceOnUse">' +
+            '<path d="M1.8,0 L1.8,7 M5.2,0 L5.2,7" stroke="rgba(90,42,117,0.14)" stroke-width="1"/>' +
+          '</pattern>' +
+          '<clipPath id="raglanTorsoClip"><path d="' + torso + '"/></clipPath>' +
+          '<clipPath id="raglanSLClip"><path d="' + sleeveL + '"/></clipPath>' +
+          '<clipPath id="raglanSRClip"><path d="' + sleeveR + '"/></clipPath>' +
+          '<clipPath id="raglanRevealTorso"><rect id="rtTorso" x="0" y="' + T + '" width="320" height="0"/></clipPath>' +
+          '<clipPath id="raglanRevealSL"><rect id="rtSleeveL" x="0" y="' + U + '" width="320" height="0"/></clipPath>' +
+          '<clipPath id="raglanRevealSR"><rect id="rtSleeveR" x="0" y="' + U + '" width="320" height="0"/></clipPath>' +
+          '<filter id="raglanShadow" x="-25%" y="-25%" width="150%" height="150%">' +
+            '<feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#2b2333" flood-opacity="0.28"/>' +
+          '</filter>' +
+        '</defs>' +
+        '<ellipse cx="160" cy="327" rx="118" ry="8" fill="rgba(43,35,51,0.10)"/>' +
+        '<g filter="url(#raglanShadow)">' +
+          '<g clip-path="url(#raglanTorsoClip)">' +
+            '<g clip-path="url(#raglanRevealTorso)">' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanGrad)"/>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanKnit)"/>' +
+              '<polygon points="' + wedge + '" fill="rgba(123,63,160,0.12)"/>' +
+              '<line x1="108" y1="' + T + '" x2="92" y2="' + U + '" stroke="rgba(90,42,117,0.35)" stroke-width="2.5" stroke-linecap="round"/>' +
+              '<line x1="212" y1="' + T + '" x2="228" y2="' + U + '" stroke="rgba(90,42,117,0.35)" stroke-width="2.5" stroke-linecap="round"/>' +
+              '<g id="raglan-hem"></g>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanShade)"/>' +
+            '</g>' +
+          '</g>' +
+          '<g clip-path="url(#raglanSLClip)">' +
+            '<g clip-path="url(#raglanRevealSL)">' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanGrad)"/>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanKnit)"/>' +
+              '<g id="raglan-cuff-l"></g>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanShade)"/>' +
+            '</g>' +
+          '</g>' +
+          '<g clip-path="url(#raglanSRClip)">' +
+            '<g clip-path="url(#raglanRevealSR)">' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanGrad)"/>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanKnit)"/>' +
+              '<g id="raglan-cuff-r"></g>' +
+              '<rect x="0" y="0" width="320" height="340" fill="url(#raglanShade)"/>' +
+            '</g>' +
+          '</g>' +
+        '</g>' +
+        '<g clip-path="url(#raglanTorsoClip)"><g clip-path="url(#raglanRevealTorso)">' +
+          '<path d="' + torso + '" fill="none" stroke="rgba(90,42,117,0.32)" stroke-width="2" stroke-linejoin="round"/>' +
+          '<path d="M108,' + T + ' C130,108 190,108 212,' + T + '" fill="none" stroke="rgba(123,63,160,0.55)" stroke-width="6" stroke-linecap="round"/>' +
+        '</g></g>' +
+        '<g clip-path="url(#raglanSLClip)"><g clip-path="url(#raglanRevealSL)">' +
+          '<path d="' + sleeveL + '" fill="none" stroke="rgba(90,42,117,0.32)" stroke-width="2" stroke-linejoin="round"/>' +
+        '</g></g>' +
+        '<g clip-path="url(#raglanSRClip)"><g clip-path="url(#raglanRevealSR)">' +
+          '<path d="' + sleeveR + '" fill="none" stroke="rgba(90,42,117,0.32)" stroke-width="2" stroke-linejoin="round"/>' +
+        '</g></g>' +
+      '</svg>';
+    }
+
+    function buildRaglan() {
+      if (!steps || !steps.length) throw new Error('no simulation steps');
+      $('garment-view').innerHTML = raglanSvg();
+      var H = raglan.hemY;
+      var hem =
+        '<rect x="92" y="' + (H - 12) + '" width="136" height="12" fill="rgba(123,63,160,0.10)"/>' +
+        '<rect x="92" y="' + (H - 12) + '" width="136" height="12" fill="url(#raglanRib)"/>';
+      var cuffL =
+        '<rect x="62" y="' + (H - 12) + '" width="36" height="12" fill="rgba(123,63,160,0.10)"/>' +
+        '<rect x="62" y="' + (H - 12) + '" width="36" height="12" fill="url(#raglanRib)"/>';
+      var cuffR =
+        '<rect x="222" y="' + (H - 12) + '" width="36" height="12" fill="rgba(123,63,160,0.10)"/>' +
+        '<rect x="222" y="' + (H - 12) + '" width="36" height="12" fill="url(#raglanRib)"/>';
+      $('garment-view').querySelector('#raglan-hem').innerHTML = hem;
+      $('garment-view').querySelector('#raglan-cuff-l').innerHTML = cuffL;
+      $('garment-view').querySelector('#raglan-cuff-r').innerHTML = cuffR;
+      return true;
+    }
+
+    function secById(id) {
+      for (var k = 0; k < metaSections.length; k++) {
+        if (metaSections[k].id === id) return metaSections[k];
+      }
+      return null;
+    }
+
+    function raglanRevealFor(i) {
+      var body = secById('body') || metaSections[2];
+      var bodyEnd = body ? body.end : (steps.length - 1);
+      var s1 = secById('left_sleeve') || metaSections[3];
+      var s2 = secById('right_sleeve') || metaSections[4];
+      var torsoFull = raglan.hemY - raglan.topY;
+      var torso = 0, sl = 0, sr = 0;
+      if (i < bodyEnd) {
+        var ft = (i + 1) / bodyEnd;
+        torso = raglan.minSliver + ft * (torsoFull - raglan.minSliver);
+      } else {
+        torso = torsoFull;   /* body complete: the torso is fully revealed */
+      }
+      if (s1 && i >= s1.start) {
+        var f1 = (i - s1.start + 1) / (s1.end - s1.start);
+        sl = raglan.minSliver + Math.min(1, f1) * (raglan.sleeveLen - raglan.minSliver);
+      }
+      if (s2 && i >= s2.start) {
+        var f2 = (i - s2.start + 1) / (s2.end - s2.start);
+        sr = raglan.minSliver + Math.min(1, f2) * (raglan.sleeveLen - raglan.minSliver);
+      }
+      return {torso: torso, sl: sl, sr: sr};
+    }
+
+    function setRaglanReveal(r, animate) {
+      var t = $('rtTorso'), l = $('rtSleeveL'), rr = $('rtSleeveR');
+      if (!t || !l || !rr) return;
+      var cT = parseFloat(t.getAttribute('height')) || 0;
+      var cL = parseFloat(l.getAttribute('height')) || 0;
+      var cR = parseFloat(rr.getAttribute('height')) || 0;
+      if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+      function snap() {
+        t.setAttribute('y', String(raglan.topY)); t.setAttribute('height', String(r.torso));
+        l.setAttribute('y', String(raglan.underarmY)); l.setAttribute('height', String(r.sl));
+        rr.setAttribute('y', String(raglan.underarmY)); rr.setAttribute('height', String(r.sr));
+      }
+      if (!animate || (Math.abs(cT - r.torso) < 0.5 && Math.abs(cL - r.sl) < 0.5 && Math.abs(cR - r.sr) < 0.5)) { snap(); return; }
+      var t0 = null;
+      function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var k = Math.min((ts - t0) / 240, 1);
+        var e = 1 - Math.pow(1 - k, 3);
+        t.setAttribute('y', String(raglan.topY)); t.setAttribute('height', String(cT + (r.torso - cT) * e));
+        l.setAttribute('y', String(raglan.underarmY)); l.setAttribute('height', String(cL + (r.sl - cL) * e));
+        rr.setAttribute('y', String(raglan.underarmY)); rr.setAttribute('height', String(cR + (r.sr - cR) * e));
+        if (k < 1) animRaf = requestAnimationFrame(frame);
+      }
+      animRaf = requestAnimationFrame(frame);
+    }
+
+    function updateRaglanInfo() {
+      var ph = $('sim-phase-line');
+      var sp = $('section-progress');
+      if (!ph || !sp) return;
+      var step = steps[cur];
+      if (raglanMode && step && step.section_label) {
+        ph.style.display = '';
+        ph.innerHTML =
+          'Phase: ' + esc(step.section_label) +
+          ' &middot; Row ' + step.sec_row + ' / ' + step.sec_rows +
+          ' &middot; Stitches: ' + step.n +
+          ' &middot; ' + esc(step.op_short || step.op);
+        var marks = '';
+        for (var k = 0; k < metaSections.length; k++) {
+          var sec = metaSections[k];
+          var done = cur > sec.end - 1;
+          var active = !done && cur >= sec.start;
+          var mark = done ? '&#10003;' : (active ? '&rarr;' : '&#9675;');
+          marks += '<span class="sec-mark ' + (done ? 'sec-done' : active ? 'sec-active' : '') + '">' +
+                   mark + ' ' + esc(sec.label) + '</span>';
+        }
+        sp.innerHTML = marks;
+        sp.style.display = '';
+      } else {
+        ph.style.display = 'none';
+        sp.style.display = 'none';
+      }
+    }
+
+    function setSockReveal(len, animate) {
+      var el = $('sockRevealPath');
+      if (!el || !sock.totalLen) return;
+      var dash = sock.totalLen - len;
+      var cur = parseFloat(el.getAttribute('stroke-dashoffset'));
+      if (!isFinite(cur)) cur = sock.totalLen;
+      if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+      if (!animate || Math.abs(cur - dash) < 0.5) {
+        el.setAttribute('stroke-dashoffset', String(dash));
+        return;
+      }
+      var t0 = null;
+      function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var k = Math.min((ts - t0) / 240, 1);
+        var e = 1 - Math.pow(1 - k, 3);
+        el.setAttribute('stroke-dashoffset', String(cur + (dash - cur) * e));
+        if (k < 1) animRaf = requestAnimationFrame(frame);
+      }
+      animRaf = requestAnimationFrame(frame);
+    }
+
+    function renderSummary(meta) {
+      var box = $('sim-summary');
+      var title = $('garment-title');
+      if (!meta) {
+        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        if (title) title.textContent = 'Garment';
+        return;
+      }
+      if (meta.garment === 'raglan' && meta.plan && meta.plan.counts) {
+        var c = meta.plan.counts;
+        var rp = [
+          c.neck != null ? 'Cast on ' + esc(c.neck) + ' sts' : null,
+          c.calc_neck != null ? 'Neck ' + esc(c.calc_neck) + ' sts' : null,
+          c.working != null ? 'Yoke ' + esc(c.working) + ' sts' : null,
+          c.bust != null ? 'Bust ' + esc(c.bust) + ' sts' : null,
+          c.arm != null ? 'Arm ' + esc(c.arm) + ' sts' : null,
+          c.wrist != null ? 'Cuff ' + esc(c.wrist) + ' sts' : null
+        ].filter(Boolean);
+        if (box) {
+          box.innerHTML = '<div class="sim-summary-row">' + rp.map(function(p) {
+            return '<span class="sim-pill">' + p + '</span>';
+          }).join('') + '</div>' +
+            '<div class="sim-summary-hint">Pattern from the Raglan Sweater Planner &middot; top-down, in the round</div>';
+          box.style.display = '';
+        }
+        if (title) title.textContent = 'Raglan sweater';
+        return;
+      }
+      if (meta.garment !== 'sock' || !meta.sock) {
+        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        if (title) title.textContent = 'Sweater';
+        return;
+      }
+      var s = meta.sock;
+      var pills = [
+        s.size ? 'Size: ' + esc(s.size) : null,
+        'Cast on ' + esc(s.cast_on_stitches) + ' sts',
+        s.ankle_stitches ? 'Ankle ' + esc(s.ankle_stitches) + ' sts' : null,
+        s.total_rounds ? esc(s.total_rounds) + ' rounds' : null
+      ].filter(Boolean);
+      var hint = s.gauge ? '<div class="sim-summary-hint">Pattern from the Sock Calculator · gauge ' + esc(s.gauge) + '</div>' : '';
+      if (box) {
+        box.innerHTML = '<div class="sim-summary-row">' + pills.map(function(p) {
+          return '<span class="sim-pill">' + p + '</span>';
+        }).join('') + '</div>' + hint;
+        box.style.display = '';
+      }
+      if (title) title.textContent = 'Sock';
+    }
+
+    function buildGarment() {
+      if (sockMode) { buildSock(); }
+      else if (raglanMode) { buildRaglan(); }
+      else { buildSweater(); }
+      renderSummary(readMeta());
+    }
+
     /* ── Player ─────────────────────────────────────────────── */
 
     function updateView(animate) {
@@ -385,7 +999,10 @@ k all</textarea>
       var step = steps[cur];
       $('sim-step-num').textContent = cur + 1;
       $('sim-step-total').textContent = steps.length;
-      setReveal(revealFor(cur), animate !== false);
+      if (sockMode) { setSockReveal(sockRevealFor(cur), animate !== false); }
+      else if (raglanMode) { setRaglanReveal(raglanRevealFor(cur), animate !== false); }
+      else { setReveal(revealFor(cur), animate !== false); }
+      updateRaglanInfo();
       $('sim-op-line').innerHTML =
         '<span class="now-label">Now knitting:</span>' + esc(step.op) +
         ' &mdash; ' + step.n + ' stitches on needle';
@@ -455,11 +1072,23 @@ k all</textarea>
       lastSig = sig;
       lastRevision = rev;
       stopPlay();
+      var meta = readMeta();
+      sockMode = !!(meta && meta.garment === 'sock' && meta.sock);
+      raglanMode = !!(meta && meta.garment === 'raglan' && meta.plan &&
+                      meta.plan.sections && meta.plan.sections.length);
+      metaSections = raglanMode ? meta.plan.sections : [];
+      metaCounts = (meta && meta.plan && meta.plan.counts) || null;
+      topDown = !!(meta && meta.construction === 'top_down');
 
       if (!parsed.length) {
         /* simulation invalidated (bad instructions) — clear the stage */
         steps = [];
         cur = 0;
+        sockMode = false;
+        raglanMode = false;
+        metaSections = [];
+        metaCounts = null;
+        topDown = false;
         $('sim-section').style.display = 'none';
         $('garment-view').innerHTML =
           '<p style="color:#888;font-size:0.9rem;padding:2rem 0">Build the simulation to see the sweater.</p>';
@@ -469,7 +1098,7 @@ k all</textarea>
       try {
         steps = parsed;
         cur = 0;
-        buildSweater();
+        buildGarment();
         updateView(false);
       } catch (e) {
         steps = [];
@@ -482,6 +1111,10 @@ k all</textarea>
       $('sim-section').style.display = '';
       setStatus('ready', 'Simulation ready',
         'Step ' + (cur + 1) + ' of ' + steps.length + '. Use the controls to play.');
+      var note = $('sock-plan-note');
+      if (note) note.style.display = sockMode ? '' : 'none';
+      var rnote = $('raglan-plan-note');
+      if (rnote) rnote.style.display = (!sockMode && window.raglan_orientation) ? '' : 'none';
       return true;
     }
 
@@ -492,6 +1125,20 @@ k all</textarea>
     $('sim-speed').addEventListener('change', function() {
       speedMs = speedMap[this.value] || 400;
       if (playing) { stopPlay(); startPlay(); }
+    });
+
+    var clearBtn = $('clear-sock-plan');
+    if (clearBtn) clearBtn.addEventListener('click', function() {
+      try { sessionStorage.removeItem('sock_sim_plan'); } catch (e) {}
+      window.location.reload();
+    });
+
+    var clearRaglanBtn = $('clear-raglan-plan');
+    if (clearRaglanBtn) clearRaglanBtn.addEventListener('click', function() {
+      try { sessionStorage.removeItem('knit_sim_plan'); } catch (e) {}
+      try { sessionStorage.removeItem('knit_sim_instructions'); } catch (e) {}
+      window.raglan_orientation = false;
+      window.location.reload();
     });
 
     var pollCount = 0;
