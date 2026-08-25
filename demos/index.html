@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>pyKnit — Interactive Knitting Tools</title>
   <meta name="description" content="Free interactive knitting calculators and planners. Plan socks, sweaters, shawls, and more — all running in your browser." />
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
   <link rel="stylesheet" href="/_assets/common.css" />
   <style>
     /* ── Landing page layout ───────────────────────────── */
@@ -240,32 +242,11 @@
       text-decoration: underline;
     }
 
-    /* ── Loading banner ─────────────────────────────────── */
-    .loading-banner {
-      border: 1px solid var(--info);
-      background: #e3f2fd;
-      border-radius: 10px;
-      padding: 0.7rem 1rem;
-      margin: 0 auto 1.5rem;
+    /* ── Runtime status banner (the page boots PyScript like the demos) ── */
+    #status-banner {
       max-width: 54rem;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.9rem;
-      color: #1a5276;
+      margin: 0 auto 1.5rem;
     }
-    .loading-banner .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--info);
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .loading-banner.hidden { display: none; }
 
     /* ── Footer ─────────────────────────────────────────── */
     .landing-footer {
@@ -324,11 +305,22 @@
     </div>
   </section>
 
-  <!-- ── Loading banner (hidden once runtime is ready) ── -->
-  <div id="loading-banner" class="loading-banner">
-    <div class="spinner"></div>
-    <span>First visit? Tools load in your browser — this takes about 30–60 seconds the first time, then it's instant.</span>
+  <!-- ── Runtime status banner: this page boots PyScript like the demo
+        pages, so the first visit pays the 30-60 second load here and every
+        tool below opens instantly afterwards ──────────────────────── -->
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail">First visit? Tools load in your browser — the first load takes about 30–60 seconds, then it's instant.</p>
+    </div>
   </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.3-py3-none-any.whl"]
+    terminal = false
+  </py-config>
 
   <!-- ── Featured tools ────────────────────────────────── -->
   <section id="featured" class="featured" aria-label="Featured tools">
@@ -703,6 +695,31 @@
     </nav>
     <p>pyknit is free and open source. All tools run locally in your browser — no data leaves your device.</p>
   </footer>
+
+  <script type="py">
+    from pyknit.pyscript._assets import shared
+
+    shared.set_status(
+        "loading",
+        "Loading pyknit...",
+        "First visit? Tools load in your browser - the first load takes "
+        "about 30-60 seconds, then it's instant.",
+    )
+
+    try:
+        # Booting the runtime here warms the Pyodide cache, so the tools
+        # below load from it and open instantly.
+        import pyknit  # noqa: F401
+
+        shared.set_status(
+            "ready",
+            "All tools ready",
+            "pyknit is loaded in this browser - the tools below will "
+            "open instantly now.",
+        )
+    except Exception as exc:
+        shared.set_status("error", "Failed to load pyknit", str(exc))
+  </script>
 
 </body>
 </html>
