@@ -102,6 +102,7 @@
 
     <div class="button-row">
       <button id="run" class="btn-primary">Knit me a sock plan</button>
+      <button id="simulate-sock" class="btn-secondary">Simulate sock &rarr;</button>
       <button id="export-pattern" class="btn-secondary">Export Pattern</button>
     </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
@@ -130,8 +131,40 @@
   </script>
 
   <script type="py">
+    import json as _json
+
     from pyknit.pyscript._assets import shared
     from pyknit.pyscript._demos import sock_calculator
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Keep the demo behaviour identical; on top of it, publish the computed
+    # simulation pattern to the JS side after every successful run so the
+    # "Simulate sock" button can hand it to the Knit Simulator.
+    _ORIG_COMPUTE = sock_calculator.DEMO["compute"]
+
+    def _compute_and_publish(inputs):
+        try:
+            result = _ORIG_COMPUTE(inputs)
+        except Exception:
+            if _win is not None:
+                _win.sock_sim_pattern = ""
+                _win.sock_sim_ready = False
+            raise
+        try:
+            plan = result.get("sim")
+            if _win is not None:
+                _win.sock_sim_pattern = _json.dumps(plan) if plan else ""
+                _win.sock_sim_ready = bool(plan)
+        except Exception:
+            pass
+        return result
+
+    sock_calculator.DEMO["compute"] = _compute_and_publish
+
     shared.bootstrap_demo(sock_calculator, action_label="Knit me a sock plan", export_button_id="export-pattern")
   </script>
   <script>
@@ -141,6 +174,27 @@
       var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
       sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
       window.location.href = "/yarn-estimator/demo.html";
+  });
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("#simulate-sock");
+    if (!btn) return;
+    var raw = window.sock_sim_pattern;
+    if (!raw) {
+      var err = document.getElementById("demo-error");
+      if (err) {
+        err.textContent = "Error: Run the Sock Calculator first (or fix your measurements), then try again.";
+        err.style.display = "block";
+      }
+      return;
+    }
+    var plan = JSON.parse(raw);
+    var sel = document.getElementById("sock-size");
+    if (sel && sel.selectedOptions && sel.selectedOptions.length) {
+      plan.size = sel.selectedOptions[0].textContent;
+    }
+    sessionStorage.setItem("sock_sim_plan", JSON.stringify(plan));
+    window.location.href = "/knit-simulator/demo.html";
   });
   </script>
 </body>
