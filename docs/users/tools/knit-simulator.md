@@ -8,8 +8,12 @@ Visualizes knitting step by step as a wearable garment. Each knitted row adds
 one band of the fabric, so you can watch it construct itself from the cast-on
 edge onward. Three inputs are supported:
 
-- **Manual instructions** — a front-facing sweater built row by row from the
-  hem up.
+- **Manual instructions** — small patterns (up to ~24 cast-on stitches, up
+  to 60 rows) render as a **swatch**: the live stitches hang as loops on a
+  needle, and each completed row is drawn beneath the previous one as
+  individual stitch glyphs — knit Vs vs purl bumps, so k2/p2 ribbing is
+  obvious. Larger manual patterns render as a front-facing sweater built
+  row by row from the hem up.
 - **Sock Calculator** — run the [Sock Calculator](../../demos/sock-calculator/demo.html), click
   **Simulate sock**, and the simulator shows the calculated sock being built
   round by round (cuff, leg, heel flap and turn, gusset, foot, toe). The
@@ -47,8 +51,15 @@ them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
 
 ## Reading the results
 
+- **Swatch view** -- Small manual patterns (the default `co 10` example, or
+  any pattern with a small cast-on) show a knitting needle with the live
+  stitches as loops on it, and below it the completed fabric, one band per
+  row. Each stitch is drawn individually: knit stitches as V shapes, purl
+  stitches as horizontal bumps in a darker shade — so `k2 p2 across` shows
+  as `V V · · V V · · …`. Row numbers sit to the left of each band, and when
+  a row is worked its stitches slide down from the needle into the fabric.
 - **Garment view** -- In manual mode, a front-facing sweater built row by row
-  from the hem up:
+  from the hem up (used when the pattern is too large for the swatch view):
   - Ribbed rows (rows that contain purls) show vertical ribbing texture
   - Plain rows show knit-stitch texture
   - The cast-on edge appears as a darker hem strip

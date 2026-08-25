@@ -396,6 +396,7 @@ k all</textarea>
     var steps = [], cur = 0, playing = false, timer = null, speedMs = 400;
     var sockMode = false;
     var raglanMode = false;
+    var swatchMode = false;
     var metaSections = [];
     var metaCounts = null;
     var topDown = false;
@@ -558,6 +559,147 @@ k all</textarea>
         if (k < 1) animRaf = requestAnimationFrame(frame);
       }
       animRaf = requestAnimationFrame(frame);
+    }
+
+    /* ── Swatch (small manual patterns) ─────────────────────── */
+    /* A small pattern like 'co 10 / k2 p2 across / k all' is not a
+       garment: it is a swatch.  Show the live stitches as loops hanging
+       on a needle, and each completed row as a band of individual stitch
+       glyphs beneath it — knit Vs vs purl bumps, drawn per stitch from the
+       step's own row_ops — so the knitter sees exactly what the
+       instructions do.  The working row slides from the needle down into
+       the fabric. */
+
+    var swatch = {x0: 40, x1: 280, fabricY: 82, rowH: 30,
+                  needleY0: 52, needleY1: 60, curR: 0, timer: null};
+
+    function isSwatchPattern(parsed, meta) {
+      if (meta && (meta.garment === 'sock' || meta.garment === 'raglan')) return false;
+      var castOn = (parsed[0] && parsed[0].n) || 0;
+      return castOn >= 1 && castOn <= 24 &&
+             parsed.length >= 1 && parsed.length <= 60;
+    }
+
+    function swatchNeedleY(x) {
+      return swatch.needleY0 + (x - 28) * (swatch.needleY1 - swatch.needleY0) / 264;
+    }
+
+    function swatchSvg(rows, rowH) {
+      var fabH = rows * rowH;
+      var H = Math.round(swatch.fabricY + fabH + 18);
+      return '' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 ' + H + '" role="img" aria-label="Knitting swatch being constructed">' +
+        '<rect x="30" y="' + (swatch.fabricY - 6) + '" width="260" height="' + (fabH + 12) + '" rx="8" fill="#f7f2fc" stroke="rgba(90,42,117,0.12)"/>' +
+        '<path d="M28,52 Q160,58 292,60" fill="none" stroke="#a9b0bd" stroke-width="5" stroke-linecap="round"/>' +
+        '<circle cx="292" cy="60" r="7" fill="#6b7180"/>' +
+        '<g id="swatch-loops"></g>' +
+        '<g id="swatch-rows"></g>' +
+        '<g id="swatch-working"></g>' +
+      '</svg>';
+    }
+
+    function buildSwatch() {
+      if (!steps || !steps.length) throw new Error('no simulation steps');
+      var rows = Math.max(steps.length - 1, 1);
+      swatch.rowH = Math.max(8, Math.min(30, 320 / rows));
+      $('garment-view').innerHTML = swatchSvg(rows, swatch.rowH);
+      return true;
+    }
+
+    function swatchStitch(code, cx, y, rowH, spacing) {
+      var h = rowH * 0.74;
+      var w = clamp(spacing * 0.42, 2.2, 5);
+      var top = y + rowH * 0.14;
+      var K = '#7c55b0', P = '#3f2459', YO = '#b98cd9', DC = '#a33e5c', BO = '#8a6bb0';
+      if (code === 1) {   /* purl: a wide horizontal bump on short legs */
+        var bw = w * 1.25;
+        var by = top + h * 0.26;
+        return '<path d="M' + (cx - bw) + ',' + by + ' Q' + cx + ',' + (by + h * 0.34) + ' ' + (cx + bw) + ',' + by + '" fill="none" stroke="' + P + '" stroke-width="2.6" stroke-linecap="round"/>' +
+               '<path d="M' + (cx - bw) + ',' + by + ' L' + (cx - bw) + ',' + (by + h * 0.48) + ' M' + (cx + bw) + ',' + by + ' L' + (cx + bw) + ',' + (by + h * 0.48) + '" fill="none" stroke="' + P + '" stroke-width="2" stroke-linecap="round"/>';
+      }
+      if (code === 2) {   /* yarn over: an open loop */
+        return '<ellipse cx="' + cx + '" cy="' + (top + h * 0.5) + '" rx="' + Math.max(2.2, w * 0.6) + '" ry="' + (h * 0.42) + '" fill="none" stroke="' + YO + '" stroke-width="2"/>';
+      }
+      if (code === 3) {   /* decrease: a knit V with a merge mark */
+        return '<path d="M' + (cx - w) + ',' + top + ' L' + cx + ',' + (top + h) + ' L' + (cx + w) + ',' + top + '" fill="none" stroke="' + K + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+               '<path d="M' + (cx - w * 1.7) + ',' + (top + h * 0.16) + ' Q' + cx + ',' + (top - 3) + ' ' + (cx + w * 1.7) + ',' + (top + h * 0.16) + '" fill="none" stroke="' + DC + '" stroke-width="1.7" stroke-linecap="round"/>';
+      }
+      if (code === 4) {   /* bind off: a V under a chain bar */
+        return '<path d="M' + (cx - w) + ',' + top + ' L' + cx + ',' + (top + h) + ' L' + (cx + w) + ',' + top + '" fill="none" stroke="' + BO + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+               '<path d="M' + (cx - w * 1.6) + ',' + (top + h * 0.12) + ' Q' + cx + ',' + (top - 3) + ' ' + (cx + w * 1.6) + ',' + (top + h * 0.12) + '" fill="none" stroke="' + BO + '" stroke-width="1.7" stroke-linecap="round"/>';
+      }
+      return '<path d="M' + (cx - w) + ',' + top + ' L' + cx + ',' + (top + h) + ' L' + (cx + w) + ',' + top + '" fill="none" stroke="' + K + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+
+    function swatchBandHtml(rowIdx, step, y, rowH) {
+      var ops = step.row_ops || [];
+      var worked = ops.length || 1;
+      var w = (swatch.x1 - swatch.x0) / worked;
+      var html = '<text x="21" y="' + (y + rowH * 0.62) + '" text-anchor="middle" font-size="9" fill="#b3a6c2">' + (rowIdx + 1) + '</text>';
+      for (var i = 0; i < ops.length; i++) {
+        var cx = swatch.x0 + (i + 0.5) * w;
+        html += swatchStitch(ops[i], cx, y, rowH, w);
+      }
+      return html;
+    }
+
+    function renderSwatch(r) {
+      var rowF = Math.floor(r);
+      var frac = r - rowF;
+      var rowsHtml = '', workingHtml = '', loopsHtml = '';
+      var y0 = swatch.fabricY;
+      for (var k = 0; k < rowF && k + 1 < steps.length; k++) {
+        rowsHtml += swatchBandHtml(k, steps[k + 1], y0 + k * swatch.rowH, swatch.rowH);
+      }
+      if (rowF + 1 < steps.length && frac > 0.001) {
+        var slotY = y0 + rowF * swatch.rowH;
+        var midX = (swatch.x0 + swatch.x1) / 2;
+        var dy = (1 - frac) * (swatchNeedleY(midX) - slotY);
+        workingHtml = '<g transform="translate(0,' + dy.toFixed(1) + ')" opacity="' + (0.35 + 0.65 * frac).toFixed(2) + '">' +
+                      swatchBandHtml(rowF, steps[rowF + 1], slotY, swatch.rowH) + '</g>';
+      }
+      var nIdx = Math.min(Math.ceil(r), steps.length - 1);
+      var liveN = Math.max(steps[nIdx].n || 0, 0);
+      var lw = (swatch.x1 - swatch.x0) / Math.max(liveN, 1);
+      for (var i = 0; i < liveN; i++) {
+        var x = swatch.x0 + (i + 0.5) * lw;
+        var ny = swatchNeedleY(x);
+        loopsHtml += '<path d="M' + (x - 3.5) + ',' + ny + ' Q' + (x - 4) + ',' + (ny + 9) + ' ' + x + ',' + (ny + 9) +
+                     ' Q' + (x + 4) + ',' + (ny + 9) + ' ' + (x + 3.5) + ',' + ny + '" fill="none" stroke="#7c55b0" stroke-width="2.2" stroke-linecap="round"/>';
+      }
+      var L = $('swatch-loops'), R = $('swatch-rows'), W = $('swatch-working');
+      if (L) L.innerHTML = loopsHtml;
+      if (R) R.innerHTML = rowsHtml;
+      if (W) W.innerHTML = workingHtml;
+    }
+
+    function swatchRevealFor(i) {
+      return i;   /* rows completed (0 = cast-on only) */
+    }
+
+    function setSwatchReveal(r, animate) {
+      var curR = swatch.curR != null ? swatch.curR : 0;
+      if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+      if (swatch.timer) { clearTimeout(swatch.timer); swatch.timer = null; }
+      function apply(v) {
+        swatch.curR = v;
+        renderSwatch(v);
+      }
+      if (!animate || Math.abs(curR - r) < 0.02) { apply(r); return; }
+      var t0 = null;
+      function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var k = Math.min((ts - t0) / 240, 1);
+        var e = 1 - Math.pow(1 - k, 3);
+        apply(curR + (r - curR) * e);
+        if (k < 1) animRaf = requestAnimationFrame(frame);
+      }
+      animRaf = requestAnimationFrame(frame);
+      /* safety net: rAF can be throttled in background tabs/previews */
+      swatch.timer = setTimeout(function() {
+        if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+        apply(r);
+      }, 420);
     }
 
     /* ── Status banner ──────────────────────────────────────── */
@@ -1061,6 +1203,17 @@ k all</textarea>
         if (title) title.textContent = 'Raglan sweater';
         return;
       }
+      if (swatchMode && steps.length) {
+        if (box) {
+          box.innerHTML = '<div class="sim-summary-row">' +
+            '<span class="sim-pill">Cast on ' + esc(steps[0].n) + ' sts</span>' +
+            '<span class="sim-pill">' + (steps.length - 1) + ' rows</span></div>' +
+            '<div class="sim-summary-hint">Swatch view &middot; knit and purl stitches drawn individually</div>';
+          box.style.display = '';
+        }
+        if (title) title.textContent = 'Swatch';
+        return;
+      }
       if (meta.garment !== 'sock' || !meta.sock) {
         if (box) { box.style.display = 'none'; box.innerHTML = ''; }
         if (title) title.textContent = 'Sweater';
@@ -1086,6 +1239,7 @@ k all</textarea>
     function buildGarment() {
       if (sockMode) { buildSock(); }
       else if (raglanMode) { buildRaglan(); }
+      else if (swatchMode) { buildSwatch(); }
       else { buildSweater(); }
       renderSummary(readMeta());
     }
@@ -1099,6 +1253,7 @@ k all</textarea>
       $('sim-step-total').textContent = steps.length;
       if (sockMode) { setSockReveal(sockRevealFor(cur), animate !== false); }
       else if (raglanMode) { setRaglanReveal(raglanRevealFor(cur), animate !== false); }
+      else if (swatchMode) { setSwatchReveal(swatchRevealFor(cur), animate !== false); }
       else { setReveal(revealFor(cur), animate !== false); }
       updateRaglanInfo();
       $('sim-op-line').innerHTML =
@@ -1174,6 +1329,7 @@ k all</textarea>
       sockMode = !!(meta && meta.garment === 'sock' && meta.sock);
       raglanMode = !!(meta && meta.garment === 'raglan' && meta.plan &&
                       meta.plan.sections && meta.plan.sections.length);
+      swatchMode = !sockMode && !raglanMode && isSwatchPattern(parsed, meta);
       metaSections = raglanMode ? meta.plan.sections : [];
       metaCounts = (meta && meta.plan && meta.plan.counts) || null;
       topDown = !!(meta && meta.construction === 'top_down');
@@ -1184,6 +1340,7 @@ k all</textarea>
         cur = 0;
         sockMode = false;
         raglanMode = false;
+        swatchMode = false;
         metaSections = [];
         metaCounts = null;
         topDown = false;

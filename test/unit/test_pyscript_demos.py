@@ -134,6 +134,22 @@ class TestKnitSimulatorBrowserBehavior:
         assert "pollCount > 120" in text
         assert "clearInterval(poll);" in text
 
+    def test_swatch_renderer_present(self):
+        """Small manual patterns render as a stitch swatch (needle + loops +
+        per-row knit/purl glyphs), driven by each step's own row_ops."""
+        html = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator" / "demo.html"
+        text = html.read_text(encoding="utf-8")
+        assert "swatchMode" in text
+        assert "isSwatchPattern" in text
+        assert "swatch-loops" in text
+        assert "swatch-rows" in text
+        assert "swatch-working" in text
+        assert "swatchStitch" in text
+        assert "row_ops" in text
+        # the swatch classification is driven by the executed cast-on count
+        assert "castOn <= 24" in text
+        assert "setSwatchReveal" in text
+
 
 class TestDemoSpecifics:
     """Spot checks on the values each demo actually produces."""

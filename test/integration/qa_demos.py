@@ -215,6 +215,19 @@ def exercise_knit_simulator_controls(page, report):
         return
     report.ok(f"build produced {total} steps")
 
+    # The default small pattern (co 10 / k2 p2 ...) must render as a stitch
+    # swatch — a needle with loops and per-row glyphs — not a sweater.
+    try:
+        title = page.eval_on_selector("#garment-title", "el => el.textContent") or ""
+        svg = page.eval_on_selector("#garment-view svg", "el => el.outerHTML") or ""
+    except Exception:
+        title, svg = "", ""
+    if title.strip() == "Swatch" and "swatch-loops" in svg and "swatch-rows" in svg:
+        report.ok("default small pattern rendered as a stitch swatch (title 'Swatch')")
+    else:
+        report.fail("default pattern did not render as a swatch",
+                    f"title={title.strip()!r}")
+
     n0 = _step_num(page)
     page.click("#sim-next")
     time.sleep(1.2)
