@@ -303,10 +303,19 @@ class TestDemoSpecifics:
         assert "assumptions" in result
         assert "warnings" in result
         assert "summary" in result
-        assert len(result["plan"]) == 8
+        # The row-by-row plan preserves the total row count and distributes
+        # decreases evenly (the bug was consecutive rows).
+        assert len(result["plan"]) == result["rows"] == 61
+        assert sum(1 for r in result["plan"] if r["kind"] == "Decrease") == 8
         assert all("round" in r for r in result["plan"])
         assert all("kind" in r for r in result["plan"])
         assert all("transition" in r for r in result["plan"])
+        # Decreases are spaced, not consecutive
+        dec_rounds = [r["round"] for r in result["plan"] if r["kind"] == "Decrease"]
+        assert dec_rounds != list(range(1, 9))
+        assert dec_rounds == result.get("decrease_row_numbers", dec_rounds)
+        # Final stitch count matches the requested ending count
+        assert result["plan"][-1]["after"] == result["ending"] == 43
 
     def test_sleeve_math_explains_derivation(self):
         module = load_demo("sleeve_decreases")

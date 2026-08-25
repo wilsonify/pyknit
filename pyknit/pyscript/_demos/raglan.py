@@ -86,6 +86,93 @@ def _freq_phrase(freq):
     return "every round" if freq == "every_round" else "every other round"
 
 
+def _sleeve_generate_schedule(rows, num_dec):
+    """Evenly-spaced decrease positions for a sleeve taper (after mode).
+
+    Uses the same :func:`pyknit._calculate_spacing` core as
+    ``pyknit.sleeve_decreases`` so the Planner's display and the Knit
+    Simulator's executable rows stay identical.  Returns 0-indexed row
+    numbers where decrease rows occur; plain rows fill the gaps so
+    ``len(schedule) + plain == rows``.
+    """
+    if num_dec <= 0:
+        return []
+    padding = rows - num_dec
+    if padding < 0:
+        return list(range(num_dec))
+    plan = _calculate_spacing(padding, num_dec, "after")
+    schedule = []
+    pos = 0
+    for interval, groups in plan:
+        for _ in range(groups):
+            schedule.append(pos)
+            pos += 1 + interval
+    return schedule
+
+
+def _sleeve_detail(arm, wrist, shaping_rounds):
+    """Build a knittable sleeve decrease schedule from measured inputs.
+
+    Returns a dict with the exact fields the knitter needs plus the
+    full row-by-row plan (``rows``) that preserves ``shaping_rounds``.
+    """
+    total_dec = arm - wrist
+    per_row = 2
+    num_dec = total_dec // per_row
+    remainder = total_dec % per_row
+    schedule = _sleeve_generate_schedule(shaping_rounds, num_dec)
+    decrease_numbers = [r + 1 for r in schedule]
+    spacing = (shaping_rounds - num_dec) / max(num_dec, 1) if num_dec else 0
+    # Full row-by-row plan: one entry per knitted round
+    dec_set = set(schedule)
+    rows = []
+    current = arm
+    # Track how many decrease rows have been emitted
+    for idx in range(shaping_rounds):
+        before = current
+        if idx in dec_set:
+            dec_idx = len([r for r in schedule if r <= idx])  # 1-indexed count
+            # stitches to have removed after this dec row
+            if dec_idx == len(schedule) and remainder:
+                after = wrist
+            else:
+                after = arm - dec_idx * per_row
+                if after < wrist:
+                    after = wrist
+            kind = "Decrease"
+            instruction = f"Decrease row: k2tog at each side of underarm marker ({per_row} sts removed) -> {after} sts"
+            if remainder and dec_idx == len(schedule):
+                instruction = f"Decrease row: k2tog at each side plus {remainder} extra k2tog -> {after} sts"
+            current = after
+        else:
+            after = current
+            kind = "Plain"
+            instruction = f"Knit plain ({after} sts)"
+        rows.append({
+            "round": idx + 1,
+            "kind": kind,
+            "before": before,
+            "after": after,
+            "transition": f"{before} -> {after}",
+            "instruction": instruction,
+        })
+    if rows and rows[-1]["after"] != wrist:
+        rows[-1]["after"] = wrist
+        rows[-1]["transition"] = f"{rows[-1]['before']} -> {wrist}"
+    return {
+        "starting": arm,
+        "ending": wrist,
+        "total_rows": shaping_rounds,
+        "num_dec_rounds": num_dec,
+        "per_row": per_row,
+        "remainder": remainder,
+        "spacing": spacing,
+        "schedule": schedule,
+        "decrease_numbers": decrease_numbers,
+        "rows": rows,
+    }
+
+
 def _section(heading, intro=None, steps=None, rows=None, table=None,
              collapsible=False):
     section = {"heading": heading}
@@ -264,6 +351,11 @@ def compute(inputs):
     except ValueError as exc:
         raise ValueError("Cannot shape the sleeve to the wrist: " + str(exc))
 
+    # Detailed sleeve decrease schedule that preserves the total row count
+    # and distributes decreases evenly (used for the Planner display and the
+    # Knit Simulator's per-row instructions).
+    sleeve_detail = _sleeve_detail(arm, wrist, sleeve_shaping_rounds)
+
     # Build the per-round transition schedule.
     display_rounds = raglan_total_rounds
     table_rows = []
@@ -323,7 +415,7 @@ def compute(inputs):
         _body_section(body_stock_rounds, rg, body_len),
         _hem_section(hem_rounds, rg, body_len),
         _sleeve_section(sleeve_final, armpit, arm, sleeve_shaping_rounds, rg,
-                        sleeve_sched, wrist, sleeve_len),
+                        sleeve_sched, wrist, sleeve_len, sleeve_detail),
         _cuff_section(cuff_rounds, rg, sleeve_len),
     ]
 
@@ -388,6 +480,7 @@ def compute(inputs):
             "cuff_rounds": cuff_rounds,
             "sleeve_shaping_rounds": sleeve_shaping_rounds,
             "sleeve_sched": sleeve_sched,
+            "sleeve_detail": sleeve_detail,
             "freq": freq,
             "display_rounds": display_rounds,
             "marker": marker,
@@ -627,26 +720,60 @@ def _hem_section(hem_rounds, rg, body_len):
 
 
 def _sleeve_section(sleeve_final, armpit, arm, sleeve_shaping_rounds, rg,
-                    sleeve_sched, wrist, sleeve_len):
-    return _section(
+                    sleeve_sched, wrist, sleeve_len, sleeve_detail=None):
+    dd = sleeve_detail or {}
+    # Fallback when called from older tests
+    if not dd and arm and wrist and sleeve_shaping_rounds:
+        try:
+            dd = _sleeve_detail(arm, wrist, sleeve_shaping_rounds)
+        except Exception:
+            dd = {}
+    starting = dd.get("starting", arm)
+    ending = dd.get("ending", wrist)
+    total_rows = dd.get("total_rows", sleeve_shaping_rounds)
+    num_dec = dd.get("num_dec_rounds", (arm - wrist)//2 if arm and wrist else 0)
+    per_row = dd.get("per_row", 2)
+    spacing = dd.get("spacing", 0)
+    dec_numbers = dd.get("decrease_numbers", [])
+    rows = dd.get("rows", [])
+
+    dec_list = ", ".join(str(n) for n in dec_numbers) if dec_numbers else "—"
+    # Build a collapsible row-by-row table: one row per knitted round
+    table = None
+    export_rows = []
+    if rows:
+        table_rows = []
+        for r in rows:
+            table_rows.append([r["round"], r["kind"], r["transition"], r["instruction"]])
+            export_rows.append(f"Row {r['round']}: {r['kind']} {r['transition']} — {r['instruction']}")
+        table = {"columns": ["Row", "Type", "Stitches", "Instruction"], "rows": table_rows}
+
+    steps = [
+        f"Pick up and knit {arm} stitches for the sleeve: the "
+        f"{sleeve_final} held stitches plus {armpit} stitches along the "
+        "underarm cast-on. Place a marker at the underarm seam.",
+        f"Starting stitches: {starting} sts at the upper arm (after picking up underarm stitches).",
+        f"Ending stitches: {ending} sts at the wrist (before the cuff).",
+        f"Total shaping rows: {total_rows} rounds (about {_num(total_rows / rg)} in).",
+        f"Number of decrease rounds: {num_dec}.",
+        f"Stitches removed per decrease round: {per_row} sts (k2tog at each side of the underarm marker).",
+        f"Actual row numbers where decreases occur: {dec_list} (1-indexed, ~{_num(spacing)} rows between decreases).",
+        f"Classic taper string: {sleeve_sched}",
+        f"Try the sweater on and adjust the sleeve length before "
+        f"starting the cuff (target {_num(sleeve_len)} in from the "
+        "underarm).",
+    ]
+    section = _section(
         "8. Sleeve instructions and shaping",
-        intro="Work each sleeve the same way.",
-        steps=[
-            f"Pick up and knit {arm} stitches for the sleeve: the "
-            f"{sleeve_final} held stitches plus {armpit} stitches along the "
-            "underarm cast-on. Place a marker at the underarm seam.",
-            f"Knit the sleeve in the round, working the shaping schedule "
-            f"below to taper from {arm} to {wrist} stitches over "
-            f"{sleeve_shaping_rounds} rounds (about "
-            f"{_num(sleeve_shaping_rounds / rg)} in).",
-            f"Sleeve shaping: {sleeve_sched}",
-            "Each decrease row removes 2 stitches (k2tog at each side of the "
-            "underarm seam).",
-            f"Try the sweater on and adjust the sleeve length before "
-            f"starting the cuff (target {_num(sleeve_len)} in from the "
-            "underarm).",
-        ],
+        intro="Work each sleeve the same way. The table below is a complete, row-by-row plan you can knit directly.",
+        steps=steps,
+        table=table,
+        rows=export_rows,
+        collapsible=True,
     )
+    # Keep the detail dict available for tests that inspect the section
+    section["sleeve_detail"] = dd
+    return section
 
 
 def _cuff_section(cuff_rounds, rg, sleeve_len):

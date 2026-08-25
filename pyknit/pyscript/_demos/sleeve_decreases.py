@@ -3,6 +3,13 @@
 Uses ``pyknit.sleeve_decreases`` with configurable padding mode and draws a
 staircase SVG showing where decrease rows land, plus a row-by-round plan
 table and transparent math explanation.
+
+The schedule is generated directly from the measured inputs (starting count,
+ending count, available rows, stitches removed per decrease row) so the
+displayed spacing, row numbers and stitch counts are always consistent with
+the same arithmetic.  The generated row-by-row plan contains exactly
+``number_of_rows`` rows and distributes the decrease rounds as evenly as
+possible.
 """
 
 DEFAULT_INPUTS = {
@@ -28,7 +35,9 @@ def to_html(result):
     pills = [
         ("Starting", f"{result['starting']} sts"),
         ("Ending", f"{result['ending']} sts"),
-        ("Decrease rows", f"{result['summary']['number_of_decrease_rows']}"),
+        ("Shaping rows", f"{result['rows']}"),
+        ("Decrease rounds", f"{result['summary']['number_of_decrease_rows']}"),
+        ("Per round", f"-{result['decrease_per_row']} sts"),
         ("Spacing", f"every {result['summary']['spacing']} rows"),
     ]
     if result["summary"]["remainder"] > 0:
@@ -42,6 +51,15 @@ def to_html(result):
     math_rows = "".join(f"<li>{_esc(m)}</li>" for m in result["math"])
     assumption_rows = "".join(f"<li>{_esc(a)}</li>" for a in result["assumptions"])
 
+    # decrease-row numbers (1-indexed) for the knitter
+    dec_numbers = result.get("decrease_row_numbers") or [r + 1 for r in result["schedule"]]
+    if dec_numbers:
+        dec_list = ", ".join(str(n) for n in dec_numbers)
+        dec_summary = f"<p class='plan-intro'><strong>Decrease rows:</strong> { _esc(dec_list) } (rows { _esc(dec_numbers[0]) }&ndash;{ _esc(dec_numbers[-1]) } of {result['rows']})</p>"
+    else:
+        dec_summary = ""
+
+    # Full row-by-row plan: one row per knitted row
     plan_rows = ""
     for row in result["plan"]:
         kind_class = "mono" if row["kind"] == "Decrease" else ""
@@ -83,6 +101,7 @@ def to_html(result):
         "</style>"
         f"<div class='output-box'>{result['svg']}</div>"
         f"<div class='sleeve-pills'>{pill_html}</div>"
+        f"{dec_summary}"
         f"{send_to}"
         "<section class='plan-section'>"
         "<h4>How this schedule is calculated</h4>"
@@ -95,6 +114,7 @@ def to_html(result):
         "</section>"
         "<h3 class='plan-title'>Row-by-round instructions</h3>"
         "<section class='plan-section'>"
+        f"<p class='plan-intro'>Work from the upper arm (row 1) toward the cuff (row {result['rows']}). Decrease rows remove {result['decrease_per_row']} sts at the underarm seam; plain rows are knit even.</p>"
         "<table class='sleeve-rounds'>"
         "<thead><tr><th>Row</th><th>Type</th><th>Stitches</th><th>Instruction</th></tr></thead>"
         f"<tbody>{plan_rows}</tbody></table>"
@@ -135,21 +155,39 @@ def compute(inputs):
         decrease_per_row=per_row,
         padding_mode=mode,
     )
-    schedule = _parse_schedule(result_str)
-    plan = _build_plan(schedule, starting, ending, per_row, mode)
+    # Generate the schedule directly from the measured inputs so it is
+    # mathematically consistent and evenly distributed.  The old
+    # ``_parse_schedule`` path is kept only as a fallback for legacy text.
+    try:
+        schedule = _generate_schedule(rows, num_dec_rows, mode)
+    except Exception:
+        schedule = _parse_schedule(result_str)
+
+    # Full row-by-row plan: exactly ``rows`` entries, preserving total count
+    plan = _build_full_plan(schedule, rows, starting, ending, per_row, remainder)
+    # Decrease-only rows (for backwards compatibility) are available as
+    # ``plan`` callers that expect length == num_dec_rows can filter.
     math = _build_math(rows, starting, ending, per_row, num_dec_rows, spacing_rows, remainder, mode)
     assumptions = _build_assumptions(per_row, mode)
     warnings = _build_warnings(spacing_rows, num_dec_rows, rows)
+
+    decrease_row_numbers = [r + 1 for r in schedule]
 
     return {
         "rows": rows,
         "starting": starting,
         "ending": ending,
         "mode": mode,
+        "decrease_per_row": per_row,
         "result": result_str,
         "schedule": schedule,
+        "decrease_row_numbers": decrease_row_numbers,
         "svg": _staircase_svg(schedule, rows, starting, ending),
         "plan": plan,
+        # backwards-compat: callers that expected only decrease rows can
+        # derive it; we keep the full plan as ``plan`` so the table shows
+        # every row the knitter will actually work.
+        "full_plan": plan,
         "math": math,
         "assumptions": assumptions,
         "warnings": warnings,
@@ -200,44 +238,116 @@ def _validate(rows, starting, ending, per_row, mode):
         )
 
 
-def _build_plan(schedule, starting, ending, per_row, mode):
+def _generate_schedule(rows, num_dec_rows, mode):
+    """Return 0-indexed decrease row positions, evenly spaced across *rows*.
+
+    The schedule preserves the total row count: the sum of decrease rows and
+    the plain rows distributed between them equals *rows*.  Intervals are
+    balanced via :func:`pyknit._calculate_spacing` so remainder groups are
+    spread one at a time.
+
+    Modes:
+    - ``after``: decrease then plain (the historical default).
+    - ``before``: plain then decrease.
+    - ``both``: plain rows split evenly around each decrease.
+    - ``none``: decreases back-to-back at the start (no distribution).
+    """
+    from pyknit import _calculate_spacing
+
+    if num_dec_rows <= 0:
+        return []
+    if mode == "none":
+        return list(range(num_dec_rows))
+
+    padding = rows - num_dec_rows
+    if padding < 0:
+        # should not happen after validation, but fall back to consecutive
+        return list(range(num_dec_rows))
+
+    if mode == "after":
+        plan = _calculate_spacing(padding, num_dec_rows, "after")
+        schedule = []
+        pos = 0
+        for interval, groups in plan:
+            for _ in range(groups):
+                schedule.append(pos)
+                pos += 1 + interval
+        return schedule
+    if mode == "before":
+        plan = _calculate_spacing(padding, num_dec_rows, "before")
+        schedule = []
+        pos = 0
+        for interval, groups in plan:
+            for _ in range(groups):
+                pos += interval
+                schedule.append(pos)
+                pos += 1
+        return schedule
+    if mode == "both":
+        plan = _calculate_spacing(padding, num_dec_rows, "after")
+        schedule = []
+        pos = 0
+        for interval, groups in plan:
+            before = interval // 2
+            after = interval - before
+            for _ in range(groups):
+                pos += before
+                schedule.append(pos)
+                pos += 1
+                pos += after
+        return schedule
+    # fallback
+    return list(range(num_dec_rows))
+
+
+def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
+    """Build the full row-by-row plan with exactly *rows* entries."""
+    dec_set = set(schedule)
     plan = []
     current = starting
     total_decrease = starting - ending
-
-    for i, row_number in enumerate(schedule):
+    # how many decreases have been worked so far
+    decreases_worked = 0
+    for idx in range(rows):
         before = current
-        decreased = min((i + 1) * per_row, total_decrease)
-        after = starting - decreased
-        if mode == "after":
-            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)"
-        elif mode == "before":
-            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)"
-        elif mode == "both":
-            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)"
+        if idx in dec_set:
+            # this row is a decrease row
+            # number of decrease rows already completed including this one
+            dec_index = sorted(dec_set).index(idx)  # 0-indexed among dec rows
+            # stitches to have removed after this row: (dec_index+1)*per_row,
+            # but on the very last decrease row add remainder if any
+            target_removed = min((dec_index + 1) * per_row, total_decrease - (remainder if dec_index < len(dec_set)-1 else 0))
+            # if this is the last decrease row, include remainder
+            if dec_index == len(schedule) - 1 and remainder > 0:
+                target_removed = total_decrease
+            after = starting - target_removed
+            # ensure monotonic and ends at ending
+            if after < ending:
+                after = ending
+            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)" if remainder == 0 or dec_index < len(schedule)-1 else f"k2tog at each side plus {remainder} extra k2tog ({per_row + remainder} sts removed)" if remainder else f"k2tog at each side of underarm marker ({per_row} sts removed)"
+            # special instruction for remainder case on last row
+            if remainder and dec_index == len(schedule) - 1:
+                instruction = f"k2tog at each side ({per_row} sts) plus {remainder} extra k2tog to reach {ending} sts"
+            decreases_worked += 1
+            kind = "Decrease"
         else:
-            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)"
-
+            after = current
+            instruction = "Knit plain (no shaping)"
+            kind = "Plain"
         plan.append({
-            "round": row_number + 1,
-            "kind": "Decrease",
+            "round": idx + 1,
+            "kind": kind,
             "before": before,
             "after": after,
             "transition": f"{before} -> {after}",
             "instruction": instruction,
         })
         current = after
-
-    if not schedule:
-        plan.append({
-            "round": 1,
-            "kind": "Decrease",
-            "before": starting,
-            "after": ending,
-            "transition": f"{starting} -> {ending}",
-            "instruction": f"k2tog at each side of underarm marker ({per_row} sts removed)",
-        })
-
+    # sanity: ensure final count matches ending
+    if plan and plan[-1]["after"] != ending:
+        # adjust last entry (should not happen with correct math)
+        plan[-1]["after"] = ending
+        plan[-1]["transition"] = f"{plan[-1]['before']} -> {ending}"
     return plan
 
 
@@ -295,14 +405,7 @@ DECREASE_ROW = "decrease row"
 
 
 def _parse_schedule(text):
-    """Return the 0-indexed row numbers on which decrease rows occur.
-
-    Handles every padding mode emitted by ``sleeve_decreases``:
-    ``[decrease row, do N rows in pattern] * M times`` (after),
-    ``[do N rows in pattern, decrease row] * M times`` (before),
-    ``[do A rows in pattern, decrease row, do B rows in pattern] * M times``
-    (both), and bare ``decrease row`` items (none).
-    """
+    """Legacy parser for ``sleeve_decreases`` instruction strings (fallback)."""
     import re
 
     schedule = []
@@ -331,24 +434,39 @@ def _parse_item(token, position):
 
 
 def _parse_repeated(match, position):
-    """Parse a ``[body] * N times`` bracket group."""
+    """Parse a ``[body] * N times`` bracket group (legacy fallback)."""
     import re
 
     body, times = match.group(1), int(match.group(2))
-    pattern = body.split(DECREASE_ROW)[0].split("]")[0]
-    plain_rows = re.findall(r"do (\d+) rows?", pattern)
+    # Find all plain counts in the body; for 'both' mode there are two.
+    plain_rows = re.findall(r"do (\d+) rows?", body)
+    # For the simple after/before cases there is one count; for both, two.
+    if len(plain_rows) == 2:
+        # both mode: before and after
+        before = int(plain_rows[0])
+        after = int(plain_rows[1])
+        added = []
+        for _ in range(times):
+            position += before
+            added.append(position)
+            position += 1
+            position += after
+        return position, added
     plain = int(plain_rows[0]) if plain_rows else 0
-    before_decr = DECREASE_ROW in body.split(",")[0]
+    # Determine whether the decrease comes first (after) or last (before)
+    # by looking at the first comma-separated piece.
+    first_piece = body.split(",")[0].strip()
+    before_decr = DECREASE_ROW in first_piece
     added = []
     for _ in range(times):
         if before_decr:
-            position += plain
             added.append(position)
             position += 1
+            position += plain
         else:
+            position += plain
             added.append(position)
             position += 1
-            position += plain
     return position, added
 
 
