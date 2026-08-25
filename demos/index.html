@@ -10,9 +10,23 @@
     /* ── Landing page layout ───────────────────────────── */
     .landing-hero {
       text-align: center;
-      padding: 2.5rem 1rem 1.8rem;
-      max-width: 42rem;
-      margin: 0 auto;
+      padding: 2.6rem 1.2rem 2.1rem;
+      max-width: 44rem;
+      margin: 0 auto 1.6rem;
+      background:
+        radial-gradient(120% 90% at 50% 0%, #fbf7ff 0%, #f3ecf7 55%, #e8dcf2 100%);
+      border: 1px solid #e3d5f2;
+      border-bottom: 3px solid var(--primary);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(90, 42, 117, 0.08);
+    }
+    .landing-hero .eyebrow {
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
     }
     .landing-hero h1 {
       font-size: 2.2rem;
@@ -87,7 +101,9 @@
       box-shadow: 0 8px 24px rgba(43,35,51,0.13);
     }
     .featured-card .card-visual {
-      background: var(--primary-light);
+      background:
+        radial-gradient(120% 100% at 50% 0%, #fbf7ff 0%, #f3ecf7 55%, #e8dcf2 100%);
+      border-bottom: 1px solid #e3d5f2;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -183,15 +199,24 @@
     }
     .tool-card .card-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.6rem;
       margin-bottom: 0.4rem;
     }
-    .tool-card .card-icon {
-      width: 28px;
-      height: 28px;
+    .tool-card .card-icon-chip {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(160deg, #f3ecf7 0%, #e8dcf2 100%);
+      border: 1px solid #e3d5f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      margin-top: 1px;
+    }
+    .tool-card .card-icon {
+      width: 24px;
+      height: 24px;
     }
     .tool-card h3 {
       margin: 0;
@@ -287,6 +312,7 @@
 
   <!-- ── Hero ─────────────────────────────────────────── -->
   <section class="landing-hero">
+    <div class="eyebrow">pyKnit &middot; Interactive knitting tools</div>
     <h1>pyKnit Knitting Tools</h1>
     <p class="tagline">
       Plan garments, calculate shaping, and generate stitch charts — all running
@@ -311,8 +337,18 @@
     <a href="sock-calculator/demo.html" class="featured-card" aria-label="Open Sock Calculator">
       <div class="card-visual">
         <svg viewBox="0 0 220 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sock diagram showing cuff, leg, heel, and toe sections">
-          <!-- sock outline -->
-          <path d="M50 15 h30 a8 8 0 0 1 8 8 v25 a12 12 0 0 0 12 12 h8 a12 12 0 0 1 12 12 v8 a25 25 0 0 1-50 0 v-8 a8 8 0 0 0-8-8 h-12" fill="none" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="sockFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#eef0fa"/>
+              <stop offset="1" stop-color="#c9d3ec"/>
+            </linearGradient>
+          </defs>
+          <!-- sock body -->
+          <path d="M50 15 h30 a8 8 0 0 1 8 8 v25 a12 12 0 0 0 12 12 h8 a12 12 0 0 1 12 12 v8 a25 25 0 0 1-50 0 v-8 a8 8 0 0 0-8-8 h-12" fill="url(#sockFill)" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- cuff, heel and toe section tints -->
+          <rect x="50" y="15" width="38" height="9" rx="2.5" fill="#e6d7f0"/>
+          <rect x="94" y="60" width="30" height="14" rx="5" fill="#d9cceb" opacity="0.9"/>
+          <circle cx="120" cy="78" r="7" fill="#c9b4e0" opacity="0.9"/>
           <!-- cuff ribbing lines -->
           <line x1="55" y1="22" x2="75" y2="22" stroke="#b38fd4" stroke-width="1.5"/>
           <line x1="55" y1="26" x2="75" y2="26" stroke="#b38fd4" stroke-width="1.5"/>
@@ -323,11 +359,11 @@
           <text x="90" y="55" font-size="9" fill="#6b6572" text-anchor="middle">heel</text>
           <text x="65" y="82" font-size="9" fill="#6b6572" text-anchor="middle">toe</text>
           <!-- stitch count pills -->
-          <rect x="110" y="14" rx="4" width="60" height="18" fill="#f3ecf7"/>
+          <rect x="110" y="14" rx="4" width="60" height="18" fill="#ffffff" stroke="#e3d5f2"/>
           <text x="140" y="27" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">54 sts cast-on</text>
-          <rect x="110" y="38" rx="4" width="60" height="18" fill="#f3ecf7"/>
+          <rect x="110" y="38" rx="4" width="60" height="18" fill="#ffffff" stroke="#e3d5f2"/>
           <text x="140" y="51" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">27 sts toe</text>
-          <rect x="110" y="62" rx="4" width="60" height="18" fill="#e8f5e9"/>
+          <rect x="110" y="62" rx="4" width="60" height="18" fill="#e8f5e9" stroke="#bfe3c6"/>
           <text x="140" y="75" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">step-by-step</text>
         </svg>
       </div>
@@ -351,17 +387,22 @@
     <a href="raglan-sweater/demo.html" class="featured-card" aria-label="Open Raglan Sweater Planner">
       <div class="card-visual">
         <svg viewBox="0 0 220 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raglan sweater diagram showing body and sleeve sections">
-          <!-- body outline -->
-          <path d="M70 30 h60 a12 12 0 0 1 12 12 v50 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-20 h-20 v20 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-50 a12 12 0 0 1 12-12z" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- raglan lines -->
-          <line x1="82" y1="30" x2="72" y2="58" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <line x1="138" y1="30" x2="148" y2="58" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <!-- body -->
+          <path d="M70 30 h60 a12 12 0 0 1 12 12 v50 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-20 h-20 v20 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-50 a12 12 0 0 1 12-12z" fill="#d5f5e3" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <!-- left sleeve -->
-          <path d="M72 58 h-20 a6 6 0 0 0-6 6 v18 a4 4 0 0 0 4 4 h18" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M72 58 h-20 a6 6 0 0 0-6 6 v18 a4 4 0 0 0 4 4 h18" fill="#c8e6f5" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <!-- right sleeve -->
-          <path d="M148 58 h20 a6 6 0 0 1 6 6 v18 a4 4 0 0 1-4 4 h-18" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M148 58 h20 a6 6 0 0 1 6 6 v18 a4 4 0 0 1-4 4 h-18" fill="#c8e6f5" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <!-- neck -->
-          <path d="M80 30 h40" fill="none" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
+          <path d="M80 30 h40" fill="none" stroke="#7f8c8d" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- raglan seams -->
+          <line x1="82" y1="30" x2="72" y2="58" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4 3"/>
+          <line x1="138" y1="30" x2="148" y2="58" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4 3"/>
+          <!-- cuff ribbing -->
+          <line x1="50" y1="80" x2="66" y2="80" stroke="#2980b9" stroke-width="1.5"/>
+          <line x1="50" y1="84" x2="66" y2="84" stroke="#2980b9" stroke-width="1.5"/>
+          <line x1="154" y1="80" x2="170" y2="80" stroke="#2980b9" stroke-width="1.5"/>
+          <line x1="154" y1="84" x2="170" y2="84" stroke="#2980b9" stroke-width="1.5"/>
           <!-- marker dots -->
           <circle cx="82" cy="38" r="3" fill="#e74c3c"/>
           <circle cx="138" cy="38" r="3" fill="#e74c3c"/>
@@ -372,9 +413,9 @@
           <text x="175" y="78" font-size="9" fill="#6b6572" text-anchor="middle">sleeve</text>
           <text x="100" y="80" font-size="9" fill="#6b6572" text-anchor="middle">body</text>
           <!-- stitch counts -->
-          <rect x="8" y="6" rx="4" width="65" height="18" fill="#f3ecf7"/>
+          <rect x="8" y="6" rx="4" width="65" height="18" fill="#ffffff" stroke="#e3d5f2"/>
           <text x="40" y="19" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">80 sts neck</text>
-          <rect x="148" y="6" rx="4" width="65" height="18" fill="#e8f5e9"/>
+          <rect x="148" y="6" rx="4" width="65" height="18" fill="#e8f5e9" stroke="#bfe3c6"/>
           <text x="180" y="19" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">full plan</text>
         </svg>
       </div>
@@ -407,11 +448,11 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <circle cx="14" cy="14" r="12" stroke="#7b3fa0" stroke-width="2"/>
             <circle cx="14" cy="14" r="6" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="3 2"/>
             <circle cx="14" cy="14" r="1.5" fill="#7b3fa0"/>
-          </svg>
+          </svg></span>
           <h3>Pi Shawl Planner</h3>
         </div>
         <p>
@@ -423,10 +464,10 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M4 22 L14 6 L24 22 Z" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linejoin="round"/>
             <path d="M8 22 L14 10 L20 22" stroke="#b38fd4" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-dasharray="3 2"/>
-          </svg>
+          </svg></span>
           <h3>Shawl Shapes</h3>
         </div>
         <p>
@@ -438,11 +479,11 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M8 24 C8 24 8 14 14 8 C20 14 20 24 20 24" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M10 24 C10 24 10 16 14 11 C18 16 18 24 18 24" stroke="#b38fd4" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 2"/>
             <circle cx="14" cy="6" r="2" fill="#7b3fa0"/>
-          </svg>
+          </svg></span>
           <h3>Hat Crown Planner</h3>
         </div>
         <p>
@@ -454,12 +495,12 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M14 4 v16" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
             <path d="M14 20 C8 20 6 24 6 24 h16 C22 24 20 20 14 20" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M10 8 h8" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
             <path d="M9 12 h10" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
-          </svg>
+          </svg></span>
           <h3>Sleeve Decreases</h3>
         </div>
         <p>
@@ -483,13 +524,13 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <line x1="4" y1="14" x2="24" y2="14" stroke="#7b3fa0" stroke-width="2" stroke-linecap="round"/>
             <circle cx="8" cy="14" r="2" fill="#e74c3c"/>
             <circle cx="14" cy="14" r="2" fill="#2ecc71"/>
             <circle cx="20" cy="14" r="2" fill="#e74c3c"/>
             <path d="M8 10 v-4 M14 10 v-4 M20 10 v-4" stroke="#b38fd4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
-          </svg>
+          </svg></span>
           <h3>Even Shaping</h3>
         </div>
         <p>
@@ -513,13 +554,13 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <rect x="4" y="4" width="20" height="20" rx="3" stroke="#7b3fa0" stroke-width="2"/>
             <line x1="4" y1="14" x2="24" y2="14" stroke="#7b3fa0" stroke-width="1.5"/>
             <line x1="14" y1="4" x2="14" y2="24" stroke="#7b3fa0" stroke-width="1.5"/>
             <text x="9" y="11" font-size="7" fill="#5a2a75" text-anchor="middle" font-weight="700">20</text>
             <text x="19" y="11" font-size="7" fill="#5a2a75" text-anchor="middle" font-weight="700">24</text>
-          </svg>
+          </svg></span>
           <h3>Gauge Conversion</h3>
         </div>
         <p>
@@ -532,11 +573,11 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M6 22 C6 22 10 6 14 6 C18 6 22 22 22 22" stroke="#7b3fa0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="6" y1="22" x2="22" y2="22" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="3 2"/>
             <text x="14" y="18" font-size="8" fill="#5a2a75" text-anchor="middle" font-weight="600">yards</text>
-          </svg>
+          </svg></span>
           <h3>Yarn &amp; Time Estimator</h3>
         </div>
         <p>
@@ -560,11 +601,11 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <ellipse cx="14" cy="14" rx="10" ry="10" stroke="#7b3fa0" stroke-width="2" fill="none"/>
             <ellipse cx="14" cy="14" rx="6" ry="6" stroke="#b38fd4" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/>
             <circle cx="14" cy="14" r="2" fill="#7b3fa0"/>
-          </svg>
+          </svg></span>
           <h3>Yarn Advisor</h3>
         </div>
         <p>
@@ -577,14 +618,14 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <line x1="6" y1="4" x2="6" y2="24" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round"/>
             <line x1="10" y1="4" x2="10" y2="24" stroke="#b38fd4" stroke-width="2" stroke-linecap="round"/>
             <circle cx="6" cy="6" r="1.5" fill="#7b3fa0"/>
             <circle cx="10" cy="6" r="1.5" fill="#b38fd4"/>
             <text x="18" y="10" font-size="7" fill="#5a2a75" font-weight="600">US 7</text>
             <text x="18" y="18" font-size="7" fill="#5a2a75" font-weight="600">4.5mm</text>
-          </svg>
+          </svg></span>
           <h3>Needle Advisor</h3>
         </div>
         <p>
@@ -608,7 +649,7 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <rect x="4" y="4" width="20" height="20" rx="2" stroke="#7b3fa0" stroke-width="2"/>
             <rect x="6" y="6" width="4" height="4" fill="#7b3fa0"/>
             <rect x="12" y="6" width="4" height="4" fill="#b38fd4"/>
@@ -619,7 +660,7 @@
             <rect x="6" y="18" width="4" height="4" fill="#7b3fa0"/>
             <rect x="12" y="18" width="4" height="4" fill="#b38fd4"/>
             <rect x="18" y="18" width="4" height="4" fill="#7b3fa0"/>
-          </svg>
+          </svg></span>
           <h3>Chart Renderer</h3>
         </div>
         <p>
@@ -632,14 +673,14 @@
 
       <div class="tool-card">
         <div class="card-header">
-          <svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <span class="card-icon-chip"><svg class="card-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <rect x="4" y="8" width="20" height="12" rx="2" stroke="#7b3fa0" stroke-width="2" fill="none"/>
             <line x1="4" y1="14" x2="24" y2="14" stroke="#b38fd4" stroke-width="1.5" stroke-dasharray="3 2"/>
             <rect x="8" y="10" width="3" height="4" fill="#7b3fa0" rx="1"/>
             <rect x="13" y="10" width="3" height="4" fill="#b38fd4" rx="1"/>
             <rect x="18" y="10" width="3" height="4" fill="#7b3fa0" rx="1"/>
             <polygon points="22,10 24,14 22,14" fill="#e74c3c"/>
-          </svg>
+          </svg></span>
           <h3>Knit Simulator</h3>
         </div>
         <p>
