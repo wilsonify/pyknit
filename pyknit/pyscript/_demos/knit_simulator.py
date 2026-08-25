@@ -182,7 +182,7 @@ def _attach_plan(result, plan):
         step["sec_rows"] = sec["end"] - sec["start"]
         step["op_short"] = _short_op(step, sec["id"])
     result["sections"] = sections
-    result["garment"] = "raglan"
+    result["garment"] = str(plan.get("garment") or "raglan")
     counts = plan.get("counts")
     if isinstance(counts, dict):
         result["counts"] = dict(counts)
