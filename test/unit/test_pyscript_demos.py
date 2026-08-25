@@ -1334,6 +1334,51 @@ class TestRaglanToSimulator:
         assert sum(s["increases"] for s in steps) == meta["working"] - meta["neck"]
         assert sum(s["decreases"] for s in steps) == 2 * (meta["arm"] - meta["wrist"])
 
+    def test_steps_carry_before_after_counts(self):
+        """Every step carries the stitch count before and after the round,
+        and the two always agree with the increases/decreases actually
+        worked — so the status line '160 → 168 (+8)' is real, never
+        invented."""
+        plan = self._plan()
+        sim = plan["sim_plan"]
+        module = load_demo("knit_simulator")
+        steps = module.DEMO["compute"]({
+            "instructions": sim["instructions"], "plan": sim,
+        })["steps"]
+        for st in steps:
+            if st["kind"] == "cast_on":
+                continue   # a cast-on creates the stitches from nothing
+            if st["kind"] == "bind_off":
+                assert st["before"] - st["worked"] == st["n"], st
+                continue   # bind-off removes stitches, no k2tog-style count
+            assert st["before"] + st["increases"] - st["decreases"] == st["n"], st
+        # the first yoke round is the first raglan increase: 72 -> 80 (+8)
+        yoke = next(s for s in steps if s["section"] == "yoke")
+        assert yoke["increases"] == plan["meta"]["inc"]
+        assert yoke["before"] == plan["meta"]["calc_neck"]
+        assert yoke["n"] == plan["meta"]["calc_neck"] + plan["meta"]["inc"]
+        # every bind-off round reports its full run-down
+        bo = [s for s in steps if s["kind"] == "bind_off"]
+        assert bo and all(s["before"] > 0 and s["n"] == 0 for s in bo)
+
+    def test_manual_steps_carry_before_counts(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({
+            "instructions": "co 10\nk2 p2 across\nk2tog across\nbo 4",
+        })
+        for st in result["steps"]:
+            if st["kind"] == "cast_on":
+                continue
+            if st["kind"] == "bind_off":
+                assert st["before"] - st["worked"] == st["n"]
+                continue
+            assert st["before"] + st["increases"] - st["decreases"] == st["n"]
+
+    def test_neck_section_label(self):
+        """The compact progress view uses 'Neck' for the first section."""
+        sim = self._plan()["sim_plan"]
+        assert sim["sections"][0]["label"] == "Neck"
+
     def test_invalid_plan_raises(self):
         """A malformed plan must raise, never silently fall back."""
         sim = self._plan()["sim_plan"]
@@ -1377,6 +1422,8 @@ class TestRaglanToSimulator:
         assert "_read_raglan_plan" in content
         assert "sim-phase-line" in content
         assert "section-progress" in content
+        assert "raglanOutline" in content
+        assert "raglan-inc-dots" in content
 
 
 def _load_gauge_conversion():

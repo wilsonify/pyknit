@@ -795,7 +795,7 @@ def _sim_instructions(m):
     s1_end = body_end + sleeve_len
     total_end = s1_end + sleeve_len
     sections = [
-        {"id": "neckline", "label": "Neckline", "start": 0, "end": neckline_end},
+        {"id": "neckline", "label": "Neck", "start": 0, "end": neckline_end},
         {"id": "yoke", "label": "Yoke", "start": neckline_end, "end": yoke_end},
         {"id": "body", "label": "Body", "start": yoke_end, "end": body_end},
         {"id": "left_sleeve", "label": "Left sleeve", "start": body_end, "end": s1_end},
