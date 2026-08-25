@@ -59,6 +59,11 @@ _OP_NAMES = {
 
 
 def compute(inputs):
+    sock_plan = inputs.get("sock_plan")
+    if sock_plan is not None:
+        # A present-but-invalid plan must raise, never silently fall back.
+        return _compute_from_sock(sock_plan, inputs)
+
     raw = inputs.get("instructions", "")
     rows = _parse(raw)
     if not rows:
@@ -75,7 +80,8 @@ def compute(inputs):
         first_name, first_count = row["ops"][0]
         if first_name == "co":
             n = int(first_count)
-            cast_on = n
+            if not cast_on:  # the FIRST cast-on is the garment's cast-on
+                cast_on = n
             stitches = list(range(1, n + 1))
             steps.append(
                 {
@@ -95,6 +101,17 @@ def compute(inputs):
 
         row_no += 1
         width = len(stitches)
+        if not row["repeat"]:
+            wanted = sum(
+                width if count == "all" else max(int(count), 0)
+                for _, count in row["ops"]
+            )
+            if wanted > width:
+                warnings.append(
+                    "Row %d (%s) tries to work %d stitches but only %d are on "
+                    "the needle; the extra stitches were left unworked."
+                    % (row_no, row["line"].strip(), wanted, width)
+                )
         expanded = _expand(row["ops"], width, row["repeat"])
         new_stitches, row_ops, increases, decreases = _apply_row(expanded, stitches)
         stitches = new_stitches
@@ -122,7 +139,7 @@ def compute(inputs):
     speed = inputs.get("speed", "normal")
     speed_ms = SPEED_PRESETS.get(speed, 400)
 
-    return {
+    result = {
         "steps": steps,
         "total_steps": total,
         "total_rows": row_no,
@@ -130,7 +147,185 @@ def compute(inputs):
         "final_stitches": list(stitches),
         "speed_ms": speed_ms,
         "warnings": warnings,
+        "garment": "sweater",
+        "sock_summary": None,
         "pattern": [r["line"] for r in rows],
+    }
+
+    plan = inputs.get("plan")
+    if plan is not None:
+        # A present-but-invalid plan must raise, never silently fall back.
+        _attach_plan(result, plan)
+    return result
+
+
+def _attach_plan(result, plan):
+    """Attach canonical garment sections from a Planner plan to the steps.
+
+    The plan is the single source of truth for the garment structure: every
+    section boundary is an index into the (non-comment) instruction lines,
+    which map 1:1 onto simulation steps.  If the plan does not match the
+    steps that were actually executed it raises instead of producing a
+    misleading garment.
+    """
+    if not isinstance(plan, dict) or not plan.get("instructions"):
+        raise ValueError("The sweater plan is missing its instructions.")
+    sections = _validate_sections(plan.get("sections"), result["total_steps"])
+    steps = result["steps"]
+    for i, step in enumerate(steps):
+        sec = _section_at(sections, i)
+        step["section"] = sec["id"]
+        step["section_label"] = sec["label"]
+        step["sec_row"] = i - sec["start"] + 1
+        step["sec_rows"] = sec["end"] - sec["start"]
+        step["op_short"] = _short_op(step, sec["id"])
+    result["sections"] = sections
+    result["garment"] = "raglan"
+    counts = plan.get("counts")
+    if isinstance(counts, dict):
+        result["counts"] = dict(counts)
+    return result
+
+
+def _validate_sections(sections, total):
+    """Validate a plan's section list against the executed step count."""
+    if not isinstance(sections, list) or not sections:
+        raise ValueError("The sweater plan has no garment sections.")
+    cleaned = []
+    prev_end = 0
+    for sec in sections:
+        try:
+            sid = str(sec["id"])
+            label = str(sec.get("label") or sid)
+            start = int(sec["start"])
+            end = int(sec["end"])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError("The sweater plan contains an invalid section.")
+        if start < 0 or end <= start or start != prev_end:
+            raise ValueError("The sweater plan's sections do not line up.")
+        cleaned.append({"id": sid, "label": label, "start": start, "end": end})
+        prev_end = end
+    if prev_end != total:
+        raise ValueError(
+            "The sweater plan's sections do not match the simulation "
+            "(%d steps)." % total
+        )
+    return cleaned
+
+
+def _section_at(sections, index):
+    for sec in sections:
+        if sec["start"] <= index < sec["end"]:
+            return sec
+    return sections[-1]
+
+
+def _short_op(step, section_id):
+    """Concise, honest operation label for the phase line, derived from the
+    step's own data and its garment section — never invented."""
+    n = step["n"]
+    if step["kind"] == "cast_on":
+        return "Cast on %d sts" % n
+    if step["kind"] == "bind_off":
+        return "Bind off %d sts" % step["worked"]
+    if step["increases"] > 0:
+        if section_id == "yoke":
+            return "Raglan increase (+%d)" % step["increases"]
+        if section_id == "neckline":
+            return "Neck increase (+%d)" % step["increases"]
+        return "Increase (+%d)" % step["increases"]
+    if step["decreases"] > 0:
+        if section_id in ("left_sleeve", "right_sleeve"):
+            return "Sleeve decrease (-%d)" % step["decreases"]
+        return "Decrease (-%d)" % step["decreases"]
+    if 1 in step["row_ops"]:
+        return "K2 P2 ribbing"
+    return "Knit all"
+
+
+def _compute_from_sock(plan, inputs):
+    """Build simulation steps from a Sock Calculator pattern.
+
+    The pattern is the single source of truth: every simulation step mirrors
+    exactly one round of ``plan["rounds"]`` (the cast-on edge included), so
+    no operations are invented and the stitch counts stay identical to the
+    calculator's.  Missing or invalid data raises a clear error instead of
+    silently falling back to something incorrect.
+    """
+    if not isinstance(plan, dict) or plan.get("source") != "sock_calculator":
+        raise ValueError(
+            "The Sock Calculator data is missing or invalid. Open the Sock "
+            "Calculator, run it, and click 'Simulate sock' again."
+        )
+    rounds = plan.get("rounds")
+    if not isinstance(rounds, list) or not rounds:
+        raise ValueError(
+            "The Sock Calculator pattern is empty. Re-run the Sock Calculator."
+        )
+    cast = plan.get("cast_on_stitches")
+    try:
+        cast_ok = cast is not None and int(rounds[0]["after"]) == int(cast)
+    except (KeyError, TypeError, ValueError):
+        cast_ok = False
+    if not cast_ok:
+        raise ValueError(
+            "The Sock Calculator cast-on count is inconsistent with its "
+            "pattern. Re-run the Sock Calculator."
+        )
+
+    steps = []
+    for i, rnd in enumerate(rounds):
+        try:
+            before = int(rnd.get("before", rnd["after"]))
+            after = int(rnd["after"])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError(
+                "The Sock Calculator pattern contains an invalid round. "
+                "Re-run the Sock Calculator."
+            )
+        removed = after - before
+        kind = str(rnd.get("kind") or "row")
+        steps.append(
+            {
+                "op": str(rnd.get("label") or "row"),
+                "kind": "cast_on" if kind == "cast_on" else "row",
+                "row": i,
+                "n": after,
+                "worked": max(0, removed),
+                "stitches": list(range(1, after + 1)),
+                "row_ops": [],
+                "texture": str(rnd.get("texture") or "stockinette"),
+                "increases": max(0, removed),
+                "decreases": max(0, -removed),
+                "progress": 0.0,
+            }
+        )
+
+    total = len(steps)
+    row_steps = max(total - 1, 1)
+    for i, step in enumerate(steps):
+        step["progress"] = round(i / row_steps, 4) if total > 1 else 0.0
+
+    speed = inputs.get("speed", "normal")
+    speed_ms = SPEED_PRESETS.get(speed, 400)
+
+    return {
+        "steps": steps,
+        "total_steps": total,
+        "total_rows": total - 1,
+        "cast_on": int(cast),
+        "final_stitches": list(range(1, steps[-1]["n"] + 1)),
+        "speed_ms": speed_ms,
+        "warnings": [],
+        "garment": "sock",
+        "sock_summary": {
+            "size": plan.get("size", ""),
+            "gauge": plan.get("gauge", ""),
+            "cast_on_stitches": int(cast),
+            "ankle_stitches": plan.get("ankle_stitches"),
+            "total_rounds": plan.get("total_rounds", total - 1),
+        },
+        "pattern": [],
     }
 
 
