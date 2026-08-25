@@ -11,7 +11,7 @@ No installation, no account, no data leaves your device.
 
 - **[Raglan Sweater Planner](../../demos/raglan-sweater/demo.html)** -- Plan a complete top-down raglan from your gauge and measurements
 - **[Sock Calculator](../../demos/sock-calculator/demo.html)** -- Get a custom-fit sock plan for your foot
-- **[Hat Crown Planner](../../demos/hat-crown/demo.html)** -- Plan decrease rounds for a hat crown
+- **[Hat Crown Planner](../../demos/hat-crown/demo.html)** -- Plan a tapered dome hat crown: decrease rounds with the stitch count at every step, a crown-shape profile, and a **Simulate hat** button that sends the plan to the Knit Simulator
 - **[Pi Shawl Planner](../../demos/pi-shawl/demo.html)** -- Find doubling rounds for a pi shawl
 - **[Shawl Shapes](../../demos/shawl-shapes/demo.html)** -- Generate instructions for crescent, triangle, square, or rectangle shawls
 - **[Sleeve Decreases](../../demos/sleeve-decreases/demo.html)** -- Plan evenly-spaced decrease rows for tapered sleeves
