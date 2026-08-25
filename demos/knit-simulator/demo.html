@@ -729,7 +729,7 @@ k all</textarea>
        sleeve only appears once its own section starts (the pattern knits
        each sleeve after the body).  The yoke is a wedge that visibly widens
        from the neckline to the underarms as the reveal grows past it. */
-    var raglan = {topY: 64, underarmY: 152, hemY: 318, sleeveLen: 166, minSliver: 12, curFlare: 0};
+    var raglan = {topY: 64, underarmY: 152, hemY: 318, sleeveLen: 166, minSliver: 12, curFlare: 0, timer: null};
 
     /* The yoke flares from the neckline to the underarms as the increase
        rounds are worked: flare F is 0 (a narrow neck tube) at the cast-on
@@ -939,6 +939,7 @@ k all</textarea>
       var cR = parseFloat(rr.getAttribute('height')) || 0;
       var cF = raglan.curFlare != null ? raglan.curFlare : 0;
       if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+      if (raglan.timer) { clearTimeout(raglan.timer); raglan.timer = null; }
       function apply(hT, hL, hR, F) {
         t.setAttribute('y', String(raglan.topY)); t.setAttribute('height', String(hT));
         l.setAttribute('y', String(raglan.underarmY)); l.setAttribute('height', String(hL));
@@ -957,6 +958,14 @@ k all</textarea>
         if (k < 1) animRaf = requestAnimationFrame(frame);
       }
       animRaf = requestAnimationFrame(frame);
+      /* Safety net: requestAnimationFrame can be throttled in background
+         tabs (or a preview webview), which would leave the reveal and the
+         yoke flare stuck mid-animation.  Force the final state once the
+         animation should have finished. */
+      raglan.timer = setTimeout(function() {
+        if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+        apply(r.torso, r.sl, r.sr, r.flare);
+      }, 420);
     }
 
     function updateRaglanInfo() {
