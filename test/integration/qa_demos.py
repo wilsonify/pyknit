@@ -11,6 +11,7 @@ Runs each demo through a headless Chromium via Playwright and verifies:
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -19,7 +20,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8877"
+BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
 
 DEMOS = [
     {"dir": "gauge-conversion", "buttons": ["run-calc", "run-chart"],
@@ -29,11 +30,21 @@ DEMOS = [
     {"dir": "hat-crown", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "pi-shawl", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "pattern-io", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "raglan-sweater", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
+    {"dir": "raglan-sweater", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
+     "extra": "simulate-nav",
+     "sim": {"button": "simulate-sweater", "target": "knit-simulator",
+             "note": "raglan-plan-note", "min_steps": 100,
+             "instr_min_len": 1000, "instr_prefix": "co"}},
     {"dir": "shawl-shapes", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "sleeve-decreases", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "sock-calculator", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "yarn-estimator", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
+    {"dir": "sock-calculator", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
+     "extra": "simulate-nav",
+     "sim": {"button": "simulate-sock", "target": "knit-simulator",
+             "note": "sock-plan-note", "min_steps": 50}},
+    {"dir": "yarn-estimator", "buttons": ["run", "run-advanced"], "outputs": ["demo-output"], "errors": ["demo-error"]},
+    {"dir": "knit-simulator", "buttons": ["run"], "outputs": ["sim-section"], "errors": ["demo-error"], "extra": "knit-simulator"},
+    {"dir": "needle-advisor", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"], "needs_svg": False},
+    {"dir": "yarn-advisor", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"], "needs_svg": False},
 ]
 
 SKIP_JS_NOISE = (
@@ -142,7 +153,7 @@ def _console_handler(report, ready_flag):
 def _requestfailed_handler(report):
     def on_requestfailed(req):
         url = req.url
-        if "127.0.0.1:8877" in url or url.startswith("http"):
+        if url.startswith("http"):
             report.failed_requests.append(f"{url} :: {req.failure}")
     return on_requestfailed
 
@@ -169,6 +180,132 @@ def check_buttons_enabled(page, report, button_ids):
         disabled = btn.get_attribute("disabled")
         if disabled == "true" or disabled == "":
             report.fail(f"button #{bid} is disabled after ready")
+
+
+def _element_visible(page, selector):
+    try:
+        el = page.query_selector(selector)
+        if el is None:
+            return False
+        return page.evaluate("el => getComputedStyle(el).display !== 'none'", el)
+    except Exception:
+        return False
+
+
+def _step_num(page):
+    try:
+        return int(page.eval_on_selector("#sim-step-num", "el => el.textContent") or 0)
+    except Exception:
+        return -1
+
+
+def exercise_knit_simulator_controls(page, report):
+    """After a build, verify the simulator's Next/Play/Pause/Prev/Reset and
+    the status line actually drive the simulation state."""
+    if not _element_visible(page, "#sim-section"):
+        report.fail("sim-section not visible after Build Simulation")
+        return
+    total = 0
+    try:
+        total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
+    except Exception:
+        pass
+    if total <= 0:
+        report.fail("no simulation steps after build")
+        return
+    report.ok(f"build produced {total} steps")
+
+    n0 = _step_num(page)
+    page.click("#sim-next")
+    time.sleep(1.2)
+    n1 = _step_num(page)
+    if n1 <= n0:
+        report.fail(f"Next did not advance the step ({n0} -> {n1})")
+
+    page.click("#sim-play")
+    # startPlay() flips the label synchronously in the click handler; reading it
+    # immediately avoids racing a fast animation that finishes and flips back.
+    play_label = ""
+    try:
+        play_label = page.eval_on_selector("#sim-play", "el => el.textContent") or ""
+    except Exception:
+        pass
+    time.sleep(1.8)
+    n2 = _step_num(page)
+    if n2 <= n1:
+        report.fail(f"Play did not advance the step ({n1} -> {n2})")
+    if "pause" not in play_label.lower():
+        report.fail(f"Play button did not become 'Pause' while playing (got {play_label!r})")
+    page.click("#sim-play")  # pause
+    time.sleep(0.4)
+
+    page.click("#sim-prev")
+    time.sleep(1.2)
+    n3 = _step_num(page)
+    if n3 >= n2:
+        report.fail(f"Prev did not go back ({n2} -> {n3})")
+
+    page.click("#sim-reset")
+    time.sleep(1.2)
+    n4 = _step_num(page)
+    if n4 > 1:
+        report.fail(f"Reset did not return to the start (step {n4})")
+
+    op = page.eval_on_selector("#sim-op-line", "el => (el.textContent || '').trim()") or ""
+    if not op:
+        report.fail("status/operation line empty after build")
+    else:
+        report.ok(f"controls Next/Play/Pause/Prev/Reset OK; status: {op[:60]}")
+
+
+def exercise_simulate_nav(page, report, sim):
+    """Cross-demo integration: click the 'Simulate' button and verify the
+    Knit Simulator consumes the published plan (prefill/note + live build)."""
+    btn = page.query_selector(f"#{sim.get('button')}")
+    if btn is None:
+        report.fail(f"#{sim.get('button')} missing from page")
+        return
+    disabled = btn.get_attribute("disabled")
+    if disabled in ("", "true"):
+        report.fail(f"#{sim.get('button')} disabled after a successful run")
+        return
+    btn.click()
+    try:
+        page.wait_for_url(f"**/{sim['target']}/demo.html", timeout=30_000)
+    except Exception as exc:
+        report.fail(f"Simulate did not navigate to {sim['target']}", str(exc)[:120])
+        return
+    state = wait_for_ready(page, report, timeout=240_000)
+    if state != "ready":
+        report.fail(f"{sim['target']} did not become ready after navigation: {state}")
+        return
+    note_id = sim.get("note")
+    if note_id and not _element_visible(page, f"#{note_id}"):
+        report.fail(f"#{note_id} not visible on {sim['target']} (plan was not consumed)")
+    if sim.get("instr_min_len"):
+        try:
+            txt = page.eval_on_selector("#instructions", "el => el.value") or ""
+        except Exception:
+            txt = ""
+        prefix = sim.get("instr_prefix", "")
+        # The plan may open with # comment lines (e.g. the raglan plan's
+        # section annotations); the first real instruction must match.
+        first_line = next(
+            (l for l in txt.splitlines() if l.strip() and not l.strip().startswith("#")),
+            "",
+        )
+        if len(txt) < sim["instr_min_len"] or (prefix and not first_line.startswith(prefix)):
+            report.fail(f"instructions field not prefilled with the plan "
+                        f"({len(txt)} chars, starts {txt[:20]!r})")
+    total = 0
+    try:
+        total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
+    except Exception:
+        pass
+    if total < sim.get("min_steps", 1):
+        report.fail(f"knit-simulator has too few steps after navigation ({total})")
+    else:
+        report.ok(f"plan consumed: {total} steps ready on {sim['target']}")
 
 
 def run_demo(browser, spec):
@@ -219,15 +356,22 @@ def run_demo(browser, spec):
 
     # interactive: click each button with default inputs
     for bid in spec["buttons"]:
-        _apply_checks(report, exercise(page, bid),
+        _apply_checks(report, exercise(page, bid, spec),
                       f"default click on #{bid} produced output")
 
     # verify rendered content (SVG chart or table/pre) is present after a run
     _apply_checks(report, check_rendered(page, spec), "rendered chart/svg output verified")
 
-    # invalid input path
+    # invalid input path (on this demo's own page, before any cross-demo navigation)
     _apply_checks(report, exercise_invalid(page, spec, name),
                   "invalid input produced a visible error")
+
+    # demo-specific extra workflows (simulator controls, cross-demo navigation)
+    extra = spec.get("extra")
+    if extra == "knit-simulator":
+        exercise_knit_simulator_controls(page, report)
+    elif extra == "simulate-nav":
+        exercise_simulate_nav(page, report, spec.get("sim", {}))
 
     page.close()
     return report
@@ -288,8 +432,7 @@ def check_rendered(page, spec):
     out_html = page.eval_on_selector(f"#{out_id}", INNER_HTML) or ""
     if not out_html.strip():
         fails.append(f"#{out_id} empty after interaction")
-    # every new demo renders an SVG diagram
-    if "<svg" not in out_html:
+    if spec.get("needs_svg", True) and "<svg" not in out_html:
         fails.append(f"#{out_id} has no <svg> element (chart fallback missing)")
     return fails
 
@@ -344,7 +487,23 @@ def _error_visible(page, eid):
     return BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style
 
 
-def exercise(page, button_id):
+def _ensure_clickable(page, bid):
+    """Open any collapsed <details> ancestors so the button is visible."""
+    try:
+        page.evaluate("""
+            bid => {
+              var el = document.getElementById(bid);
+              while (el) {
+                if (el.tagName === 'DETAILS') el.open = true;
+                el = el.parentElement;
+              }
+            }
+        """, bid)
+    except Exception:
+        pass
+
+
+def exercise(page, button_id, spec=None):
     """Click with current inputs and check output non-blank + changed on input change."""
     bid = button_id
     fails = []
@@ -352,14 +511,21 @@ def exercise(page, button_id):
     btn = page.query_selector(f"#{bid}")
     if btn is None:
         return ["missing button #" + bid]
+    _ensure_clickable(page, bid)
     btn.click()
     time.sleep(1.5)
 
-    oids, eids = _targets_for(bid)
+    if bid in ("run-calc", "run-chart"):
+        oids, eids = _targets_for(bid)
+    elif spec:
+        oids = spec.get("outputs", ["demo-output"])
+        eids = spec.get("errors", ["demo-error"])
+    else:
+        oids, eids = _targets_for(bid)
     fails.extend(_check_outputs(page, oids))
     fails.extend(_check_no_error(page, eids))
 
-    if not fails and not change_input_and_compare(page, oids, bid):
+    if not fails and not change_input_and_compare(page, oids, eids, bid):
         fails.append("changing an input did not change the output")
 
     return fails
@@ -369,7 +535,7 @@ def _all_cards():
     return "section.card input[type=number], section.card textarea"
 
 
-def change_input_and_compare(page, oids, bid):
+def change_input_and_compare(page, oids, eids, bid):
     """Alter one input, click, and verify the corresponding output changes."""
     if bid == "run-calc":
         target, out_id = "#measurement", "calc-output"
@@ -492,6 +658,9 @@ def _invalid_textarea(page, bid, eid, ta):
     if not _error_visible(page, eid):
         fails.append(f"invalid (garbage) pattern produced no visible error in #{eid}")
     ta.fill(original)
+    # rebuild from the restored input so the demo is left in a working state
+    page.query_selector(f"#{bid}").click()
+    time.sleep(1.2)
     return fails
 
 
