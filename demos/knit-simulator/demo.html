@@ -169,7 +169,7 @@
 
   <py-config>
     interpreter = "/_assets/pyodide/pyodide.mjs"
-    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.2-py3-none-any.whl"]
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.3-py3-none-any.whl"]
     terminal = false
   </py-config>
 
@@ -193,6 +193,10 @@ k all</textarea>
     <div id="raglan-plan-note" class="sim-summary-hint" style="display:none">
       Instructions loaded from the Raglan Sweater Planner.
       <button id="clear-raglan-plan" class="btn-link" type="button">Clear it and use the default pattern</button>
+    </div>
+    <div id="hat-plan-note" class="sim-summary-hint" style="display:none">
+      Instructions loaded from the Hat Crown Planner.
+      <button id="clear-hat-plan" class="btn-link" type="button">Clear it and use the default pattern</button>
     </div>
     <div id="demo-error" class="error-message" style="display:none;"></div>
   </section>
@@ -372,7 +376,7 @@ k all</textarea>
         _PENDING_PLAN[0] = _plan
         try:
             _win.document.getElementById("instructions").value = _plan["instructions"]
-            _win.raglan_orientation = True
+            _win.raglan_orientation = _plan.get("garment") == "raglan"
         except Exception:
             pass
     else:
@@ -396,6 +400,7 @@ k all</textarea>
     var steps = [], cur = 0, playing = false, timer = null, speedMs = 400;
     var sockMode = false;
     var raglanMode = false;
+    var hatMode = false;
     var swatchMode = false;
     var metaSections = [];
     var metaCounts = null;
@@ -574,7 +579,7 @@ k all</textarea>
                   needleY0: 52, needleY1: 60, curR: 0, timer: null};
 
     function isSwatchPattern(parsed, meta) {
-      if (meta && (meta.garment === 'sock' || meta.garment === 'raglan')) return false;
+      if (meta && (meta.garment === 'sock' || meta.garment === 'raglan' || meta.garment === 'hat')) return false;
       var castOn = (parsed[0] && parsed[0].n) || 0;
       return castOn >= 1 && castOn <= 24 &&
              parsed.length >= 1 && parsed.length <= 60;
@@ -1110,12 +1115,12 @@ k all</textarea>
       }, 420);
     }
 
-    function updateRaglanInfo() {
+    function updateSectionInfo() {
       var ph = $('sim-phase-line');
       var sp = $('section-progress');
       if (!ph || !sp) return;
       var step = steps[cur];
-      if (raglanMode && step && step.section_label) {
+      if ((raglanMode || hatMode) && step && step.section_label) {
         ph.style.display = '';
         var before = (step.before != null) ? step.before : (step.n - step.increases + step.decreases);
         var line1 = esc(step.section_label) + ' &mdash; Round ' + step.sec_row + ' / ' + step.sec_rows;
@@ -1151,6 +1156,131 @@ k all</textarea>
         ph.style.display = 'none';
         sp.style.display = 'none';
       }
+    }
+
+    /* ── Hat crown (bottom-up dome, section-aware) ────────── */
+    /* A hat plan from the Hat Crown Planner renders as a simple crown
+       profile: the silhouette narrows from the cast-on brim to the cinched
+       top exactly as the executed rounds step the count down, revealed from
+       the brim up.  Each completed decrease round leaves a dot on the
+       silhouette edge, and the section progress shows the schedule's
+       phases (Curve in / Steady / Round over). */
+    var hat = {topY: 22, brimY: 176, minSliver: 12, points: [], timer: null};
+
+    function hatGeometry() {
+      var pts = [];
+      var n = Math.max(steps.length - 1, 1);
+      var maxC = 1;
+      for (var i = 0; i < steps.length; i++) maxC = Math.max(maxC, steps[i].n || 0);
+      for (var i = 0; i < steps.length; i++) {
+        var c = steps[i].n || 0;
+        var f = i / n;
+        pts.push({w: 104 * c / maxC, y: hat.brimY - f * (hat.brimY - hat.topY), c: c});
+      }
+      return pts;
+    }
+
+    function hatSilhouette(pts) {
+      var right = '', left = '';
+      for (var i = 0; i < pts.length; i++) {
+        right += ' L ' + (160 + pts[i].w).toFixed(1) + ',' + pts[i].y.toFixed(1);
+      }
+      for (var i = pts.length - 1; i >= 0; i--) {
+        left += ' L ' + (160 - pts[i].w).toFixed(1) + ',' + pts[i].y.toFixed(1);
+      }
+      return 'M' + (160 - pts[0].w).toFixed(1) + ',' + pts[0].y.toFixed(1) + right + left + ' Z';
+    }
+
+    function hatSvg() {
+      var sil = hatSilhouette(hat.points);
+      var cw = hat.points[0].w;
+      return '' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 210" role="img" aria-label="Hat crown being constructed">' +
+        '<defs>' +
+          '<linearGradient id="hatGrad" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#e3d3f0"/>' +
+            '<stop offset="1" stop-color="#c4a8d8"/>' +
+          '</linearGradient>' +
+          '<pattern id="hatKnit" width="11" height="8" patternUnits="userSpaceOnUse">' +
+            '<path d="M2.6,7 L5.5,1.6 L8.4,7" fill="none" stroke="rgba(90,42,117,0.14)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</pattern>' +
+          '<clipPath id="hatClip"><path id="hatSilPath" d="' + sil + '"/></clipPath>' +
+          '<clipPath id="hatRevealClip"><rect id="hatRevealRect" x="0" y="' + hat.brimY + '" width="320" height="0"/></clipPath>' +
+          '<filter id="hatShadow" x="-25%" y="-25%" width="150%" height="150%">' +
+            '<feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#2b2333" flood-opacity="0.22"/>' +
+          '</filter>' +
+        '</defs>' +
+        '<ellipse cx="160" cy="198" rx="112" ry="7" fill="rgba(43,35,51,0.10)"/>' +
+        '<rect x="' + (160 - cw).toFixed(1) + '" y="' + hat.brimY + '" width="' + (2 * cw).toFixed(1) + '" height="34" fill="#f2eaf9" stroke="rgba(90,42,117,0.15)"/>' +
+        '<text x="160" y="200" text-anchor="middle" font-size="9" fill="#8a82a0">hat body — knit to length, then work the crown</text>' +
+        '<g filter="url(#hatShadow)">' +
+          '<g clip-path="url(#hatClip)">' +
+            '<g clip-path="url(#hatRevealClip)">' +
+              '<rect x="0" y="0" width="320" height="210" fill="url(#hatGrad)"/>' +
+              '<rect x="0" y="0" width="320" height="210" fill="url(#hatKnit)"/>' +
+              '<g id="hat-round-lines"></g>' +
+              '<g id="hat-dots"></g>' +
+            '</g>' +
+          '</g>' +
+        '</g>' +
+        '<g clip-path="url(#hatClip)"><g clip-path="url(#hatRevealClip)">' +
+          '<path d="' + sil + '" fill="none" stroke="rgba(90,42,117,0.35)" stroke-width="1.8" stroke-linejoin="round"/>' +
+          '<line x1="' + (160 - cw).toFixed(1) + '" y1="' + hat.brimY + '" x2="' + (160 + cw).toFixed(1) + '" y2="' + hat.brimY + '" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round"/>' +
+        '</g></g>' +
+      '</svg>';
+    }
+
+    function buildHat() {
+      if (!steps || !steps.length) throw new Error('no simulation steps');
+      hat.points = hatGeometry();
+      $('garment-view').innerHTML = hatSvg();
+      var lines = '', dots = '';
+      for (var i = 1; i < hat.points.length; i++) {
+        var p = hat.points[i];
+        lines += '<line x1="' + (160 - p.w).toFixed(1) + '" y1="' + p.y.toFixed(1) +
+                 '" x2="' + (160 + p.w).toFixed(1) + '" y2="' + p.y.toFixed(1) +
+                 '" stroke="rgba(43,35,51,0.10)" stroke-width="1"/>';
+        if ((steps[i].decreases || 0) > 0) {
+          dots += '<circle cx="' + (160 - p.w).toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.3" fill="rgba(90,42,117,0.65)"/>';
+          dots += '<circle cx="' + (160 + p.w).toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.3" fill="rgba(90,42,117,0.65)"/>';
+        }
+      }
+      var rl = $('hat-round-lines'), hd = $('hat-dots');
+      if (rl) rl.innerHTML = lines;
+      if (hd) hd.innerHTML = dots;
+      return true;
+    }
+
+    function hatRevealFor(i) {
+      var totalH = hat.brimY - hat.topY;
+      var f = i / Math.max(steps.length - 1, 1);
+      return hat.minSliver + f * (totalH - hat.minSliver);
+    }
+
+    function setHatReveal(r, animate) {
+      var rect = $('hatRevealRect');
+      if (!rect) return;
+      var curH = parseFloat(rect.getAttribute('height')) || 0;
+      if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+      if (hat.timer) { clearTimeout(hat.timer); hat.timer = null; }
+      function apply(v) {
+        rect.setAttribute('y', String(hat.brimY - v));
+        rect.setAttribute('height', String(v));
+      }
+      if (!animate || Math.abs(curH - r) < 0.5) { apply(r); return; }
+      var t0 = null;
+      function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var k = Math.min((ts - t0) / 240, 1);
+        var e = 1 - Math.pow(1 - k, 3);
+        apply(curH + (r - curH) * e);
+        if (k < 1) animRaf = requestAnimationFrame(frame);
+      }
+      animRaf = requestAnimationFrame(frame);
+      hat.timer = setTimeout(function() {
+        if (animRaf) { cancelAnimationFrame(animRaf); animRaf = null; }
+        apply(r);
+      }, 420);
     }
 
     function setSockReveal(len, animate) {
@@ -1203,6 +1333,19 @@ k all</textarea>
         if (title) title.textContent = 'Raglan sweater';
         return;
       }
+      if (hatMode && meta && meta.plan && meta.plan.counts) {
+        var hc = meta.plan.counts;
+        if (box) {
+          box.innerHTML = '<div class="sim-summary-row">' +
+            '<span class="sim-pill">Cast on ' + esc(hc.cast_on) + ' sts</span>' +
+            '<span class="sim-pill">' + esc(hc.repeats) + ' decrease repeats</span>' +
+            '<span class="sim-pill">Finish ' + esc(hc.final) + ' sts</span></div>' +
+            '<div class="sim-summary-hint">Pattern from the Hat Crown Planner &middot; tapered dome crown</div>';
+          box.style.display = '';
+        }
+        if (title) title.textContent = 'Hat crown';
+        return;
+      }
       if (swatchMode && steps.length) {
         if (box) {
           box.innerHTML = '<div class="sim-summary-row">' +
@@ -1239,6 +1382,7 @@ k all</textarea>
     function buildGarment() {
       if (sockMode) { buildSock(); }
       else if (raglanMode) { buildRaglan(); }
+      else if (hatMode) { buildHat(); }
       else if (swatchMode) { buildSwatch(); }
       else { buildSweater(); }
       renderSummary(readMeta());
@@ -1253,9 +1397,10 @@ k all</textarea>
       $('sim-step-total').textContent = steps.length;
       if (sockMode) { setSockReveal(sockRevealFor(cur), animate !== false); }
       else if (raglanMode) { setRaglanReveal(raglanRevealFor(cur), animate !== false); }
+      else if (hatMode) { setHatReveal(hatRevealFor(cur), animate !== false); }
       else if (swatchMode) { setSwatchReveal(swatchRevealFor(cur), animate !== false); }
       else { setReveal(revealFor(cur), animate !== false); }
-      updateRaglanInfo();
+      updateSectionInfo();
       $('sim-op-line').innerHTML =
         '<span class="now-label">Now knitting:</span>' + esc(step.op) +
         ' &mdash; ' + step.n + ' stitches on needle';
@@ -1329,8 +1474,10 @@ k all</textarea>
       sockMode = !!(meta && meta.garment === 'sock' && meta.sock);
       raglanMode = !!(meta && meta.garment === 'raglan' && meta.plan &&
                       meta.plan.sections && meta.plan.sections.length);
-      swatchMode = !sockMode && !raglanMode && isSwatchPattern(parsed, meta);
-      metaSections = raglanMode ? meta.plan.sections : [];
+      hatMode = !!(meta && meta.garment === 'hat' && meta.plan &&
+                   meta.plan.sections && meta.plan.sections.length);
+      swatchMode = !sockMode && !raglanMode && !hatMode && isSwatchPattern(parsed, meta);
+      metaSections = (raglanMode || hatMode) ? meta.plan.sections : [];
       metaCounts = (meta && meta.plan && meta.plan.counts) || null;
       topDown = !!(meta && meta.construction === 'top_down');
 
@@ -1340,6 +1487,7 @@ k all</textarea>
         cur = 0;
         sockMode = false;
         raglanMode = false;
+        hatMode = false;
         swatchMode = false;
         metaSections = [];
         metaCounts = null;
@@ -1370,6 +1518,8 @@ k all</textarea>
       if (note) note.style.display = sockMode ? '' : 'none';
       var rnote = $('raglan-plan-note');
       if (rnote) rnote.style.display = (!sockMode && window.raglan_orientation) ? '' : 'none';
+      var hnote = $('hat-plan-note');
+      if (hnote) hnote.style.display = hatMode ? '' : 'none';
       return true;
     }
 
@@ -1390,6 +1540,14 @@ k all</textarea>
 
     var clearRaglanBtn = $('clear-raglan-plan');
     if (clearRaglanBtn) clearRaglanBtn.addEventListener('click', function() {
+      try { sessionStorage.removeItem('knit_sim_plan'); } catch (e) {}
+      try { sessionStorage.removeItem('knit_sim_instructions'); } catch (e) {}
+      window.raglan_orientation = false;
+      window.location.reload();
+    });
+
+    var clearHatBtn = $('clear-hat-plan');
+    if (clearHatBtn) clearHatBtn.addEventListener('click', function() {
       try { sessionStorage.removeItem('knit_sim_plan'); } catch (e) {}
       try { sessionStorage.removeItem('knit_sim_instructions'); } catch (e) {}
       window.raglan_orientation = false;
