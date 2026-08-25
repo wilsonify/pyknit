@@ -67,14 +67,23 @@ them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
     count when the sock plan comes from the Sock Calculator; for raglan
     plans it shows the neck, yoke, bust, arm and cuff counts from the
     Planner
-- **Knitter's status line** -- For raglan plans, a line above the garment
-  always answers the knitter's question with real simulation values:
-  `Phase: Yoke · Row 23 / 58 · Stitches: 136 · Raglan increase (+8)`. The
-  phase, row-within-section, stitch count and operation all come straight
-  from the executed steps.
+- **Knitter's status line** -- For raglan plans, a two-line status above
+  the garment always answers the knitter's question with real simulation
+  values: `Yoke — Round 23 / 50` over `160 → 168 stitches (+8)`. The
+  section, round-within-section, and the before → after stitch transition
+  (per-round change in parentheses) all come straight from the executed
+  steps.
+- **Raglan geometry** -- The yoke visibly flares from the neckline to the
+  underarms as the increase rounds are worked: the torso silhouette, raglan
+  seams and outline all widen round by round, and one dot per completed
+  increase round appears on each seam — the reason the garment widens is
+  drawn, not just narrated. The sleeves only appear once their own sections
+  start, so the sweater separates into body + sleeves instead of staying a
+  rectangle.
 - **Compact section progress** -- Instead of a giant list of rows, the raglan
-  view shows one marker per garment section (`✓ Neckline · → Yoke · ○ Body
-  · ○ Left sleeve · ○ Right sleeve`), with the current section highlighted.
+  view shows one marker per garment section (`✓ Neck · ● Yoke 23/50 · ○ Body
+  · ○ Left sleeve · ○ Right sleeve`), with the current section highlighted
+  and its round counter shown.
 - **Step log** -- Written record of each row/round: what was worked and the
   stitch count on the needle. It is collapsed into a *Step log* disclosure by
   default so the detailed rows don't overwhelm the garment view; open it to
