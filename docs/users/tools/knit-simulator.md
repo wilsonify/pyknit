@@ -28,6 +28,12 @@ edge onward. Three inputs are supported:
   raglan increase schedule, body rounds, hem, sleeve decreases and cuffs all
   match the Planner's numbers. Edits to the field are used on the next
   Build.
+- **Hat Crown Planner** — run the [Hat Crown Planner](../../demos/hat-crown/demo.html), click
+  **Simulate hat**, and the Planner's tapered dome schedule fills the
+  instructions field; the simulator builds the crown as a simple hat profile
+  from the brim up, with a dot on the silhouette edge for every completed
+  decrease round. The section progress shows the schedule's phases
+  (`✓ Curve in · ● Steady 1/6 · ○ Round over`) with real stitch counts.
 
 In all modes, stitch counts only change when the pattern explicitly changes
 them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
@@ -74,6 +80,10 @@ them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
     and hem grow downward — and the sleeves only appear once their own
     sections start, so the sweater visibly separates into body + sleeves
     instead of staying a rectangle
+  - Hat plans are revealed from the brim up as a crown profile that narrows
+    exactly as the executed rounds step the count down: the cast-on is the
+    widest point, each decrease round steps the silhouette inward (a dot on
+    each side marks it), and the final bind-off closes the cinched top
   - A summary box shows the size, cast-on stitches, ankle stitches and round
     count when the sock plan comes from the Sock Calculator; for raglan
     plans it shows the neck, yoke, bust, arm and cuff counts from the
