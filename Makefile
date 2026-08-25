@@ -33,7 +33,14 @@ help:
 	@echo "  DOCKER=docker      Container engine"
 	@echo "  IMAGE=pyknit-demos  Image name for docker targets"
 
-setup: wheel favicon
+setup: wheel favicon demo-assets
+
+demo-assets:
+	mkdir -p demos/_assets
+	@printf '%s\n' \
+	  '"""Gauge conversion demo bootstrap (recreated by make demo-assets)."""' \
+	  'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401  # auto-bootstraps' \
+	  > demos/_assets/gauge-conversion.py
 
 wheel:
 	mkdir -p $(BUILD_DIR) $(WHEEL_DIR)
