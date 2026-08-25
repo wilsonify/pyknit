@@ -1123,18 +1123,36 @@ k all</textarea>
       if ((raglanMode || hatMode) && step && step.section_label) {
         ph.style.display = '';
         var before = (step.before != null) ? step.before : (step.n - step.increases + step.decreases);
-        var line1 = esc(step.section_label) + ' &mdash; Round ' + step.sec_row + ' / ' + step.sec_rows;
-        var line2;
-        if (step.kind === 'cast_on') {
-          line2 = 'Cast on ' + step.n + ' sts';
-        } else if (step.kind === 'bind_off') {
-          line2 = before + ' &rarr; 0 stitches (&minus;' + before + ')';
-        } else if (step.increases > 0) {
-          line2 = before + ' &rarr; ' + step.n + ' stitches (+' + step.increases + ')';
-        } else if (step.decreases > 0) {
-          line2 = before + ' &rarr; ' + step.n + ' stitches (&minus;' + step.decreases + ')';
+        var line1, line2;
+        if (hatMode) {
+          // Hat crown: explicit round + stitch-count transition for a real knitter
+          // e.g. "Round 8: 80 → 72 stitches, 8 decreases."
+          if (step.kind === 'cast_on') {
+            line1 = 'Round ' + step.row + ': Cast on';
+            line2 = 'Cast on ' + step.n + ' sts';
+          } else if (step.kind === 'bind_off') {
+            line1 = esc(step.section_label) + ' &mdash; Round ' + step.row;
+            line2 = before + ' &rarr; 0 stitches (cinch closed)';
+          } else if (step.decreases > 0) {
+            line1 = esc(step.section_label) + ' &mdash; Round ' + step.row;
+            line2 = 'Round ' + step.row + ': ' + before + ' &rarr; ' + step.n + ' stitches, ' + step.decreases + ' decreases.';
+          } else {
+            line1 = esc(step.section_label) + ' &mdash; Round ' + step.row;
+            line2 = 'Round ' + step.row + ': ' + step.n + ' stitches (knit even)';
+          }
         } else {
-          line2 = step.n + ' stitches';
+          line1 = esc(step.section_label) + ' &mdash; Round ' + step.sec_row + ' / ' + step.sec_rows;
+          if (step.kind === 'cast_on') {
+            line2 = 'Cast on ' + step.n + ' sts';
+          } else if (step.kind === 'bind_off') {
+            line2 = before + ' &rarr; 0 stitches (&minus;' + before + ')';
+          } else if (step.increases > 0) {
+            line2 = before + ' &rarr; ' + step.n + ' stitches (+' + step.increases + ')';
+          } else if (step.decreases > 0) {
+            line2 = before + ' &rarr; ' + step.n + ' stitches (&minus;' + step.decreases + ')';
+          } else {
+            line2 = step.n + ' stitches';
+          }
         }
         ph.innerHTML = '<div>' + line1 + '</div><div>' + line2 + '</div>';
         var marks = '';
@@ -1195,7 +1213,7 @@ k all</textarea>
       var sil = hatSilhouette(hat.points);
       var cw = hat.points[0].w;
       return '' +
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 210" role="img" aria-label="Hat crown being constructed">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-label="Hat crown being constructed — tapered dome with evenly spaced decreases">' +
         '<defs>' +
           '<linearGradient id="hatGrad" x1="0" y1="0" x2="0" y2="1">' +
             '<stop offset="0" stop-color="#e3d3f0"/>' +
@@ -1216,10 +1234,11 @@ k all</textarea>
         '<g filter="url(#hatShadow)">' +
           '<g clip-path="url(#hatClip)">' +
             '<g clip-path="url(#hatRevealClip)">' +
-              '<rect x="0" y="0" width="320" height="210" fill="url(#hatGrad)"/>' +
-              '<rect x="0" y="0" width="320" height="210" fill="url(#hatKnit)"/>' +
+              '<rect x="0" y="0" width="320" height="240" fill="url(#hatGrad)"/>' +
+              '<rect x="0" y="0" width="320" height="240" fill="url(#hatKnit)"/>' +
               '<g id="hat-round-lines"></g>' +
               '<g id="hat-dots"></g>' +
+              '<g id="hat-stitch-rows"></g>' +
             '</g>' +
           '</g>' +
         '</g>' +
@@ -1227,7 +1246,93 @@ k all</textarea>
           '<path d="' + sil + '" fill="none" stroke="rgba(90,42,117,0.35)" stroke-width="1.8" stroke-linejoin="round"/>' +
           '<line x1="' + (160 - cw).toFixed(1) + '" y1="' + hat.brimY + '" x2="' + (160 + cw).toFixed(1) + '" y2="' + hat.brimY + '" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round"/>' +
         '</g></g>' +
+        '<g id="hat-current-row"></g>' +
       '</svg>';
+    }
+
+    /* Draw the evenly spaced decrease points for a hat step.
+       A decrease round removes `repeats` stitches, one k2tog per marker,
+       so the points are exactly `repeats` evenly spaced ticks along the
+       round line at that height. Knit-even rounds get no ticks. */
+    function hatDecreaseTicks(step, y, halfW) {
+      var dec = step.decreases || 0;
+      if (!dec) return '';
+      var html = '';
+      for (var d = 0; d < dec; d++) {
+        var frac = (d + 0.5) / dec;
+        var x = 160 - halfW + frac * 2 * halfW;
+        html += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.2" fill="#a33e5c" stroke="white" stroke-width="1"/>';
+        html += '<text x="' + x.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="6" fill="#a33e5c" font-weight="700">×</text>';
+      }
+      return html;
+    }
+
+    /* 2D stitch/loop strip for the current hat round:
+       Shows the actual stitch-count change. Knit stitches are Vs, purl/knit-even
+       keeps the count, decrease stitches are marked and the two consumed stitches
+       collapse into one — the knitter can see stitches being removed at the
+       evenly spaced markers. */
+    function hatStitchRowForStep(step) {
+      if (!step || !step.row_ops || !step.row_ops.length) return '';
+      var ops = step.row_ops;
+      var n = ops.length;
+      // map to a 280px strip centered at 160,  y = 222
+      var x0 = 20, x1 = 300;
+      var w = (x1 - x0) / Math.max(n, 1);
+      var y = 222;
+      var html = '<text x="18" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="7" fill="#6b6572">sts</text>';
+      for (var i = 0; i < ops.length; i++) {
+        var code = ops[i];
+        // k2tog consumes two stitches but is one decrease point — merge the pair
+        if (code === 3 && i + 1 < ops.length && ops[i + 1] === 3) {
+          var cx = x0 + (i + 1) * w; // center between the two consumed stitches
+          html += '<path d="M' + (cx - 5) + ',' + y + ' L' + cx + ',' + (y + 7) + ' L' + (cx + 5) + ',' + y + '" fill="none" stroke="#a33e5c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+          html += '<circle cx="' + cx.toFixed(1) + '" cy="' + (y + 2).toFixed(1) + '" r="2.2" fill="#a33e5c"/>';
+          i++; // skip the paired stitch
+          continue;
+        }
+        var cx = x0 + (i + 0.5) * w;
+        if (code === 3) {
+          // single decrease (fallback)
+          html += '<path d="M' + (cx - 3) + ',' + y + ' L' + cx + ',' + (y + 7) + ' L' + (cx + 3) + ',' + y + '" fill="none" stroke="#a33e5c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+          html += '<circle cx="' + cx.toFixed(1) + '" cy="' + (y + 2).toFixed(1) + '" r="2" fill="#a33e5c"/>';
+        } else if (code === 1) {
+          html += '<path d="M' + (cx - 3) + ',' + (y + 2) + ' Q' + cx + ',' + (y + 7) + ' ' + (cx + 3) + ',' + (y + 2) + '" fill="none" stroke="#3f2459" stroke-width="1.4" stroke-linecap="round"/>';
+        } else if (code === 4) {
+          html += '<line x1="' + (cx - 2) + '" y1="' + y + '" x2="' + (cx + 2) + '" y2="' + y + '" stroke="#8a6bb0" stroke-width="1.6"/>';
+        } else if (code === 0) {
+          html += '<path d="M' + (cx - 3) + ',' + y + ' L' + cx + ',' + (y + 7) + ' L' + (cx + 3) + ',' + y + '" fill="none" stroke="#7c55b0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else {
+          html += '<circle cx="' + cx.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="1.2" fill="#ccc"/>';
+        }
+      }
+      // count label at right end
+      var before = (step.before != null) ? step.before : step.n + step.decreases - step.increases;
+      var label = step.decreases > 0 ? (before + ' → ' + step.n + '  (−' + step.decreases + ')') : (step.n + ' sts');
+      html += '<text x="' + (x1 + 4).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" font-size="7" fill="#5a2a75">' + esc(label) + '</text>';
+      return html;
+    }
+
+    function renderHatCurrentRow() {
+      var host = document.getElementById('hat-current-row');
+      if (!host || !steps[cur]) return;
+      var step = steps[cur];
+      // show stitches for the current round; cast_on shows the brim count
+      if (step.kind === 'cast_on') {
+        var n = step.n;
+        var x0 = 20, x1 = 300;
+        var w = (x1 - x0) / Math.max(n, 1);
+        var y = 222;
+        var html = '<text x="18" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="7" fill="#6b6572">sts</text>';
+        for (var i = 0; i < n; i++) {
+          var cx = x0 + (i + 0.5) * w;
+          html += '<path d="M' + (cx - 3) + ',' + y + ' L' + cx + ',' + (y + 7) + ' L' + (cx + 3) + ',' + y + '" fill="none" stroke="#7c55b0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>';
+        }
+        html += '<text x="' + (x1 + 4).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" font-size="7" fill="#5a2a75">' + n + ' sts (cast on)</text>';
+        host.innerHTML = html;
+        return;
+      }
+      host.innerHTML = hatStitchRowForStep(step);
     }
 
     function buildHat() {
@@ -1237,17 +1342,35 @@ k all</textarea>
       var lines = '', dots = '';
       for (var i = 1; i < hat.points.length; i++) {
         var p = hat.points[i];
+        var step = steps[i];
         lines += '<line x1="' + (160 - p.w).toFixed(1) + '" y1="' + p.y.toFixed(1) +
                  '" x2="' + (160 + p.w).toFixed(1) + '" y2="' + p.y.toFixed(1) +
                  '" stroke="rgba(43,35,51,0.10)" stroke-width="1"/>';
-        if ((steps[i].decreases || 0) > 0) {
-          dots += '<circle cx="' + (160 - p.w).toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.3" fill="rgba(90,42,117,0.65)"/>';
-          dots += '<circle cx="' + (160 + p.w).toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.3" fill="rgba(90,42,117,0.65)"/>';
+        // evenly spaced decrease points for this round (not just edge dots)
+        if (step && (step.decreases || 0) > 0) {
+          dots += hatDecreaseTicks(step, p.y, p.w);
+        }
+        // stitch-level rows drawn faintly for every round, so knit-even rounds
+        // are visibly plain (no red ticks) and keep the count/shape
+        if (step && step.row_ops && step.row_ops.length) {
+          // tiny stitch ticks along the line to hint at stitch density
+          var ops = step.row_ops;
+          var x0 = 160 - p.w, x1 = 160 + p.w;
+          var gap = (x1 - x0) / Math.max(ops.length, 1);
+          var tickHtml = '';
+          for (var t = 0; t < ops.length; t++) {
+            if (ops[t] === 3) continue; // decrease already drawn as red dot
+            var tx = x0 + (t + 0.5) * gap;
+            // faint knit tick
+            tickHtml += '<circle cx="' + tx.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="0.7" fill="rgba(124,85,176,0.35)"/>';
+          }
+          dots += tickHtml;
         }
       }
       var rl = $('hat-round-lines'), hd = $('hat-dots');
       if (rl) rl.innerHTML = lines;
       if (hd) hd.innerHTML = dots;
+      renderHatCurrentRow();
       return true;
     }
 
@@ -1397,13 +1520,27 @@ k all</textarea>
       $('sim-step-total').textContent = steps.length;
       if (sockMode) { setSockReveal(sockRevealFor(cur), animate !== false); }
       else if (raglanMode) { setRaglanReveal(raglanRevealFor(cur), animate !== false); }
-      else if (hatMode) { setHatReveal(hatRevealFor(cur), animate !== false); }
+      else if (hatMode) { setHatReveal(hatRevealFor(cur), animate !== false); if (typeof renderHatCurrentRow === 'function') renderHatCurrentRow(); }
       else if (swatchMode) { setSwatchReveal(swatchRevealFor(cur), animate !== false); }
       else { setReveal(revealFor(cur), animate !== false); }
       updateSectionInfo();
-      $('sim-op-line').innerHTML =
-        '<span class="now-label">Now knitting:</span>' + esc(step.op) +
-        ' &mdash; ' + step.n + ' stitches on needle';
+      // For hats, the op line doubles as the honest stitch-count transition
+      // the knitter follows: "Round 8: 80 → 72 stitches, 8 decreases."
+      if (hatMode && step) {
+        var hBefore = (step.before != null) ? step.before : step.n;
+        var hLabel;
+        if (step.kind === 'cast_on') hLabel = 'Cast on ' + step.n + ' sts';
+        else if (step.kind === 'bind_off') hLabel = hBefore + ' → 0 stitches';
+        else if (step.decreases > 0) hLabel = 'Round ' + step.row + ': ' + hBefore + ' → ' + step.n + ' stitches, ' + step.decreases + ' decreases.';
+        else hLabel = 'Round ' + step.row + ': ' + step.n + ' stitches (knit even)';
+        $('sim-op-line').innerHTML =
+          '<span class="now-label">Now knitting:</span>' + esc(step.op) +
+          ' &mdash; ' + esc(hLabel);
+      } else {
+        $('sim-op-line').innerHTML =
+          '<span class="now-label">Now knitting:</span>' + esc(step.op) +
+          ' &mdash; ' + step.n + ' stitches on needle';
+      }
       var logHtml = '';
       for (var i = 0; i < steps.length; i++) {
         var cls = i === cur ? ' class="step-active"' : '';
