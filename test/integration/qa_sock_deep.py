@@ -5,6 +5,7 @@ invalid), the size quick-pick, warnings, SVG geometry and the full plan
 rendering in a real browser.
 """
 
+import os
 import re
 import sys
 import time
@@ -13,7 +14,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8877/demos/sock-calculator/demo.html"
+BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000") + "/sock-calculator/demo.html"
 
 EXTRA = (
     "Attempting to import", "pyknit imported", "Running default",
@@ -152,6 +153,10 @@ def _check_svg_geometry(html):
 
 def _probe_edge_values(page):
     for sel, values in EDGE_VALUES.items():
+        # test each edge value in isolation against otherwise-default inputs;
+        # cross-field combinations can legitimately fail validation (e.g. a
+        # fine gauge making the leg too short for the decrease rounds).
+        _restore_defaults(page)
         for val in values:
             fill(page, sel, val)
             run_click(page)
