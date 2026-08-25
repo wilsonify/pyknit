@@ -35,6 +35,116 @@ def _ease_factor(inputs):
     return 1 - pct / 100.0
 
 
+def _sim_pattern(sock):
+    """Package the computed Sock plan into a round-by-round simulation pattern.
+
+    Every number comes straight from the ``Sock`` object that ``compute``
+    already built (cast-on, rib/leg rounds, the exact leg decrease rounds,
+    heel flap, heel turn, gusset pickup and decreases, foot and toe
+    schedule).  This function performs no knitting math of its own -- it only
+    orders the calculated values into one pattern the Knit Simulator can
+    consume as its single source of truth.
+    """
+    cast = sock.cast_on_stitches
+    ankle = sock.ankle_stitches
+    flap = sock.number_of_heel_flap_stitches
+    instep = sock.instep_stitches
+    heel_rem = sock.heel_turn_remaining()
+    after_pickup = sock.gusset_stitches_after_pickup()
+    toe = sock._toe_row_schedule()
+
+    rounds = []
+
+    def add(kind, label, before, after, removed, texture):
+        rounds.append({
+            "kind": kind,
+            "label": label,
+            "before": before,
+            "after": after,
+            "removed": removed,
+            "texture": texture,
+        })
+
+    # Cast-on edge: the cuff begins here.
+    add("cast_on", "cast on {0}".format(cast), 0, cast, 0, "rib")
+
+    # Cuff ribbing.
+    for _ in range(sock.rib_rounds):
+        add("rib", "cuff ribbing · k2, p2", cast, cast, 0, "rib")
+
+    # Leg: plain stockinette rounds with the calculated decrease rounds
+    # dropped in at their exact positions.
+    dec_by_plain = {
+        round_no - sock.rib_rounds: removed
+        for round_no, _before, removed in sock.leg_decrease_plan()
+    }
+    current = cast
+    for i in range(1, sock.plain_leg_rounds + 1):
+        removed = dec_by_plain.get(i)
+        if removed is None:
+            add("knit", "leg · stockinette", current, current, 0, "stockinette")
+        else:
+            add("leg_decrease", "leg decrease · -{0}".format(removed),
+                current, current - removed, removed, "stockinette")
+            current -= removed
+
+    # Heel flap: slip-stitch rows back and forth over the flap stitches.
+    for _ in range(flap):
+        add("heel_slip", "heel flap · slip 1, k1", flap, flap, 0, "heel")
+
+    # Heel turn: the set-up row plus the pull rows, one decrease each,
+    # landing exactly on the heel-turn remainder.
+    current = flap
+    for _ in range(flap - heel_rem):
+        add("heel_turn", "heel turn", current, current - 1, 1, "heel")
+        current -= 1
+
+    # Gusset: pick up the edge stitches (the count on the needle jumps
+    # from the heel-turn remainder to the full after-pickup count), then
+    # decrease back to the ankle count.
+    add("gusset", "gusset · pick up stitches", heel_rem,
+        after_pickup, heel_rem - after_pickup, "gusset")
+    current = after_pickup
+    gusset_first, gusset_rest = sock.gusset_decrease_rounds()
+    if gusset_first:
+        add("gusset", "gusset decrease", current, current - 1, 1, "gusset")
+        current -= 1
+    for i in range(gusset_rest):
+        if i:
+            add("knit", "gusset · plain round", current, current, 0, "gusset")
+        add("gusset", "gusset decrease", current, current - 2, 2, "gusset")
+        current -= 2
+
+    # Foot: plain stockinette rounds at the ankle count.
+    for _ in range(sock.foot_rounds()):
+        add("knit", "foot · stockinette", ankle, ankle, 0, "stockinette")
+
+    # Toe: phase 1 (decrease every other round), then phase 2 (decrease
+    # every round) down to the finish count.
+    current = ankle
+    p1 = toe["phase1_decrease_rounds"]
+    for i in range(2 * p1 - 1):
+        if i % 2 == 0:
+            add("toe_decrease", "toe decrease", current, current - 4, 4, "toe")
+            current -= 4
+        else:
+            add("knit", "toe · plain round", current, current, 0, "toe")
+    for _ in range(toe["phase2_decrease_rounds"]):
+        add("toe_decrease", "toe decrease", current, current - 4, 4, "toe")
+        current -= 4
+
+    return {
+        "source": "sock_calculator",
+        "cast_on_stitches": cast,
+        "ankle_stitches": ankle,
+        "gauge": "{0:g} sts/in × {1:g} rows/in".format(
+            sock.stitches_per_inch, sock.rows_per_inch
+        ),
+        "total_rounds": len(rounds) - 1,
+        "rounds": rounds,
+    }
+
+
 def compute(inputs):
     """Return the Sock plan as a plain dict plus the SVG diagram."""
     sock = Sock()
@@ -81,6 +191,7 @@ def compute(inputs):
     data["warnings"] = plan["warnings"]
     data["plan"] = plan
     data["svg"] = _sock_svg(data)
+    data["sim"] = _sim_pattern(sock)
     avg_leg_stitches = (data["cast_on_stitches"] + data["ankle_stitches"]) / 2
     leg_rounds = data["length_from_sock_top_to_heel_flap"] * data["rows_per_inch"]
     foot_stitches = data["ankle_stitches"] * data["foot_rounds"]
