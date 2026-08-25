@@ -1097,6 +1097,288 @@ class TestKnitSimulator:
             )
 
 
+class TestSockCalculatorToSimulator:
+    """The Sock Calculator's computed pattern must drive the Knit Simulator
+    end to end without re-deriving any knitting math."""
+
+    def _sock_plan(self):
+        sock = load_demo("sock_calculator")
+        result = sock.DEMO["compute"](sock.DEMO["DEFAULT_INPUTS"])
+        return result["sim"]
+
+    def test_calculator_emits_round_by_round_pattern(self):
+        plan = self._sock_plan()
+        assert plan["source"] == "sock_calculator"
+        rounds = plan["rounds"]
+        assert rounds and rounds[0]["kind"] == "cast_on"
+        assert rounds[0]["after"] == plan["cast_on_stitches"]
+        # Counts are continuous within each construction section.  The one
+        # deliberate jump is the leg -> heel flap transition, where the
+        # flap is worked back and forth over just the flap stitches while
+        # the instep stitches sit on hold (classic top-down sock anatomy).
+        for prev, nxt in zip(rounds, rounds[1:]):
+            if nxt["kind"] == "heel_slip":
+                assert nxt["before"] == nxt["after"]  # flap width, not leg width
+                continue
+            assert prev["after"] == nxt["before"], (prev, nxt)
+
+    def test_simulator_converts_pattern_without_inventing_ops(self):
+        plan = self._sock_plan()
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"sock_plan": plan})
+        assert result["garment"] == "sock"
+        assert result["total_steps"] == len(plan["rounds"])
+        # one step per round, same labels/counts/textures — nothing invented
+        for step, rnd in zip(result["steps"], plan["rounds"]):
+            assert step["n"] == rnd["after"]
+            assert step["op"] == rnd["label"]
+            assert step["texture"] == rnd["texture"]
+        # counts stay consistent calculator -> pattern -> simulator
+        assert result["cast_on"] == plan["cast_on_stitches"]
+        assert result["cast_on"] == result["steps"][0]["n"]
+        assert result["final_stitches"] == list(
+            range(1, plan["rounds"][-1]["after"] + 1)
+        )
+
+    def test_simulator_reports_sock_summary(self):
+        plan = self._sock_plan()
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"sock_plan": plan})
+        summary = result["sock_summary"]
+        assert summary["cast_on_stitches"] == plan["cast_on_stitches"]
+        assert summary["ankle_stitches"] == plan["ankle_stitches"]
+        assert summary["total_rounds"] == len(plan["rounds"]) - 1
+        assert summary["gauge"]
+
+    def test_manual_instructions_still_work(self):
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
+        assert result["garment"] == "sweater"
+        assert result["sock_summary"] is None
+
+    def test_invalid_sock_plan_raises(self):
+        module = load_demo("knit_simulator")
+        with pytest.raises(ValueError, match="missing or invalid"):
+            module.DEMO["compute"]({"sock_plan": {"source": "other"}})
+        with pytest.raises(ValueError, match="empty"):
+            module.DEMO["compute"]({"sock_plan": {"source": "sock_calculator"}})
+        with pytest.raises(ValueError, match="inconsistent"):
+            module.DEMO["compute"](
+                {
+                    "sock_plan": {
+                        "source": "sock_calculator",
+                        "rounds": [{"after": 5}],
+                        "cast_on_stitches": 72,
+                    }
+                }
+            )
+
+    def test_empty_sock_plan_raises(self):
+        module = load_demo("knit_simulator")
+        with pytest.raises(ValueError, match="empty"):
+            module.DEMO["compute"](
+                {"sock_plan": {"source": "sock_calculator", "rounds": []}}
+            )
+
+
+class TestRaglanToSimulator:
+    """The Raglan Sweater Planner's generated instructions must be the exact
+    instruction stream the Knit Simulator executes."""
+
+    def _plan(self):
+        raglan = load_demo("raglan")
+        return raglan.DEMO["compute"](raglan.DEMO["DEFAULT_INPUTS"])
+
+    def test_planner_generates_executable_instructions(self):
+        result = self._plan()
+        meta = result["meta"]
+        instr = result["sim_instructions"]
+        assert instr and instr.startswith("# Raglan sweater")
+        lines = [
+            ln for ln in instr.splitlines()
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+        # cast on the neck, then the collar rib, then the yoke
+        assert lines[0] == "co %d" % meta["neck"]
+        assert "k2 p2 across" in lines[: meta["collar_rounds"]]
+        assert any("yo" in ln for ln in lines)      # raglan increases
+        assert any("k2tog" in ln for ln in lines)   # sleeve decreases
+        assert lines.count("bo all") == 3           # body hem + 2 cuffs
+        assert lines.count("co %d" % meta["arm"]) == 2  # the two sleeves
+
+    def test_instructions_execute_without_inventing_ops(self):
+        plan = self._plan()
+        meta = plan["meta"]
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({"instructions": plan["sim_instructions"]})
+        steps = result["steps"]
+
+        # the neck cast-on is the garment's cast-on (sleeve cast-ons follow)
+        assert steps[0]["op"] == "cast on %d" % meta["neck"]
+        assert result["cast_on"] == meta["neck"]
+
+        # the simulator's own count bookkeeping reproduces the Planner's
+        # arithmetic exactly: +working-neck from the yoke, -2*(arm-wrist)
+        # from the sleeves, and nothing else
+        assert sum(st["increases"] for st in steps) == meta["working"] - meta["neck"]
+        assert sum(st["decreases"] for st in steps) == 2 * (meta["arm"] - meta["wrist"])
+
+        # both sleeves are cast on at the Planner's arm count and finish at
+        # the wrist
+        sleeve_cos = [st for st in steps if st["kind"] == "cast_on" and st["n"] == meta["arm"]]
+        assert len(sleeve_cos) == 2
+        assert steps[-1]["op"] == "bind off %d" % meta["wrist"]
+
+    def test_edited_instructions_are_what_runs(self):
+        """The prefill is one-shot: whatever is in the instructions field is
+        what gets simulated, so a user edit changes the simulation."""
+        plan = self._plan()
+        module = load_demo("knit_simulator")
+        edited = plan["sim_instructions"].replace(
+            "k2 p2 across" + chr(10), "k all" + chr(10), 1
+        )
+        result = module.DEMO["compute"]({"instructions": edited})
+        assert result["steps"][1]["op"] == "knit all"
+
+    def test_raglan_page_has_simulate_button(self):
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "raglan-sweater" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("raglan demo.html not found")
+        content = html_path.read_text(encoding="utf-8")
+        assert "simulate-sweater" in content
+        assert "knit_sim_instructions" in content
+        assert "raglan_sim_instructions" in content
+
+    def test_knit_sim_page_prefills_from_storage(self):
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("knit-simulator demo.html not found")
+        content = html_path.read_text(encoding="utf-8")
+        assert "knit_sim_instructions" in content
+        assert "raglan-plan-note" in content
+        assert "raglan_orientation" in content
+
+    # ── Canonical plan -> section-aware simulation ──
+
+    def test_plan_sections_align_with_instruction_lines(self):
+        """The canonical plan's section boundaries are indices into the
+        non-comment instruction lines, so they map 1:1 onto steps."""
+        sim = self._plan()["sim_plan"]
+        lines = [
+            ln for ln in sim["instructions"].splitlines()
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+        secs = sim["sections"]
+        assert secs[0]["start"] == 0
+        assert secs[-1]["end"] == len(lines)
+        prev = 0
+        for sec in secs:
+            assert sec["start"] == prev and sec["end"] > sec["start"]
+            prev = sec["end"]
+        assert [sec["id"] for sec in secs] == [
+            "neckline", "yoke", "body", "left_sleeve", "right_sleeve",
+        ]
+
+    def test_plan_driven_steps_are_section_aware(self):
+        """Passing the plan makes every step carry its garment section and a
+        concise operation label derived from the step's own data."""
+        sim = self._plan()["sim_plan"]
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({
+            "instructions": sim["instructions"], "plan": sim,
+        })
+        assert result["garment"] == "raglan"
+        assert result["sections"] == sim["sections"]
+        for i, st in enumerate(result["steps"]):
+            assert st["section"] in (
+                "neckline", "yoke", "body", "left_sleeve", "right_sleeve",
+            )
+            assert st["section_label"]
+            assert st["sec_row"] >= 1 and st["sec_rows"] >= 1
+            assert st["op_short"]
+            sec = next(s for s in sim["sections"] if s["id"] == st["section"])
+            assert sec["start"] <= i < sec["end"]
+            assert st["sec_row"] == i - sec["start"] + 1
+            assert st["sec_rows"] == sec["end"] - sec["start"]
+
+    def test_plan_phase_values_are_real(self):
+        """Phase line numbers (yoke end, per-round increase, sleeve run-down)
+        come straight from the executed steps, never invented."""
+        plan = self._plan()
+        meta = plan["meta"]
+        sim = plan["sim_plan"]
+        module = load_demo("knit_simulator")
+        steps = module.DEMO["compute"]({
+            "instructions": sim["instructions"], "plan": sim,
+        })["steps"]
+
+        yoke = [s for s in steps if s["section"] == "yoke"]
+        assert yoke[-1]["n"] == meta["working"]      # yoke ends at working count
+        inc_steps = [s for s in yoke if s["increases"] > 0]
+        assert inc_steps
+        assert all(s["increases"] == meta["inc"] for s in inc_steps)
+        assert inc_steps[0]["op_short"] == "Raglan increase (+%d)" % meta["inc"]
+
+        body = [s for s in steps if s["section"] == "body"]
+        assert body and body[0]["op_short"] == "Knit all"
+
+        for side in ("left_sleeve", "right_sleeve"):
+            sec = [s for s in steps if s["section"] == side]
+            assert sec[0]["kind"] == "cast_on" and sec[0]["n"] == meta["arm"]
+            rib = next(s for s in sec if "ribbing" in s["op_short"])
+            assert rib["n"] == meta["wrist"]        # cuff starts at wrist count
+            assert sec[-1]["kind"] == "bind_off"
+            assert sec[-1]["worked"] == meta["wrist"]
+
+        # no invented stitch-count changes anywhere
+        assert sum(s["increases"] for s in steps) == meta["working"] - meta["neck"]
+        assert sum(s["decreases"] for s in steps) == 2 * (meta["arm"] - meta["wrist"])
+
+    def test_invalid_plan_raises(self):
+        """A malformed plan must raise, never silently fall back."""
+        sim = self._plan()["sim_plan"]
+        module = load_demo("knit_simulator")
+        bad_sections = [dict(s) for s in sim["sections"]]
+        bad_sections[-1]["end"] += 1
+        with pytest.raises(ValueError, match="do not match the simulation"):
+            module.DEMO["compute"]({
+                "instructions": sim["instructions"],
+                "plan": {"instructions": sim["instructions"], "sections": bad_sections},
+            })
+        with pytest.raises(ValueError, match="missing its instructions"):
+            module.DEMO["compute"]({
+                "instructions": sim["instructions"],
+                "plan": {"sections": sim["sections"]},
+            })
+
+    def test_overflow_row_is_warned(self):
+        """A row that names more stitches than are on the needle is reported
+        instead of silently producing a misleading garment."""
+        module = load_demo("knit_simulator")
+        result = module.DEMO["compute"]({
+            "instructions": "co 10\nk 15\nk2 p2 across",
+        })
+        assert any("15" in w and "10" in w for w in result["warnings"])
+
+    def test_raglan_page_publishes_plan(self):
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "raglan-sweater" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("raglan demo.html not found")
+        content = html_path.read_text(encoding="utf-8")
+        assert "raglan_sim_plan" in content
+        assert "knit_sim_plan" in content
+
+    def test_knit_sim_page_reads_plan(self):
+        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
+        if not html_path.exists():
+            pytest.skip("knit-simulator demo.html not found")
+        content = html_path.read_text(encoding="utf-8")
+        assert "knit_sim_plan" in content
+        assert "_read_raglan_plan" in content
+        assert "sim-phase-line" in content
+        assert "section-progress" in content
+
+
 def _load_gauge_conversion():
     """Load the legacy dual-section gauge-conversion page module."""
     spec = importlib.util.spec_from_file_location(
