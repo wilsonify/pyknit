@@ -8,7 +8,7 @@ Quick reference for all 13 interactive tools.
 |------|---------|------------|
 | [Raglan Sweater](../../demos/raglan-sweater/demo.html) | Plan a top-down raglan sweater | Gauge, body measurements |
 | [Sock Calculator](../../demos/sock-calculator/demo.html) | Custom-fit sock plan | Gauge, foot measurements |
-| [Hat Crown](../../demos/hat-crown/demo.html) | Crown decrease schedule | Stitch count, repeats |
+| [Hat Crown](../../demos/hat-crown/demo.html) | Tapered dome crown decrease schedule + shape | Stitch count, repeats |
 | [Pi Shawl](../../demos/pi-shawl/demo.html) | Pi shawl increase rounds | Radius, row gauge |
 | [Shawl Shapes](../../demos/shawl-shapes/demo.html) | Shawl instructions by shape | Shape, dimensions, gauge |
 | [Sleeve Decreases](../../demos/sleeve-decreases/demo.html) | Even decrease spacing | Rows, start/end counts |
@@ -38,4 +38,4 @@ Quick reference for all 13 interactive tools.
 | Tool | Purpose | Key Inputs |
 |------|---------|------------|
 | [Chart Renderer](../../demos/chart-renderer/demo.html) | Render knitting instructions as a chart | Pattern text, legend |
-| [Knit Simulator](../../demos/knit-simulator/demo.html) | Watch knitting step by step | Instructions, speed |
+| [Knit Simulator](../../demos/knit-simulator/demo.html) | Watch knitting step by step (sock, raglan, hat, swatch) | Instructions, speed |
