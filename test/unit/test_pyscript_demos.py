@@ -459,7 +459,7 @@ class TestDemoSpecifics:
 
         wheel = (
             pathlib.Path(__file__).resolve().parents[2]
-            / "demos" / "_wheel" / "pyknit-0.1.2-py3-none-any.whl"
+            / "demos" / "_wheel" / "pyknit-0.1.3-py3-none-any.whl"
         )
         with zipfile.ZipFile(wheel) as zf:
             names = zf.namelist()
@@ -538,11 +538,26 @@ class TestDemoSpecifics:
         html = index_path.read_text(encoding="utf-8")
         assert "github.com/wilsonify/pyknit" in html
 
-    def test_demo_index_has_loading_banner(self):
+    def test_demo_index_boots_pyscript_like_the_demos(self):
+        """The landing page loads PyScript itself (core + py-config + py
+        block), so the first visit pays the boot there and the banner turns
+        into a real ready state instead of a static claim."""
         index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
         html = index_path.read_text(encoding="utf-8")
-        assert "loading-banner" in html
+        # boots PyScript exactly like a demo page
+        assert "/_assets/pyscript/core.js" in html
+        assert "/_assets/pyscript/core.css" in html
+        assert "<py-config>" in html
+        assert "pyknit-0.1.3-py3-none-any.whl" in html
+        assert "import pyknit" in html
+        # live status banner driven by shared.set_status, not a static banner
+        assert "status-banner" in html
+        assert "status-message" in html
+        assert "set_status" in html
+        assert "All tools ready" in html
+        # the friendly first-visit copy is still there, as the loading detail
         assert "30" in html and "60" in html
+        assert "loading-banner" not in html
 
     def test_demo_index_svg_illustrations_present(self):
         index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
@@ -1195,6 +1210,117 @@ class TestSockCalculatorToSimulator:
             module.DEMO["compute"](
                 {"sock_plan": {"source": "sock_calculator", "rounds": []}}
             )
+
+
+class TestHatCrownToSimulator:
+    """The Hat Crown Planner's tapered dome schedule and its generated
+    instructions must produce a sensible crown and drive the simulator 1:1."""
+
+    @staticmethod
+    def _plain_gaps(plan):
+        """Plain rounds between consecutive decrease rounds."""
+        gaps = []
+        i = 0
+        while i < len(plan):
+            if plan[i]["kind"] == "Decrease":
+                j = i + 1
+                cnt = 0
+                while j < len(plan) and plan[j]["kind"] == "Knit even":
+                    cnt += 1
+                    j += 1
+                gaps.append(cnt)
+                i = j
+            else:
+                i += 1
+        return gaps
+
+    def test_tapered_dome_schedule(self):
+        """80 sts / 8 repeats: counts fall by 8 per decrease round and the
+        plain-round gap shortens 2 -> 1 -> 0 as the crown narrows, so the
+        crown is a dome, not a cone."""
+        module = load_demo("hat_crown")
+        result = module.DEMO["compute"]({"repeats": 8, "stitches": 80})
+        plan = result["plan"]
+        decs = [r for r in plan if r["kind"] == "Decrease"]
+        assert [d["before"] for d in decs] == [80, 72, 64, 56, 48, 40, 32, 24, 16]
+        assert all(d["after"] == d["before"] - 8 for d in decs)
+        # 9 decrease rounds; the last is followed by the finish (gap 0)
+        assert self._plain_gaps(plan) == [2, 2, 1, 1, 1, 0, 0, 0, 0]
+        assert [d["phase"] for d in decs] == [
+            "curve", "curve", "steady", "steady", "steady",
+            "top", "top", "top", "top",
+        ]
+        # ends with the drawstring cinch on the final repeats
+        assert plan[-1]["kind"] == "Finish"
+        assert plan[-1]["after"] == 8
+
+    def test_small_hat_skips_curve_phase(self):
+        """Small hats have no room for a gradual start and round over
+        immediately."""
+        module = load_demo("hat_crown")
+        result = module.DEMO["compute"]({"repeats": 8, "stitches": 24})
+        decs = [r for r in result["plan"] if r["kind"] == "Decrease"]
+        assert [d["before"] for d in decs] == [24, 16]
+        assert all(d["phase"] == "top" for d in decs)
+        assert result["plan"][-1]["after"] == 8
+
+    def test_crown_shape_visualizations_present(self):
+        module = load_demo("hat_crown")
+        result = module.DEMO["compute"]({"repeats": 8, "stitches": 80})
+        # top-down rings + side profile + shape explanation
+        assert "<svg" in result["svg"]
+        assert "<svg" in result["svg_profile"]
+        assert "hat body" in result["svg_profile"]
+        assert "dome" in result["shape_note"].lower()
+        html = module.DEMO["to_html"](result)
+        assert "hat-shapes" in html
+        assert "Phase" in html
+        assert "Curve in" in html
+        assert "Round over" in html
+
+    def test_sim_plan_executes_1to1(self):
+        """The generated instructions, executed by the Knit Simulator, must
+        reproduce the planner's arithmetic exactly — no invented ops."""
+        module = load_demo("hat_crown")
+        result = module.DEMO["compute"]({"repeats": 8, "stitches": 80})
+        sim = result["sim_plan"]
+        assert sim["garment"] == "hat"
+        assert sim["counts"]["cast_on"] == 80
+        assert sim["counts"]["final"] == 8
+
+        ks = load_demo("knit_simulator")
+        executed = ks.DEMO["compute"]({"instructions": sim["instructions"], "plan": sim})
+        assert executed["garment"] == "hat"
+        assert executed["total_steps"] == sim["sections"][-1]["end"]
+        # every decrease row removes exactly 8 stitches
+        dec_steps = [s for s in executed["steps"] if s["decreases"] > 0]
+        assert all(s["decreases"] == 8 for s in dec_steps)
+        assert all(s["n"] == s["before"] - 8 for s in dec_steps)
+        # first step casts on, last step is the bind-off/cinch
+        assert executed["steps"][0]["kind"] == "cast_on"
+        assert executed["steps"][0]["n"] == 80
+        assert executed["steps"][-1]["kind"] == "bind_off"
+        assert executed["steps"][-1]["n"] == 0
+        # the phase sections are stamped onto the steps
+        labels = {s["section_label"] for s in executed["steps"]}
+        assert labels == {"Curve in", "Steady", "Round over"}
+        # honest short ops
+        shorts = [s["op_short"] for s in executed["steps"] if "op_short" in s]
+        assert shorts[0] == "Cast on 80 sts"
+        assert "Decrease (-8)" in shorts
+
+    def test_page_plumbing(self):
+        root = pathlib.Path(__file__).resolve().parents[2]
+        hat = (root / "demos" / "hat-crown" / "demo.html").read_text(encoding="utf-8")
+        assert "simulate-hat" in hat
+        assert "hat_sim_plan" in hat
+        assert "hat_sim_ready" in hat
+        assert "knit_sim_instructions" in hat
+        sim = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
+        assert "hatMode" in sim
+        assert "buildHat" in sim
+        assert "hat-plan-note" in sim
+        assert "clear-hat-plan" in sim
 
 
 class TestRaglanToSimulator:
