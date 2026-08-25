@@ -1,4 +1,5 @@
 """Probe served test page: confirm binding approach."""
+import os
 import sys
 import time
 
@@ -6,7 +7,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8877"
+BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
