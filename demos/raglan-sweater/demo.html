@@ -38,6 +38,7 @@
 
     <div class="button-row">
       <button id="run" class="btn-primary">Plan Sweater</button>
+      <button id="simulate-sweater" class="btn-secondary">Simulate sweater &rarr;</button>
       <button id="export-pattern" class="btn-secondary">Export Pattern</button>
     </div>
     <div id="demo-error" class="error-message" style="display: none;"></div>
@@ -158,9 +159,46 @@
   </footer>
 
 <script type="py">
+    import json as _json
+
     from pyknit.pyscript._assets import shared
-    from pyknit.pyscript._demos import raglan as DEMO
-    shared.bootstrap_demo(DEMO, action_label="Plan Sweater", export_button_id="export-pattern")
+    from pyknit.pyscript._demos import raglan as _DEMO
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Keep the demo behaviour identical; on top of it, publish the generated
+    # knitting instructions so the "Simulate sweater" button can hand them to
+    # the Knit Simulator (which populates its instructions field with them).
+    _ORIG_COMPUTE = _DEMO.DEMO["compute"]
+
+    def _compute_and_publish(inputs):
+        try:
+            result = _ORIG_COMPUTE(inputs)
+        except Exception:
+            if _win is not None:
+                _win.raglan_sim_instructions = ""
+                _win.raglan_sim_ready = False
+                _win.raglan_sim_plan = None
+            raise
+        try:
+            instr = result.get("sim_instructions") or ""
+            plan = result.get("sim_plan")
+            if _win is not None:
+                _win.raglan_sim_instructions = instr
+                # serialize here: a raw Python dict becomes a JSProxy the
+                # page's JS cannot enumerate, so hand over a JSON string
+                _win.raglan_sim_plan = _json.dumps(plan) if isinstance(plan, dict) else ""
+                _win.raglan_sim_ready = bool(instr and _win.raglan_sim_plan)
+        except Exception:
+            pass
+        return result
+
+    _DEMO.DEMO["compute"] = _compute_and_publish
+
+    shared.bootstrap_demo(_DEMO, action_label="Plan Sweater", export_button_id="export-pattern")
 </script>
 <script>
 document.addEventListener("click", function(e) {
@@ -169,6 +207,24 @@ document.addEventListener("click", function(e) {
     var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
     sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
     window.location.href = "/yarn-estimator/demo.html";
+});
+
+document.addEventListener("click", function (e) {
+    var btn = e.target.closest("#simulate-sweater");
+    if (!btn) return;
+    var raw = window.raglan_sim_instructions;
+    var planJson = window.raglan_sim_plan;
+    if (!raw || !planJson) {
+        var err = document.getElementById("demo-error");
+        if (err) {
+            err.textContent = "Error: Run the Planner first (Plan Sweater), then try again.";
+            err.style.display = "block";
+        }
+        return;
+    }
+    sessionStorage.setItem("knit_sim_instructions", raw);
+    sessionStorage.setItem("knit_sim_plan", planJson);
+    window.location.href = "/knit-simulator/demo.html";
 });
 </script>
 </body>
