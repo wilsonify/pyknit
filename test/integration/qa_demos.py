@@ -27,7 +27,11 @@ DEMOS = [
      "outputs": ["calc-output", "chart-output"], "errors": ["calc-error", "chart-error"]},
     {"dir": "chart-renderer", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "even-shaping", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "hat-crown", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
+    {"dir": "hat-crown", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
+     "extra": "simulate-nav",
+     "sim": {"button": "simulate-hat", "target": "knit-simulator",
+             "note": "hat-plan-note", "min_steps": 10,
+             "instr_min_len": 200, "instr_prefix": "co"}},
     {"dir": "pi-shawl", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "pattern-io", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
     {"dir": "raglan-sweater", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
@@ -748,6 +752,25 @@ def check_index(browser):
                     problems.append(f"{href} -> {r.status}")
             except Exception as exc:
                 problems.append(f"{href} -> {str(exc)[:80]}")
+
+        # The landing page boots PyScript itself (like the demos) so the
+        # first visit pays the load there; its banner must reach 'ready'.
+        deadline = time.time() + 240
+        state = None
+        while time.time() < deadline:
+            try:
+                cls = page.query_selector("#status-banner").get_attribute("class") or ""
+                if "ready" in cls:
+                    state = "ready"
+                    break
+                if "error" in cls:
+                    state = "error"
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+        if state != "ready":
+            problems.append(f"index.html PyScript did not become ready (state={state})")
     except Exception as exc:
         problems.append("index.html navigation failed: " + str(exc)[:120])
     page.close()
