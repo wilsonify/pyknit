@@ -13,6 +13,9 @@ COPY build/ /tmp/build/
 RUN rm -rf README.md Makefile _assets/japanese-symbols && \
     mkdir -p _wheel _assets/pyscript _assets/pyodide _assets/wheels && \
     cp /wheel/pyknit-*.whl _wheel/ && \
+    printf '%s\n' '"""Gauge conversion demo bootstrap (generated in image)."""' \
+        'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401  # auto-bootstraps' \
+        > _assets/gauge-conversion.py && \
     if [ -d /tmp/build/pyscript ]; then cp -a /tmp/build/pyscript/. _assets/pyscript/; fi && \
     if [ -d /tmp/build/pyodide ]; then cp -a /tmp/build/pyodide/. _assets/pyodide/; fi && \
     if [ -d /tmp/build/wheels ]; then cp -a /tmp/build/wheels/. _assets/wheels/; fi && \
