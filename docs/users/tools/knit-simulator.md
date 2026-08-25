@@ -79,7 +79,10 @@ them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
     each raglan increase round (visible raglan seam lines), then the body
     and hem grow downward — and the sleeves only appear once their own
     sections start, so the sweater visibly separates into body + sleeves
-    instead of staying a rectangle
+    instead of staying a rectangle. At the sleeve separation the body is
+    cast on at the Planner's real bust count (the sleeve stitches rest on
+    holders), so the body/hem rounds run at the pattern's own stitch count,
+    never the yoke's inflated linear count
   - Hat plans are revealed from the brim up as a crown profile that narrows
     exactly as the executed rounds step the count down: the cast-on is the
     widest point, each decrease round steps the silhouette inward (a dot on
@@ -102,9 +105,11 @@ them (yo, k2tog, ssk, bo, or the Planner's shaping rounds).
   start, so the sweater separates into body + sleeves instead of staying a
   rectangle.
 - **Compact section progress** -- Instead of a giant list of rows, the raglan
-  view shows one marker per garment section (`✓ Neck · ● Yoke 23/50 · ○ Body
-  · ○ Left sleeve · ○ Right sleeve`), with the current section highlighted
-  and its round counter shown.
+  view shows one marker per garment phase (`✓ Neck · ● Yoke 23/50 · ○ Body
+  · ○ Hem & bind-off · ○ Left sleeve · ○ Left cuff & bind-off · ○ Right
+  sleeve · ○ Right cuff & bind-off`), with the current section highlighted
+  and its round counter shown — so the cuffs and bind-offs are visible as
+  their own phases, not hidden inside the body/sleeve sections.
 - **Step log** -- Written record of each row/round: what was worked and the
   stitch count on the needle. It is collapsed into a *Step log* disclosure by
   default so the detailed rows don't overwhelm the garment view; open it to

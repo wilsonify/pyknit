@@ -1356,6 +1356,9 @@ class TestRaglanToSimulator:
         assert any("k2tog" in ln for ln in lines)   # sleeve decreases
         assert lines.count("bo all") == 3           # body hem + 2 cuffs
         assert lines.count("co %d" % meta["arm"]) == 2  # the two sleeves
+        # the sleeve separation casts the body on at the planner's real bust
+        # count, so the body/hem rounds are never run at the yoke's count
+        assert lines.count("co %d" % meta["bust"]) == 1
 
     def test_instructions_execute_without_inventing_ops(self):
         plan = self._plan()
@@ -1427,7 +1430,8 @@ class TestRaglanToSimulator:
             assert sec["start"] == prev and sec["end"] > sec["start"]
             prev = sec["end"]
         assert [sec["id"] for sec in secs] == [
-            "neckline", "yoke", "body", "left_sleeve", "right_sleeve",
+            "neckline", "yoke", "body", "hem", "left_sleeve", "left_cuff",
+            "right_sleeve", "right_cuff",
         ]
 
     def test_plan_driven_steps_are_section_aware(self):
@@ -1442,7 +1446,8 @@ class TestRaglanToSimulator:
         assert result["sections"] == sim["sections"]
         for i, st in enumerate(result["steps"]):
             assert st["section"] in (
-                "neckline", "yoke", "body", "left_sleeve", "right_sleeve",
+                "neckline", "yoke", "body", "hem", "left_sleeve",
+                "left_cuff", "right_sleeve", "right_cuff",
             )
             assert st["section_label"]
             assert st["sec_row"] >= 1 and st["sec_rows"] >= 1
@@ -1471,15 +1476,20 @@ class TestRaglanToSimulator:
         assert inc_steps[0]["op_short"] == "Raglan increase (+%d)" % meta["inc"]
 
         body = [s for s in steps if s["section"] == "body"]
-        assert body and body[0]["op_short"] == "Knit all"
+        # the body phase begins with the sleeve separation: the body is cast
+        # on at the planner's real bust count, then knitted plain
+        assert body[0]["kind"] == "cast_on" and body[0]["n"] == meta["bust"]
+        assert body[1]["op_short"] == "Knit all"
 
-        for side in ("left_sleeve", "right_sleeve"):
+        for side, cuff_id in (("left_sleeve", "left_cuff"),
+                              ("right_sleeve", "right_cuff")):
             sec = [s for s in steps if s["section"] == side]
             assert sec[0]["kind"] == "cast_on" and sec[0]["n"] == meta["arm"]
-            rib = next(s for s in sec if "ribbing" in s["op_short"])
-            assert rib["n"] == meta["wrist"]        # cuff starts at wrist count
-            assert sec[-1]["kind"] == "bind_off"
-            assert sec[-1]["worked"] == meta["wrist"]
+            cuff = [s for s in steps if s["section"] == cuff_id]
+            rib = next(s for s in cuff if "ribbing" in s["op_short"])
+            assert rib["n"] == meta["wrist"]       # cuff starts at wrist count
+            assert cuff[-1]["kind"] == "bind_off"
+            assert cuff[-1]["worked"] == meta["wrist"]
 
         # no invented stitch-count changes anywhere
         assert sum(s["increases"] for s in steps) == meta["working"] - meta["neck"]
@@ -1524,6 +1534,39 @@ class TestRaglanToSimulator:
                 assert st["before"] - st["worked"] == st["n"]
                 continue
             assert st["before"] + st["increases"] - st["decreases"] == st["n"]
+
+    def test_body_runs_at_planner_bust_count(self):
+        """The separation moves the body to the planner's real bust count —
+        never the yoke's inflated linear count — so the phase line numbers a
+        knitter reads are the pattern's own numbers."""
+        plan = self._plan()
+        meta = plan["meta"]
+        sim = plan["sim_plan"]
+        module = load_demo("knit_simulator")
+        steps = module.DEMO["compute"]({
+            "instructions": sim["instructions"], "plan": sim,
+        })["steps"]
+        body = [s for s in steps if s["section"] == "body"]
+        hem = [s for s in steps if s["section"] == "hem"]
+        # separation cast-on, then every body/hem round at bust
+        assert body[0]["kind"] == "cast_on" and body[0]["n"] == meta["bust"]
+        assert all(s["n"] == meta["bust"] for s in body[1:])
+        assert all(s["n"] == meta["bust"] for s in hem[:-1])
+        # the hem bind-off runs the body down 180 -> 0, not 272 -> 0
+        assert hem[-1]["kind"] == "bind_off"
+        assert hem[-1]["before"] == meta["bust"] and hem[-1]["n"] == 0
+
+    def test_cuff_and_bind_off_phases_are_visible(self):
+        """The compact progress view shows the cuffs and bind-offs as their
+        own phases: neck, yoke, body, hem, left sleeve, left cuff, right
+        sleeve, right cuff."""
+        sim = self._plan()["sim_plan"]
+        ids = [s["id"] for s in sim["sections"]]
+        assert "hem" in ids and "left_cuff" in ids and "right_cuff" in ids
+        labels = {s["label"] for s in sim["sections"]}
+        assert "Hem & bind-off" in labels
+        assert "Left cuff & bind-off" in labels
+        assert "Right cuff & bind-off" in labels
 
     def test_neck_section_label(self):
         """The compact progress view uses 'Neck' for the first section."""
