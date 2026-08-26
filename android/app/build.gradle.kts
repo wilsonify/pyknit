@@ -35,10 +35,12 @@ chaquopy {
             // Use the canonical repository package; algorithms are not copied.
             // This source root contains pyknit/chaquopy/mobile_api.py as the adapter.
             srcDir("../../")
+            include("pyknit/**/*.py")
         }
     }
     defaultConfig {
         version = "3.11"
+        buildPython("C:/Users/toman/AppData/Roaming/uv/python/cpython-3.11.15-windows-x86_64-none/python.exe")
         pip {
             install("-r", "../requirements-android.txt")
         }
