@@ -1,14 +1,17 @@
 package org.pyknit.android
 
 import android.app.Activity
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.graphics.Color
-import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.Button
 import android.widget.EditText
 import android.widget.HorizontalScrollView
@@ -33,10 +36,16 @@ class MainActivity : Activity() {
     private var simulationPicture: TextView? = null
     private var canonicalPlan = ""
     private var plannerInputs = mutableMapOf<String, EditText>()
+    private var currentTab = "Home"
 
-    private val purple = Color.rgb(109, 76, 141)
-    private val ink = Color.rgb(44, 38, 50)
-    private val paper = Color.rgb(250, 247, 252)
+    // Palette
+    private val primary = Color.rgb(109, 76, 141)          // yarn purple
+    private val ink = Color.rgb(43, 37, 50)                // near-black text
+    private val inkSoft = Color.rgb(112, 104, 122)         // secondary text
+    private val paper = Color.rgb(246, 243, 249)           // page background
+    private val surface = Color.WHITE                       // cards / panels
+    private val surfaceTint = Color.rgb(240, 234, 246)     // pill bar / input fill
+    private val outline = Color.rgb(228, 220, 235)         // hairline borders
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -45,35 +54,148 @@ class MainActivity : Activity() {
         showHome()
     }
 
-    private fun text(value: String, size: Float = 16f, bold: Boolean = false): TextView =
+    // ---------- design helpers ----------
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun roundedBg(fill: Int, radiusDp: Int, stroke: Int? = null): RippleDrawable {
+        val shape = GradientDrawable().apply {
+            cornerRadius = dp(radiusDp).toFloat()
+            setColor(fill)
+            if (stroke != null) setStroke(dp(1), stroke)
+        }
+        val mask = GradientDrawable().apply {
+            cornerRadius = dp(radiusDp).toFloat()
+            setColor(Color.WHITE)
+        }
+        return RippleDrawable(ColorStateList.valueOf(Color.argb(36, 0, 0, 0)), shape, mask)
+    }
+
+    private fun text(value: String, size: Float = 16f, bold: Boolean = false, color: Int = ink): TextView =
         TextView(this).apply {
             this.text = value
             textSize = size
-            setTextColor(ink)
-            setPadding(16, 10, 16, 10)
+            setTextColor(color)
+            setLineSpacing(0f, 1.18f)
+            setPadding(dp(4), dp(4), dp(4), dp(4))
             if (bold) typeface = Typeface.DEFAULT_BOLD
         }
 
-    private fun button(label: String, action: () -> Unit): Button = Button(this).apply {
-        this.text = label
-        setOnClickListener { action() }
+    private fun eyebrow(value: String): TextView = TextView(this).apply {
+        text = value.uppercase()
+        textSize = 12f
+        letterSpacing = 0.14f
+        setTextColor(primary)
+        typeface = Typeface.DEFAULT_BOLD
+        setPadding(dp(4), dp(10), dp(4), dp(2))
+    }
+
+    private fun primaryButton(label: String, action: () -> Unit): Button = Button(this).apply {
+        text = label
         isAllCaps = false
+        textSize = 15f
+        setTextColor(Color.WHITE)
+        typeface = Typeface.DEFAULT_BOLD
+        background = roundedBg(primary, 26)
+        setPadding(dp(20), dp(12), dp(20), dp(12))
+        minWidth = 0
+        minHeight = 0
+        stateListAnimator = null
+        setOnClickListener { action() }
+    }
+
+    private fun ghostButton(label: String, action: () -> Unit): Button = Button(this).apply {
+        text = label
+        isAllCaps = false
+        textSize = 14f
+        setTextColor(primary)
+        typeface = Typeface.DEFAULT_BOLD
+        background = roundedBg(surface, 20, stroke = outline)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        minWidth = 0
+        minHeight = 0
+        stateListAnimator = null
+        setOnClickListener { action() }
+    }
+
+    private fun field(label: String, value: String): EditText = EditText(this).apply {
+        setText(value)
+        hint = label
+        setSingleLine(true)
+        textSize = 16f
+        setTextColor(ink)
+        setHintTextColor(inkSoft)
+        background = roundedBg(surface, 14, stroke = outline)
+        setPadding(dp(16), dp(12), dp(16), dp(12))
+        stateListAnimator = null
+    }
+
+    private fun infoBox(initial: String = ""): TextView = TextView(this).apply {
+        text = initial
+        textSize = 15f
+        setTextColor(ink)
+        setLineSpacing(0f, 1.22f)
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+        background = roundedBg(surface, 16, stroke = outline)
     }
 
     private fun column(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(16, 12, 16, 24)
+        setPadding(dp(20), dp(8), dp(20), dp(36))
     }
 
-    private fun setScreen(view: View) {
-        val frame = LinearLayout(this).apply {
+    private fun toolCard(title: String, description: String, action: () -> Unit): LinearLayout =
+        LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(paper)
+            background = roundedBg(surface, 18, stroke = outline)
+            elevation = dp(1).toFloat()
+            outlineProvider = ViewOutlineProvider.BACKGROUND
+            clipToOutline = true
+            isClickable = true
+            isFocusable = true
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+            setOnClickListener { action() }
+            addView(text(title, 17f, true))
+            addView(text(description, 13.5f, color = inkSoft))
         }
-        frame.addView(text("pyKnit · offline knitting tools", 18f, true))
-        val navScroll = HorizontalScrollView(this)
-        val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        listOf(
+
+    private fun appBar(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setBackgroundColor(primary)
+        elevation = dp(3).toFloat()
+        outlineProvider = ViewOutlineProvider.BACKGROUND
+        setPadding(dp(20), dp(14), dp(20), dp(14))
+        addView(TextView(this@MainActivity).apply {
+            text = "🧶 pyKnit"
+            textSize = 20f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "  offline knitting tools"
+            textSize = 13f
+            setTextColor(Color.argb(215, 255, 255, 255))
+            setPadding(0, dp(3), 0, 0)
+        })
+    }
+
+    private fun navPill(label: String, active: Boolean, action: () -> Unit): Button = Button(this).apply {
+        text = label
+        isAllCaps = false
+        textSize = 13.5f
+        setTextColor(if (active) Color.WHITE else inkSoft)
+        typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        background = if (active) roundedBg(primary, 22) else roundedBg(Color.TRANSPARENT, 22)
+        setPadding(dp(14), dp(7), dp(14), dp(7))
+        minWidth = 0
+        minHeight = 0
+        stateListAnimator = null
+        setOnClickListener { action() }
+    }
+
+    private fun navBar(): View {
+        val tabs = listOf(
             "Home" to { showHome() },
             "Raglan" to { showPlanner("raglan") },
             "Hat" to { showPlanner("hat") },
@@ -81,9 +203,36 @@ class MainActivity : Activity() {
             "Sock" to { showPlanner("sock") },
             "Simulator" to { showSimulator() },
             "Yarn" to { showPlanner("yarn") },
-        ).forEach { (label, action) -> nav.addView(button(label, action)) }
-        navScroll.addView(nav)
-        frame.addView(navScroll, LinearLayout.LayoutParams(-1, -2))
+        )
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(paper)
+        }
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+            background = roundedBg(surfaceTint, 26)
+        }
+        tabs.forEach { (label, action) ->
+            wrap.addView(navPill(label, currentTab == label, action),
+                LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(4) })
+        }
+        val holder = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(16), dp(10), dp(16), dp(12))
+        }
+        holder.addView(wrap)
+        scroll.addView(holder)
+        return scroll
+    }
+
+    private fun setScreen(view: View) {
+        val frame = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(paper)
+        }
+        frame.addView(appBar())
+        frame.addView(navBar())
         val scroll = ScrollView(this)
         content = column()
         content.addView(view)
@@ -92,11 +241,14 @@ class MainActivity : Activity() {
         setContentView(frame)
     }
 
+    // ---------- screens ----------
+
     private fun showHome() {
+        currentTab = "Home"
         val c = column()
-        c.addView(text("Knit from the numbers, not from a mystery box.", 26f, true))
-        c.addView(text("The Android app embeds the existing pyKnit Python calculations. It works offline after installation; Kotlin is only the native shell."))
-        c.addView(text("Choose a tool", 20f, true))
+        c.addView(text("Knit from the numbers, not from a mystery box.", 24f, true))
+        c.addView(text("The Android app embeds the existing pyKnit Python calculations. It works offline after installation; Kotlin is only the native shell.", 14.5f, color = inkSoft))
+        c.addView(eyebrow("Choose a tool"))
         listOf(
             "Raglan Sweater Planner" to "Gauge and measurements → exact top-down sweater pattern",
             "Hat Crown Planner" to "A decrease schedule with a practical crown shape",
@@ -105,34 +257,30 @@ class MainActivity : Activity() {
             "Knit Simulator" to "Step through manual or planner-generated instructions",
             "Yarn & Time Estimator" to "Estimate yarn, weight, and knitting time",
         ).forEach { (name, description) ->
-            c.addView(button(name) {
-                val key = when (name) {
-                    "Raglan Sweater Planner" -> "raglan"
-                    "Hat Crown Planner" -> "hat"
-                    "Sleeve Decreases" -> "sleeve"
-                    "Sock Calculator" -> "sock"
-                    "Knit Simulator" -> "sim"
-                    else -> "yarn"
-                }
+            val key = when (name) {
+                "Raglan Sweater Planner" -> "raglan"
+                "Hat Crown Planner" -> "hat"
+                "Sleeve Decreases" -> "sleeve"
+                "Sock Calculator" -> "sock"
+                "Knit Simulator" -> "sim"
+                else -> "yarn"
+            }
+            c.addView(toolCard(name, description) {
                 if (key == "sim") showSimulator() else showPlanner(key)
-            })
-            c.addView(text(description, 14f))
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         }
         setScreen(c)
     }
 
     private fun input(c: LinearLayout, key: String, label: String, value: String) {
-        c.addView(text(label, 14f, true))
-        val field = EditText(this).apply {
-            setText(value)
-            hint = label
-            setSingleLine(true)
-        }
-        c.addView(field, LinearLayout.LayoutParams(-1, -2))
-        plannerInputs[key] = field
+        c.addView(text(label, 13.5f, true))
+        val f = field(label, value)
+        c.addView(f, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+        plannerInputs[key] = f
     }
 
     private fun showPlanner(name: String) {
+        currentTab = name.replaceFirstChar { it.uppercase() }
         plannerInputs.clear()
         val c = column()
         val title = when (name) {
@@ -142,8 +290,9 @@ class MainActivity : Activity() {
             "sock" -> "Sock Calculator"
             else -> "Yarn & Time Estimator"
         }
-        c.addView(text(title, 25f, true))
-        c.addView(text("These fields are sent to the existing Python demo module. No calculation is duplicated in Kotlin."))
+        c.addView(text(title, 24f, true))
+        c.addView(text("These fields are sent to the existing Python demo module. No calculation is duplicated in Kotlin.", 14f, color = inkSoft))
+        c.addView(eyebrow("Inputs"))
         when (name) {
             "raglan" -> {
                 val d = mapOf(
@@ -172,19 +321,20 @@ class MainActivity : Activity() {
                 d.forEach { (key, value) -> input(c, key, key.replace('_', ' '), value) }
             }
         }
-        val resultText = text("Run the calculation to see the authoritative Python result.")
-        c.addView(button("Calculate") {
+        val resultText = infoBox("Run the calculation to see the authoritative Python result.")
+        val calculate = primaryButton("Calculate") {
             try {
                 val result = callPlanner(name)
                 resultText.text = summaryText(result.getJSONObject("summary"))
                 if (result.has("sim_plan")) {
-                    c.addView(button("Open exact pattern in Knit Simulator") {
+                    c.addView(ghostButton("Open exact pattern in Knit Simulator") {
                         openPlannerSimulator(name)
                     }, 0)
                 }
             } catch (e: Exception) { resultText.text = "Could not calculate: ${cleanError(e)}" }
-        })
-        c.addView(resultText)
+        }
+        c.addView(calculate, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        c.addView(resultText, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) })
         setScreen(c)
     }
 
@@ -213,32 +363,49 @@ class MainActivity : Activity() {
     }
 
     private fun showSimulator(prefill: String = "co 10\nk2 p2 across\nk2 p2 across\nk all", plan: String = "", ready: JSONObject? = null) {
+        currentTab = "Simulator"
         playing = false
         canonicalPlan = plan
         val c = column()
-        c.addView(text("Knit Simulator", 25f, true))
-        c.addView(text("The field below is the source of truth. Planner patterns are copied exactly; editing the field switches to an independent manual simulation."))
+        c.addView(text("Knit Simulator", 24f, true))
+        c.addView(text("The field below is the source of truth. Planner patterns are copied exactly; editing the field switches to an independent manual simulation.", 14f, color = inkSoft))
         val field = EditText(this).apply {
             setText(prefill)
             minLines = 8
             gravity = Gravity.TOP
+            textSize = 14f
+            typeface = Typeface.MONOSPACE
+            setTextColor(ink)
             setTextIsSelectable(true)
+            background = roundedBg(surface, 14, stroke = outline)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
         }
         instructionsField = field
-        c.addView(field, LinearLayout.LayoutParams(-1, 260))
+        c.addView(field, LinearLayout.LayoutParams(-1, dp(230)).apply { topMargin = dp(6) })
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        controls.addView(button("Build") { build(field.text.toString()) })
-        controls.addView(button("Previous") { move(-1) })
-        controls.addView(button("Next") { move(1) })
-        controls.addView(button(if (playing) "Pause" else "Play") { togglePlay(field) })
-        controls.addView(button("Reset") { reset() })
-        c.addView(HorizontalScrollView(this).apply { addView(controls) })
-        val status = text("Build Simulation to validate and step through the instructions.")
-        val picture = text("", 18f)
+        controls.addView(ghostButton("Previous") { move(-1) })
+        controls.addView(ghostButton("Next") { move(1) })
+        controls.addView(ghostButton(if (playing) "Pause" else "Play") { togglePlay(field) })
+        controls.addView(ghostButton("Reset") { reset() })
+        val controlRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        controlRow.addView(primaryButton("Build") { build(field.text.toString()) })
+        controlRow.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(controls)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        c.addView(controlRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        val status = infoBox("Build Simulation to validate and step through the instructions.")
+        val picture = TextView(this).apply {
+            textSize = 14f
+            setTextColor(ink)
+            typeface = Typeface.MONOSPACE
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = roundedBg(surfaceTint, 14)
+        }
         simulationStatus = status
         simulationPicture = picture
-        c.addView(status)
-        c.addView(picture)
+        c.addView(status, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        c.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         if (ready != null) {
             simulation = ready
             simulationIndex = 0
@@ -284,9 +451,9 @@ class MainActivity : Activity() {
         val width = (step.optInt("n", 0) / 12).coerceIn(3, 18)
         val sleeve = "=".repeat((width / 2).coerceAtLeast(2))
         return """        .-''''-.
-       /  neck  \\
-  $sleeve/  $label  \\$sleeve
-     /            \\
+       /  neck  \
+  $sleeve/  $label  \$sleeve
+     /            \
     |    BODY      |
     |              |
     |______________|
