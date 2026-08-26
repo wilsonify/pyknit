@@ -297,8 +297,17 @@ def exercise_simulate_nav(page, report, sim):
         report.fail(f"{sim['target']} did not become ready after navigation: {state}")
         return
     note_id = sim.get("note")
-    if note_id and not _element_visible(page, f"#{note_id}"):
-        report.fail(f"#{note_id} not visible on {sim['target']} (plan was not consumed)")
+    if note_id:
+        # The Python boot publishes the plan, but the JS player renders it on
+        # its 500 ms poll tick — poll for it instead of checking once.
+        note_ok = False
+        for _ in range(30):
+            if _element_visible(page, f"#{note_id}"):
+                note_ok = True
+                break
+            time.sleep(0.5)
+        if not note_ok:
+            report.fail(f"#{note_id} not visible on {sim['target']} (plan was not consumed)")
     if sim.get("instr_min_len"):
         try:
             txt = page.eval_on_selector("#instructions", "el => el.value") or ""
@@ -315,10 +324,14 @@ def exercise_simulate_nav(page, report, sim):
             report.fail(f"instructions field not prefilled with the plan "
                         f"({len(txt)} chars, starts {txt[:20]!r})")
     total = 0
-    try:
-        total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
-    except Exception:
-        pass
+    for _ in range(30):
+        try:
+            total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
+        except Exception:
+            total = 0
+        if total >= sim.get("min_steps", 1):
+            break
+        time.sleep(0.5)
     if total < sim.get("min_steps", 1):
         report.fail(f"knit-simulator has too few steps after navigation ({total})")
     else:

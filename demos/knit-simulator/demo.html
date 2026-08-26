@@ -876,7 +876,7 @@ k all</textarea>
        sleeve only appears once its own section starts (the pattern knits
        each sleeve after the body).  The yoke is a wedge that visibly widens
        from the neckline to the underarms as the reveal grows past it. */
-    var raglan = {topY: 64, underarmY: 152, hemY: 318, sleeveLen: 166, minSliver: 12, curFlare: 0, timer: null};
+    var raglan = {topY: 64, sleeveTopY: 66, underarmY: 152, hemY: 318, sleeveLen: 252, minSliver: 12, curFlare: 0, timer: null};
 
     /* The yoke flares from the neckline to the underarms as the increase
        rounds are worked: flare F is 0 (a narrow neck tube) at the cast-on
@@ -900,14 +900,20 @@ k all</textarea>
       return '108,' + T + ' 212,' + T + ' ' + ex + ',' + U + ' ' + sx + ',' + U;
     }
 
+    /* Each sleeve is a tube that hangs from the yoke: its top edge sits at
+       the shoulder next to the neck, its inner edge follows the raglan seam
+       down to the underarm, and it hangs straight down to the cuff — so the
+       sleeves read as attached to the yoke, not to the body's sides. */
     function raglanSvg() {
       var T = raglan.topY, U = raglan.underarmY, H = raglan.hemY;
       var torso = raglanTorsoPath(1);
       var wedge = '108,' + T + ' 212,' + T + ' 228,' + U + ' 92,' + U;
-      var sleeveL = 'M62,' + U + ' L98,' + U + ' L98,' + (H - 6) +
-        ' Q98,' + H + ' 92,' + H + ' L68,' + H + ' Q62,' + H + ' 62,' + (H - 6) + ' Z';
-      var sleeveR = 'M222,' + U + ' L258,' + U + ' L258,' + (H - 6) +
-        ' Q258,' + H + ' 252,' + H + ' L228,' + H + ' Q222,' + H + ' 222,' + (H - 6) + ' Z';
+      var sleeveL = 'M74,76 L108,66 L92,' + U + ' L92,' + (H - 12) +
+        ' Q92,' + H + ' 86,' + H + ' L68,' + H + ' Q62,' + H + ' 62,' + (H - 12) +
+        ' L62,84 Z';
+      var sleeveR = 'M246,76 L212,66 L228,' + U + ' L228,' + (H - 12) +
+        ' Q228,' + H + ' 234,' + H + ' L252,' + H + ' Q258,' + H + ' 258,' + (H - 12) +
+        ' L258,84 Z';
       return '' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 340" role="img" aria-label="Raglan sweater being constructed top-down">' +
         '<defs>' +
@@ -932,8 +938,8 @@ k all</textarea>
           '<clipPath id="raglanSLClip"><path d="' + sleeveL + '"/></clipPath>' +
           '<clipPath id="raglanSRClip"><path d="' + sleeveR + '"/></clipPath>' +
           '<clipPath id="raglanRevealTorso"><rect id="rtTorso" x="0" y="' + T + '" width="320" height="0"/></clipPath>' +
-          '<clipPath id="raglanRevealSL"><rect id="rtSleeveL" x="0" y="' + U + '" width="320" height="0"/></clipPath>' +
-          '<clipPath id="raglanRevealSR"><rect id="rtSleeveR" x="0" y="' + U + '" width="320" height="0"/></clipPath>' +
+          '<clipPath id="raglanRevealSL"><rect id="rtSleeveL" x="0" y="' + raglan.sleeveTopY + '" width="320" height="0"/></clipPath>' +
+          '<clipPath id="raglanRevealSR"><rect id="rtSleeveR" x="0" y="' + raglan.sleeveTopY + '" width="320" height="0"/></clipPath>' +
           '<filter id="raglanShadow" x="-25%" y="-25%" width="150%" height="150%">' +
             '<feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#2b2333" flood-opacity="0.28"/>' +
           '</filter>' +
@@ -990,11 +996,11 @@ k all</textarea>
         '<rect x="92" y="' + (H - 12) + '" width="136" height="12" fill="rgba(123,63,160,0.10)"/>' +
         '<rect x="92" y="' + (H - 12) + '" width="136" height="12" fill="url(#raglanRib)"/>';
       var cuffL =
-        '<rect x="62" y="' + (H - 12) + '" width="36" height="12" fill="rgba(123,63,160,0.10)"/>' +
-        '<rect x="62" y="' + (H - 12) + '" width="36" height="12" fill="url(#raglanRib)"/>';
+        '<rect x="62" y="' + (H - 12) + '" width="30" height="12" fill="rgba(123,63,160,0.10)"/>' +
+        '<rect x="62" y="' + (H - 12) + '" width="30" height="12" fill="url(#raglanRib)"/>';
       var cuffR =
-        '<rect x="222" y="' + (H - 12) + '" width="36" height="12" fill="rgba(123,63,160,0.10)"/>' +
-        '<rect x="222" y="' + (H - 12) + '" width="36" height="12" fill="url(#raglanRib)"/>';
+        '<rect x="228" y="' + (H - 12) + '" width="30" height="12" fill="rgba(123,63,160,0.10)"/>' +
+        '<rect x="228" y="' + (H - 12) + '" width="30" height="12" fill="url(#raglanRib)"/>';
       $('garment-view').querySelector('#raglan-hem').innerHTML = hem;
       $('garment-view').querySelector('#raglan-cuff-l').innerHTML = cuffL;
       $('garment-view').querySelector('#raglan-cuff-r').innerHTML = cuffR;
@@ -1089,8 +1095,8 @@ k all</textarea>
       if (raglan.timer) { clearTimeout(raglan.timer); raglan.timer = null; }
       function apply(hT, hL, hR, F) {
         t.setAttribute('y', String(raglan.topY)); t.setAttribute('height', String(hT));
-        l.setAttribute('y', String(raglan.underarmY)); l.setAttribute('height', String(hL));
-        rr.setAttribute('y', String(raglan.underarmY)); rr.setAttribute('height', String(hR));
+        l.setAttribute('y', String(raglan.sleeveTopY)); l.setAttribute('height', String(hL));
+        rr.setAttribute('y', String(raglan.sleeveTopY)); rr.setAttribute('height', String(hR));
         applyRaglanShape(F);
         raglan.curFlare = F;
       }
