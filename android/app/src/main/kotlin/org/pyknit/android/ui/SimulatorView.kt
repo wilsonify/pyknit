@@ -23,7 +23,9 @@ import org.pyknit.android.R
 /**
  * The Knit Simulator screen. The instruction text is the source of truth;
  * the Python engine builds the simulation. This class only presents the
- * steps the engine produced.
+ * steps the engine produced, mirroring the pyscript demo: a status card
+ * with progress and counts, a rendered garment, and simple stepping
+ * controls.
  */
 class SimulatorView(private val activity: MainActivity) {
 
@@ -40,11 +42,13 @@ class SimulatorView(private val activity: MainActivity) {
     private var rowValue: TextView? = null
     private var stsValue: TextView? = null
     private var sectionValue: TextView? = null
-    private var nextOpLabel: TextView? = null
     private var slider: Slider? = null
     private var rowLog: LinearLayout? = null
     private var rowLogScroller: NestedScrollView? = null
     private var playButton: MaterialButton? = null
+
+    private var garmentView: GarmentView? = null
+    private var opPill: TextView? = null
 
     fun build(): View {
         val c = activity.column()
@@ -66,7 +70,7 @@ class SimulatorView(private val activity: MainActivity) {
         }
         // Cap the editor height so long planner patterns cannot push the
         // status card and controls off screen; long text scrolls internally.
-        c.addView(editorLayout, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(190)))
+        c.addView(editorLayout, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(150)))
 
         val buildButton = activity.filledButton(activity.getString(R.string.sim_build)) {
             val text = editorLayout.editText?.text?.toString().orEmpty()
@@ -77,6 +81,7 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(6)
         })
 
+        // Status card: progress, section bar, big counts, scrub slider.
         val card = activity.card()
         val content = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         card.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -84,6 +89,35 @@ class SimulatorView(private val activity: MainActivity) {
         statusContent = content
         c.addView(card, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(14)
+        })
+
+        // Garment card: the rendered knitting plus the current operation.
+        val garmentCard = activity.card()
+        garmentCard.addView(activity.textView(
+            activity.getString(R.string.sim_garment_title),
+            sizeSp = 12f, typeface = TITLE_FACE, colorAttr = MR.attr.colorOnSurfaceVariant,
+        ))
+        val garment = GarmentView(activity).apply {
+            contentDescription = activity.getString(R.string.sim_garment_desc)
+        }
+        garmentView = garment
+        // The viewBox is 320x340, so a tall view lets the garment fill the
+        // card like the web demo's large stage.
+        garmentCard.addView(garment, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(340)))
+        val pill = TextView(activity).apply {
+            setTextSize(14f)
+            typeface = TITLE_FACE
+            gravity = Gravity.CENTER
+            setPadding(activity.dp(14), activity.dp(10), activity.dp(14), activity.dp(10))
+            background = activity.rounded(activity.attrColor(MR.attr.colorPrimaryContainer), 22)
+            setTextColor(activity.attrColor(MR.attr.colorOnPrimaryContainer))
+        }
+        opPill = pill
+        garmentCard.addView(pill, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(10)
+        })
+        c.addView(garmentCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(10)
         })
 
         // Controls: big, obvious touch targets for knitting hands.
@@ -106,6 +140,26 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(4)
         })
 
+        // Worked rows log (like the demo's step log, kept compact).
+        val logCard = activity.card()
+        logCard.addView(activity.textView(
+            activity.getString(R.string.sim_row_log_title),
+            sizeSp = 12f, typeface = TITLE_FACE, colorAttr = MR.attr.colorOnSurfaceVariant,
+        ))
+        val log = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        rowLog = log
+        val scroller = NestedScrollView(activity).apply {
+            isVerticalScrollBarEnabled = true
+            addView(log)
+        }
+        rowLogScroller = scroller
+        logCard.addView(scroller, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(150)).apply {
+            topMargin = activity.dp(2)
+        })
+        c.addView(logCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(10)
+        })
+
         scrollView = ScrollView(activity).apply {
             isFillViewport = true
             addView(activity.maxWidthFrame(c))
@@ -114,7 +168,7 @@ class SimulatorView(private val activity: MainActivity) {
         return scrollView!!
     }
 
-    /** Re-render the status card from the activity's current simulation state. */
+    /** Re-render the status card and garment from the activity's state. */
     fun refresh() {
         val sim = activity.simulation
         val content = statusContent ?: return
@@ -135,7 +189,7 @@ class SimulatorView(private val activity: MainActivity) {
 
         val sections = sim.optJSONArray("sections")
         if (sections != null && sections.length() > 0) {
-            updateSectionBar(sections, index, steps, step)
+            updateSectionBar(sections, index, step)
             sectionBarRow?.visibility = View.VISIBLE
             sectionProgressLabel?.visibility = View.VISIBLE
         } else {
@@ -147,14 +201,16 @@ class SimulatorView(private val activity: MainActivity) {
         rowValue?.text = if (castOn) activity.getString(R.string.sim_cast_on, step.optInt("n", 0)) else step.optInt("row", 0).toString()
         stsValue?.text = step.optInt("n", 0).toString()
         sectionValue?.text = sectionLabel(sim, step)
-        nextOpLabel?.text = when {
-            castOn -> activity.getString(R.string.sim_cast_on, step.optInt("n", 0))
-            index >= total - 1 -> activity.getString(R.string.sim_end)
-            else -> activity.getString(R.string.sim_next_op, step.optString("op"))
-        }
         slider?.value = index.toFloat()
         updateRowLog(steps, index)
         playButton?.text = activity.getString(if (activity.playing) R.string.sim_pause else R.string.sim_play)
+
+        opPill?.text = when {
+            castOn -> activity.getString(R.string.sim_now, activity.getString(R.string.sim_cast_on, step.optInt("n", 0)))
+            index >= total - 1 -> activity.getString(R.string.sim_end)
+            else -> activity.getString(R.string.sim_now, step.optString("op"))
+        }
+        garmentView?.setSimulation(sim, steps, index)
     }
 
     fun showError(message: String) {
@@ -168,6 +224,8 @@ class SimulatorView(private val activity: MainActivity) {
             sizeSp = 14f, colorAttr = MR.attr.colorOnErrorContainer,
         ))
         content.addView(card)
+        opPill?.text = ""
+        garmentView?.setSimulation(null, JSONArray(), 0, animate = false)
     }
 
     private fun showEmpty() {
@@ -189,6 +247,8 @@ class SimulatorView(private val activity: MainActivity) {
         ))
         content.addView(wrap)
         playButton?.text = activity.getString(R.string.sim_play)
+        opPill?.text = ""
+        garmentView?.setSimulation(null, JSONArray(), 0, animate = false)
     }
 
     private fun buildLoaded(sim: JSONObject, total: Int, steps: JSONArray) {
@@ -240,13 +300,6 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(10)
         })
 
-        // The actionable next-row line.
-        val nextOp = activity.textView("", sizeSp = 14f, typeface = TITLE_FACE)
-        nextOpLabel = nextOp
-        content.addView(nextOp, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = activity.dp(10)
-        })
-
         // Scrub slider
         val scrub = Slider(activity, null, MR.attr.sliderStyle).apply {
             valueFrom = 0f
@@ -262,27 +315,9 @@ class SimulatorView(private val activity: MainActivity) {
         content.addView(scrub, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(6)
         })
-
-        // Worked rows log
-        content.addView(activity.textView(
-            activity.getString(R.string.sim_row_log_title),
-            sizeSp = 12f, typeface = TITLE_FACE, colorAttr = MR.attr.colorOnSurfaceVariant,
-        ), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = activity.dp(10)
-        })
-        val log = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        rowLog = log
-        val scroller = NestedScrollView(activity).apply {
-            isVerticalScrollBarEnabled = true
-            addView(log)
-        }
-        rowLogScroller = scroller
-        content.addView(scroller, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(150)).apply {
-            topMargin = activity.dp(2)
-        })
     }
 
-    private fun updateSectionBar(sections: JSONArray, index: Int, steps: JSONArray, step: JSONObject) {
+    private fun updateSectionBar(sections: JSONArray, index: Int, step: JSONObject) {
         val row = sectionBarRow ?: return
         row.removeAllViews()
         for (i in 0 until sections.length()) {

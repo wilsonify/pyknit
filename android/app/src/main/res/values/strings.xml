@@ -54,6 +54,9 @@
     <string name="sim_stat_section">Section</string>
     <string name="sim_next_op">Next row: %1$s</string>
     <string name="sim_end">End of pattern</string>
+    <string name="sim_now">Now: %1$s</string>
+    <string name="sim_garment_title">Garment</string>
+    <string name="sim_garment_desc">Knitted garment preview</string>
     <string name="sim_progress_in_section">Row %1$d of %2$d in %3$s</string>
     <string name="sim_row_log_title">Worked rows</string>
     <string name="sim_row_log_empty">No rows worked yet.</string>
