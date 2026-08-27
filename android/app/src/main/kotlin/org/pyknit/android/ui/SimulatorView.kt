@@ -1,10 +1,14 @@
 package org.pyknit.android.ui
 
+import android.graphics.LinearGradient
 import android.graphics.Rect
+import android.graphics.Shader
+import android.graphics.drawable.GradientDrawable
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -26,6 +30,14 @@ import org.pyknit.android.R
  * steps the engine produced, mirroring the pyscript demo: a status card
  * with progress and counts, a rendered garment, and simple stepping
  * controls.
+ *
+ * Improvements over the pyscript demo:
+ * - Speed selector (Slow / Normal / Fast) for play-through
+ * - Section progress pills showing done / active / pending sections
+ * - Phase line showing current section and row progress
+ * - Gradient garment stage background
+ * - Collapsible row log
+ * - Plan banner when loaded from a planner
  */
 class SimulatorView(private val activity: MainActivity) {
 
@@ -37,7 +49,9 @@ class SimulatorView(private val activity: MainActivity) {
     private var loadedSteps = -1
     private var progressBar: LinearProgressIndicator? = null
     private var stepLabel: TextView? = null
+    private var phaseLine: TextView? = null
     private var sectionBarRow: LinearLayout? = null
+    private var sectionPillsRow: LinearLayout? = null
     private var sectionProgressLabel: TextView? = null
     private var rowValue: TextView? = null
     private var stsValue: TextView? = null
@@ -45,10 +59,15 @@ class SimulatorView(private val activity: MainActivity) {
     private var slider: Slider? = null
     private var rowLog: LinearLayout? = null
     private var rowLogScroller: NestedScrollView? = null
+    private var rowLogToggle: MaterialButton? = null
     private var playButton: MaterialButton? = null
+    private var speedButton: MaterialButton? = null
+    private var planBanner: TextView? = null
 
     private var garmentView: GarmentView? = null
     private var opPill: TextView? = null
+
+    private var logExpanded = false
 
     fun build(): View {
         val c = activity.column()
@@ -81,6 +100,18 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(6)
         })
 
+        // Plan banner — shown when a planner pattern is loaded.
+        val banner = TextView(activity).apply {
+            setTextSize(13f)
+            typeface = TITLE_FACE
+            gravity = Gravity.CENTER
+            visibility = View.GONE
+        }
+        planBanner = banner
+        c.addView(banner, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(8)
+        })
+
         // Status card: progress, section bar, big counts, scrub slider.
         val card = activity.card()
         val content = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
@@ -91,9 +122,22 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(14)
         })
 
-        // Garment card: the rendered knitting plus the current operation.
-        val garmentCard = activity.card()
-        garmentCard.addView(activity.textView(
+        // Garment card: gradient background, the rendered knitting, and the operation.
+        val garmentCard = FrameLayout(activity).apply {
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(
+                    activity.attrColor(MR.attr.colorSurface),
+                    activity.attrColor(MR.attr.colorSurfaceVariant),
+                ),
+            ).apply {
+                cornerRadius = activity.dp(12).toFloat()
+                setStroke(activity.dp(1), activity.attrColor(MR.attr.colorOutlineVariant))
+            }
+            setPadding(activity.dp(16), activity.dp(14), activity.dp(16), activity.dp(14))
+        }
+        val garmentInner = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        garmentInner.addView(activity.textView(
             activity.getString(R.string.sim_garment_title),
             sizeSp = 12f, typeface = TITLE_FACE, colorAttr = MR.attr.colorOnSurfaceVariant,
         ))
@@ -103,7 +147,7 @@ class SimulatorView(private val activity: MainActivity) {
         garmentView = garment
         // The viewBox is 320x340, so a tall view lets the garment fill the
         // card like the web demo's large stage.
-        garmentCard.addView(garment, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(340)))
+        garmentInner.addView(garment, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(340)))
         val pill = TextView(activity).apply {
             setTextSize(14f)
             typeface = TITLE_FACE
@@ -113,9 +157,10 @@ class SimulatorView(private val activity: MainActivity) {
             setTextColor(activity.attrColor(MR.attr.colorOnPrimaryContainer))
         }
         opPill = pill
-        garmentCard.addView(pill, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+        garmentInner.addView(pill, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(10)
         })
+        garmentCard.addView(garmentInner, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         c.addView(garmentCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(10)
         })
@@ -132,30 +177,47 @@ class SimulatorView(private val activity: MainActivity) {
 
         val play = activity.tonalButton(activity.getString(R.string.sim_play)) { activity.togglePlay() }
         playButton = play
+        val speed = activity.outlinedButton(speedLabel()) { cycleSpeed() }
+        speedButton = speed
         val reset = activity.textButton(activity.getString(R.string.sim_reset)) { activity.resetSimulation() }
         val row2 = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
-        row2.addView(play, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = activity.dp(8) })
+        row2.addView(play, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = activity.dp(6) })
+        row2.addView(speed, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = activity.dp(6) })
         row2.addView(reset, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         c.addView(row2, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(4)
         })
 
-        // Worked rows log (like the demo's step log, kept compact).
+        // Worked rows log — collapsible, matching the demo's <details> toggle.
         val logCard = activity.card()
-        logCard.addView(activity.textView(
+        val logHeader = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { toggleLog() }
+        }
+        logHeader.addView(activity.textView(
             activity.getString(R.string.sim_row_log_title),
             sizeSp = 12f, typeface = TITLE_FACE, colorAttr = MR.attr.colorOnSurfaceVariant,
-        ))
+        ), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        logHeader.addView(activity.textView(
+            "", // will be updated by toggleLog
+            sizeSp = 12f, colorAttr = MR.attr.colorPrimary,
+        ), LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        logCard.addView(logHeader, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         val log = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         rowLog = log
         val scroller = NestedScrollView(activity).apply {
             isVerticalScrollBarEnabled = true
+            visibility = View.GONE
             addView(log)
         }
         rowLogScroller = scroller
         logCard.addView(scroller, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, activity.dp(150)).apply {
             topMargin = activity.dp(2)
         })
+        rowLogToggle = logHeader.getChildAt(1) as? MaterialButton // not actually a button, but tracks state
         c.addView(logCard, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(10)
         })
@@ -164,9 +226,41 @@ class SimulatorView(private val activity: MainActivity) {
             isFillViewport = true
             addView(activity.maxWidthFrame(c))
         }
+        toggleLog() // set initial toggle text
         refresh()
         return scrollView!!
     }
+
+    // ---------- speed ----------
+
+    private fun speedLabel(): String = when {
+        activity.speedMultiplier < 0.7f -> activity.getString(R.string.sim_speed_slow)
+        activity.speedMultiplier > 1.5f -> activity.getString(R.string.sim_speed_fast)
+        else -> activity.getString(R.string.sim_speed_normal)
+    }
+
+    private fun cycleSpeed() {
+        activity.speedMultiplier = when {
+            activity.speedMultiplier < 0.7f -> 1.0f   // slow -> normal
+            activity.speedMultiplier < 1.5f -> 2.0f   // normal -> fast
+            else -> 0.5f                               // fast -> slow
+        }
+        speedButton?.text = speedLabel()
+    }
+
+    // ---------- log toggle ----------
+
+    private fun toggleLog() {
+        logExpanded = !logExpanded
+        rowLogScroller?.visibility = if (logExpanded) View.VISIBLE else View.GONE
+        // Update the toggle hint text via the parent card's last child
+        val parent = rowLogScroller?.parent as? ViewGroup ?: return
+        val hint = parent.getChildAt(0) as? LinearLayout ?: return
+        val toggle = hint.getChildAt(1) as? TextView ?: return
+        toggle.text = if (logExpanded) activity.getString(R.string.sim_row_log_hide) else activity.getString(R.string.sim_row_log_show)
+    }
+
+    // ---------- refresh ----------
 
     /** Re-render the status card and garment from the activity's state. */
     fun refresh() {
@@ -183,6 +277,9 @@ class SimulatorView(private val activity: MainActivity) {
 
         if (loadedSteps != total) buildLoaded(sim, total, steps)
 
+        // Plan banner
+        updatePlanBanner()
+
         val denom = (total - 1).coerceAtLeast(1)
         progressBar?.setProgressCompat(index * 100 / denom, true)
         stepLabel?.text = activity.getString(R.string.sim_step_of, index + 1, total)
@@ -190,11 +287,13 @@ class SimulatorView(private val activity: MainActivity) {
         val sections = sim.optJSONArray("sections")
         if (sections != null && sections.length() > 0) {
             updateSectionBar(sections, index, step)
-            sectionBarRow?.visibility = View.VISIBLE
-            sectionProgressLabel?.visibility = View.VISIBLE
+            updateSectionPills(sections, index)
+            updatePhaseLine(sections, index, step)
+            sectionPillsRow?.visibility = View.VISIBLE
+            phaseLine?.visibility = View.VISIBLE
         } else {
-            sectionBarRow?.visibility = View.GONE
-            sectionProgressLabel?.visibility = View.GONE
+            sectionPillsRow?.visibility = View.GONE
+            phaseLine?.visibility = View.GONE
         }
 
         val castOn = step.optString("kind") == "cast_on"
@@ -202,7 +301,7 @@ class SimulatorView(private val activity: MainActivity) {
         stsValue?.text = step.optInt("n", 0).toString()
         sectionValue?.text = sectionLabel(sim, step)
         slider?.value = index.toFloat()
-        updateRowLog(steps, index)
+        if (logExpanded) updateRowLog(steps, index)
         playButton?.text = activity.getString(if (activity.playing) R.string.sim_pause else R.string.sim_play)
 
         opPill?.text = when {
@@ -271,12 +370,36 @@ class SimulatorView(private val activity: MainActivity) {
             topMargin = activity.dp(4)
         })
 
-        // Section segments
+        // Phase line (like demo's bold phase-line box)
+        val phase = TextView(activity).apply {
+            setTextSize(14f)
+            typeface = TITLE_FACE
+            setPadding(activity.dp(10), activity.dp(6), activity.dp(10), activity.dp(6))
+            background = activity.rounded(activity.attrColor(MR.attr.colorSurfaceVariant), 8)
+            visibility = View.GONE
+        }
+        phaseLine = phase
+        content.addView(phase, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(6)
+        })
+
+        // Section color bar
         val sectionRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
         sectionBarRow = sectionRow
         content.addView(sectionRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = activity.dp(8)
         })
+
+        // Section pills (done / active / pending)
+        val pillsRow = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.START
+        }
+        sectionPillsRow = pillsRow
+        content.addView(pillsRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = activity.dp(6)
+        })
+
         val sectionProgress = activity.textView("", sizeSp = 12f, colorAttr = MR.attr.colorOnSurfaceVariant)
         sectionProgressLabel = sectionProgress
         content.addView(sectionProgress, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -317,6 +440,8 @@ class SimulatorView(private val activity: MainActivity) {
         })
     }
 
+    // ---------- section bar ----------
+
     private fun updateSectionBar(sections: JSONArray, index: Int, step: JSONObject) {
         val row = sectionBarRow ?: return
         row.removeAllViews()
@@ -342,6 +467,91 @@ class SimulatorView(private val activity: MainActivity) {
             sec.optString("label"),
         )
     }
+
+    // ---------- section pills ----------
+
+    private fun updateSectionPills(sections: JSONArray, index: Int) {
+        val row = sectionPillsRow ?: return
+        row.removeAllViews()
+        val currentSection = sectionAt(sections, index)
+        for (i in 0 until sections.length()) {
+            val sec = sections.getJSONObject(i)
+            val start = sec.getInt("start")
+            val end = sec.getInt("end")
+            val done = index >= end
+            val active = index in start until end
+            val label = sec.optString("label")
+            if (label.isEmpty()) continue
+
+            val pillBg: Int
+            val pillText: Int
+            val pillBorder: Int
+            when {
+                done -> {
+                    pillBg = activity.colorSuccess
+                    pillText = 0xFFFFFFFF.toInt()
+                    pillBorder = activity.colorSuccess
+                }
+                active -> {
+                    pillBg = activity.attrColor(MR.attr.colorPrimaryContainer)
+                    pillText = activity.attrColor(MR.attr.colorOnPrimaryContainer)
+                    pillBorder = activity.colorPrimary
+                }
+                else -> {
+                    pillBg = activity.attrColor(MR.attr.colorSurfaceVariant)
+                    pillText = activity.attrColor(MR.attr.colorOnSurfaceVariant)
+                    pillBorder = activity.attrColor(MR.attr.colorOutlineVariant)
+                }
+            }
+            val pill = TextView(activity).apply {
+                text = if (done) "✓ $label" else label
+                setTextSize(11f)
+                typeface = TITLE_FACE
+                setTextColor(pillText)
+                setPadding(activity.dp(10), activity.dp(4), activity.dp(10), activity.dp(4))
+                background = GradientDrawable().apply {
+                    setColor(pillBg)
+                    cornerRadius = activity.dp(10).toFloat()
+                    setStroke(activity.dp(1), pillBorder)
+                }
+            }
+            row.addView(pill, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = activity.dp(6) })
+        }
+    }
+
+    // ---------- phase line ----------
+
+    private fun updatePhaseLine(sections: JSONArray, index: Int, step: JSONObject) {
+        val line = phaseLine ?: return
+        val sec = sectionAt(sections, index)
+        val label = sec.optString("label")
+        val secRow = step.optInt("sec_row", 1)
+        val secRows = step.optInt("sec_rows", 0)
+        line.text = if (label.isNotEmpty() && secRows > 0) {
+            activity.getString(R.string.sim_phase, label, secRow, secRows)
+        } else {
+            activity.getString(R.string.sim_step_of, index + 1, sections.getJSONObject(sections.length() - 1).getInt("end"))
+        }
+    }
+
+    // ---------- plan banner ----------
+
+    private fun updatePlanBanner() {
+        val banner = planBanner ?: return
+        val label = activity.plannerLabel
+        if (label != null) {
+            banner.text = activity.getString(R.string.sim_plan_loaded, label)
+            banner.background = activity.rounded(activity.attrColor(MR.attr.colorPrimaryContainer), 8)
+            banner.setTextColor(activity.attrColor(MR.attr.colorOnPrimaryContainer))
+            banner.visibility = View.VISIBLE
+        } else {
+            banner.visibility = View.GONE
+        }
+    }
+
+    // ---------- helpers ----------
 
     private fun sectionAt(sections: JSONArray, index: Int): JSONObject {
         for (i in 0 until sections.length()) {

@@ -65,4 +65,12 @@
     <string name="sim_play_desc">Play through the pattern automatically</string>
     <string name="sim_reset_desc">Jump back to the start</string>
     <string name="sim_scrub_desc">Jump to a step</string>
+    <string name="sim_speed">Speed</string>
+    <string name="sim_speed_slow">Slow</string>
+    <string name="sim_speed_normal">Normal</string>
+    <string name="sim_speed_fast">Fast</string>
+    <string name="sim_row_log_show">Show worked rows</string>
+    <string name="sim_row_log_hide">Hide worked rows</string>
+    <string name="sim_phase">%1$s — Row %2$d of %3$d</string>
+    <string name="sim_plan_loaded">Using pattern from %1$s</string>
 </resources>

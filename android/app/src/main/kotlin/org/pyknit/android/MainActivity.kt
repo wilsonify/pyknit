@@ -52,6 +52,9 @@ class MainActivity : AppCompatActivity() {
     var playing = false
     var canonicalPlan = ""
     var draftInstructions = "co 10\nk2 p2 across\nk2 p2 across\nk all"
+    /** Speed multiplier: 0.5 = slow (800ms), 1.0 = normal (400ms), 2.0 = fast (200ms). */
+    var speedMultiplier = 1.0f
+    var plannerLabel: String? = null
 
     private val simulatorView = SimulatorView(this)
 
@@ -188,6 +191,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openPlannerSimulator(name: String, valuesJson: String) {
+        val spec = PlannerSpecs.forName(name)
         Thread {
             try {
                 val result = JSONObject(
@@ -200,6 +204,7 @@ class MainActivity : AppCompatActivity() {
                     simulationIndex = 0
                     playing = false
                     simulatorFromPlanner = true
+                    plannerLabel = spec.title
                     showSimulator()
                     simulatorView.bringStatusIntoView()
                 }
@@ -265,7 +270,8 @@ class MainActivity : AppCompatActivity() {
             simulatorView.refresh()
             return
         }
-        val speed = sim.optInt("speed_ms", 400)
+        val baseSpeed = sim.optInt("speed_ms", 400)
+        val speed = (baseSpeed / speedMultiplier.coerceAtLeast(0.25f)).toLong()
         handler.postDelayed({
             if (!playing) return@postDelayed
             simulationIndex++
