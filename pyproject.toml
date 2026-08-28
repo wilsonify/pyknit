@@ -38,6 +38,10 @@ exclude = ["build*", "test*", "documentation*", "demos*", "openspec*"]
 [tool.setuptools.package-data]
 "pyknit" = ["symbols/*.png", "symbols/japanese/*.png"]
 
+[tool.black]
+target-version = ["py312"]
+line-length = 120
+
 [tool.pytest.ini_options]
 testpaths = ["test/unit"]
 python_files = ["test_*.py", "qa_*.py"]

@@ -1,3 +1,2 @@
 [flake8]
-# match black line length
-max-line-length = 88
+max-line-length = 120
