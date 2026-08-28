@@ -1,0 +1,293 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Stage 0: calculate unique SemVer version ──────────────────────────
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calc.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: calc
+        run: python scripts/calculate_version.py
+
+  # ── Stage 1: lint everything ─────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Lint Python (black)
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e  # 26.5.1
+        with:
+          options: "--check --color"
+
+      - name: Lint Python (flake8)
+        run: |
+          pip install flake8
+          flake8 pyknit/ scripts/ test/
+
+      - name: Lint JavaScript
+        run: .github/workflows/scripts/lint-js.sh
+
+      - name: Lint HTML
+        run: .github/workflows/scripts/lint-html.sh
+
+      - name: Lint CSS
+        run: .github/workflows/scripts/lint-css.sh
+
+      - name: Lint Kotlin
+        run: .github/workflows/scripts/lint-kotlin.sh
+
+      - name: Lint Gradle
+        run: .github/workflows/scripts/lint-gradle.sh
+
+      - name: Lint workflow YAML
+        run: .github/workflows/scripts/lint-yaml.sh
+
+  # ── Stage 2: unit tests against source ───────────────────────────────
+  unit-tests:
+    needs: [version, lint]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: .github/workflows/scripts/install-test-deps.sh
+
+      - name: Run unit tests
+        run: .github/workflows/scripts/run-unit-tests.sh
+
+      - name: Run doctests
+        run: .github/workflows/scripts/run-doctests.sh
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-results-${{ matrix.python-version }}
+          path: unit-results.xml
+
+  # ── Stage 3: SonarCloud quality gate (push only) ─────────────────────
+  sonarcloud:
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: .github/workflows/scripts/install-test-deps.sh
+
+      - name: Run tests with coverage
+        run: .github/workflows/scripts/run-tests-coverage.sh
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=wilsonify_pyknit
+            -Dsonar.organization=wilsonify
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.sources=pyknit/
+            -Dsonar.tests=test/
+
+  # ── Stage 4: clean Python package build ──────────────────────────────
+  python-build:
+    needs: [version, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Clean build
+        run: .github/workflows/scripts/build-python-wheel.sh
+
+      - name: Verify package
+        run: .github/workflows/scripts/verify-python-package.sh
+
+      - name: Upload Python wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheel
+          path: dist/*.whl
+          retention-days: 5
+
+  # ── Stage 5: integration tests against built package ─────────────────
+  integration-tests:
+    needs: [python-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download built wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheel
+          path: dist/
+
+      - name: Install from wheel (not source)
+        run: .github/workflows/scripts/install-wheel-for-testing.sh
+
+      - name: Run integration tests
+        run: .github/workflows/scripts/run-integration-tests.sh
+        env:
+          PYQ_BASE: http://127.0.0.1:8000
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results
+          path: integration-results.xml
+
+  # ── Stage 6: clean PyScript build ────────────────────────────────────
+  pyscript-build:
+    needs: [integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Clean build
+        run: .github/workflows/scripts/build-pyscript-clean.sh
+
+      - name: Cache PyScript runtime
+        run: make runtime-cache
+
+      - name: Assemble PyScript distribution
+        run: .github/workflows/scripts/assemble-pyscript-dist.sh
+
+      - name: Upload PyScript distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyscript-dist
+          path: dist/pyscript/
+          retention-days: 5
+
+  # ── Stage 7: PyScript E2E tests against generated build ──────────────
+  pyscript-e2e:
+    needs: [pyscript-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download PyScript distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: pyscript-dist
+          path: site/
+
+      - name: Install test dependencies
+        run: .github/workflows/scripts/install-pyscript-test-deps.sh
+
+      - name: Start server and run E2E tests
+        run: .github/workflows/scripts/run-pyscript-e2e.sh
+
+      - name: Upload PyScript E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyscript-e2e-results
+          path: pyscript-e2e-results.xml
+
+  # ── Stage 8: clean Android build ─────────────────────────────────────
+  android-build:
+    needs: [pyscript-e2e, version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Determine version
+        id: ver
+        run: |
+          .github/workflows/scripts/android-determine-version.sh "${{ needs.version.outputs.version }}" >> "$GITHUB_OUTPUT"
+
+      - name: Write local.properties
+        run: .github/workflows/scripts/android-write-local-properties.sh
+
+      - name: Build APK
+        run: .github/workflows/scripts/android-build-apk.sh "${{ steps.ver.outputs.version_name }}" "${{ steps.ver.outputs.version_code }}"
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 5
+
+  # ── Stage 9: Android E2E tests ───────────────────────────────────────
+  android-e2e:
+    needs: [android-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: apk/
+
+      - name: Verify APK
+        run: .github/workflows/scripts/android-verify-apk.sh apk/app-debug.apk
