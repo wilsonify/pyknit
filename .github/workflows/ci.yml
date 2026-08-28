@@ -36,32 +36,32 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Lint Python (black)
+      - name: Python formatting (black)
         uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e  # 26.5.1
         with:
           options: "--check --color"
 
-      - name: Lint Python (flake8)
+      - name: Python style (flake8)
         run: |
           pip install flake8
           flake8 pyknit/ scripts/ test/
 
-      - name: Lint JavaScript
+      - name: JavaScript (eslint)
         run: .github/workflows/scripts/lint-js.sh
 
-      - name: Lint HTML
+      - name: HTML (htmllint)
         run: .github/workflows/scripts/lint-html.sh
 
-      - name: Lint CSS
+      - name: CSS (stylelint)
         run: .github/workflows/scripts/lint-css.sh
 
-      - name: Lint Kotlin
+      - name: Kotlin (ktlint)
         run: .github/workflows/scripts/lint-kotlin.sh
 
-      - name: Lint Gradle
+      - name: Gradle (spotless)
         run: .github/workflows/scripts/lint-gradle.sh
 
-      - name: Lint workflow YAML
+      - name: Workflow YAML (actionlint)
         run: .github/workflows/scripts/lint-yaml.sh
 
   # ── Stage 2: unit tests against source ───────────────────────────────
