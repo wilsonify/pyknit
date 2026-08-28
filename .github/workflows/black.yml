@@ -1,4 +1,4 @@
-name: Lint
+name: Lint (black)
 
 on: [push, pull_request]
 
@@ -6,7 +6,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: psf/black@stable
+      - uses: actions/checkout@v7
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e  # 26.5.1
         with:
-          options: "--color"
+          options: "--check --color"
