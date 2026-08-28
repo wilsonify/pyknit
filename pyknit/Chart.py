@@ -510,7 +510,7 @@ def parse_row(row: str, legend: Dict[str, Stitch] = stitch_legend) -> List[Stitc
     return stitch_array
 
 
-def _match_stitch_pattern(section: str) -> Tuple[str, int] | None:
+def _match_stitch_pattern(section: str) -> Optional[Tuple[str, int]]:
     """Match a stitch pattern and return (stitch_name, count) or None.
 
     Tries patterns in order: cables, multi-letter stitches, simple stitches.

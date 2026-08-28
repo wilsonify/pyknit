@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """Calculate deterministic SemVer version from git history.
 
 Determines version bump level by analyzing test file changes since the last

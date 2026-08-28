@@ -15,7 +15,6 @@ import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.R as MR
 import org.json.JSONObject
 import org.pyknit.android.ui.HomeView
 import org.pyknit.android.ui.PlannerSpecs
@@ -23,6 +22,7 @@ import org.pyknit.android.ui.PlannerView
 import org.pyknit.android.ui.SimulatorView
 import org.pyknit.android.ui.attrColor
 import org.pyknit.android.ui.hairline
+import com.google.android.material.R as MR
 
 /**
  * Native shell around the existing pyKnit Python calculations.
@@ -32,7 +32,6 @@ import org.pyknit.android.ui.hairline
  * by `pyknit/chaquopy/mobile_api.py` and rendered here.
  */
 class MainActivity : AppCompatActivity() {
-
     private lateinit var api: PyObject
     private val handler = Handler(Looper.getMainLooper())
 
@@ -41,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
 
     private enum class Screen { TOOLS, PLANNER, SIMULATOR }
+
     private var currentScreen = Screen.TOOLS
     private var simulatorFromPlanner = false
 
@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     var playing = false
     var canonicalPlan = ""
     var draftInstructions = "co 10\nk2 p2 across\nk2 p2 across\nk all"
+
     /** Speed multiplier: 0.5 = slow (800ms), 1.0 = normal (400ms), 2.0 = fast (200ms). */
     var speedMultiplier = 1.0f
     var plannerLabel: String? = null
@@ -76,14 +77,15 @@ class MainActivity : AppCompatActivity() {
     private fun buildShell() {
         val frame = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        toolbar = MaterialToolbar(this).apply {
-            setTitleTextColor(attrColor(MR.attr.colorOnSurface))
-            setBackgroundColor(attrColor(MR.attr.colorSurface))
-            setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-            setNavigationContentDescription(getString(R.string.back))
-            setNavigationOnClickListener { onBackPressed() }
-            navigationIcon = null
-        }
+        toolbar =
+            MaterialToolbar(this).apply {
+                setTitleTextColor(attrColor(MR.attr.colorOnSurface))
+                setBackgroundColor(attrColor(MR.attr.colorSurface))
+                setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+                setNavigationContentDescription(getString(R.string.back))
+                setNavigationOnClickListener { onBackPressed() }
+                navigationIcon = null
+            }
         frame.addView(toolbar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         val divider = hairline()
@@ -92,31 +94,43 @@ class MainActivity : AppCompatActivity() {
         contentHost = FrameLayout(this)
         frame.addView(contentHost, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        bottomNav = BottomNavigationView(this, null, MR.attr.bottomNavigationStyle).apply {
-            setBackgroundColor(attrColor(MR.attr.colorSurface))
-            labelVisibilityMode = BottomNavigationView.LABEL_VISIBILITY_LABELED
-            menu.add(Menu.NONE, ID_TOOLS, 0, getString(R.string.nav_tools)).setIcon(R.drawable.ic_tools)
-            menu.add(Menu.NONE, ID_SIMULATOR, 1, getString(R.string.nav_simulator)).setIcon(R.drawable.ic_simulator)
-            setOnItemSelectedListener { item ->
-                when (item.itemId) {
-                    ID_TOOLS -> { if (currentScreen != Screen.TOOLS) showTools(); true }
-                    ID_SIMULATOR -> { if (currentScreen != Screen.SIMULATOR) showSimulator(); true }
-                    else -> false
+        bottomNav =
+            BottomNavigationView(this, null, MR.attr.bottomNavigationStyle).apply {
+                setBackgroundColor(attrColor(MR.attr.colorSurface))
+                labelVisibilityMode = BottomNavigationView.LABEL_VISIBILITY_LABELED
+                menu.add(Menu.NONE, ID_TOOLS, 0, getString(R.string.nav_tools)).setIcon(R.drawable.ic_tools)
+                menu.add(Menu.NONE, ID_SIMULATOR, 1, getString(R.string.nav_simulator)).setIcon(R.drawable.ic_simulator)
+                setOnItemSelectedListener { item ->
+                    when (item.itemId) {
+                        ID_TOOLS -> {
+                            if (currentScreen != Screen.TOOLS) showTools()
+                            true
+                        }
+                        ID_SIMULATOR -> {
+                            if (currentScreen != Screen.SIMULATOR) showSimulator()
+                            true
+                        }
+                        else -> false
+                    }
                 }
             }
-        }
         frame.addView(bottomNav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         setContentView(frame)
     }
 
-    private fun setScreen(title: String, back: Boolean, body: View) {
+    private fun setScreen(
+        title: String,
+        back: Boolean,
+        body: View,
+    ) {
         toolbar.title = title
-        toolbar.navigationIcon = if (back) {
-            androidx.appcompat.content.res.AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        } else {
-            null
-        }
+        toolbar.navigationIcon =
+            if (back) {
+                androidx.appcompat.content.res.AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+            } else {
+                null
+            }
         contentHost.removeAllViews()
         contentHost.addView(body, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
@@ -147,13 +161,14 @@ class MainActivity : AppCompatActivity() {
         currentScreen = Screen.PLANNER
         val spec = PlannerSpecs.forName(name)
         val drafts = plannerDrafts.getOrPut(name) { mutableMapOf() }
-        val body = PlannerView.build(
-            activity = this,
-            spec = spec,
-            drafts = drafts,
-            calculate = { json, onResult, onError -> callPlanner(name, json, onResult, onError) },
-            onOpenSimulator = { valuesJson -> openPlannerSimulator(name, valuesJson) },
-        )
+        val body =
+            PlannerView.build(
+                activity = this,
+                spec = spec,
+                drafts = drafts,
+                calculate = { json, onResult, onError -> callPlanner(name, json, onResult, onError) },
+                onOpenSimulator = { valuesJson -> openPlannerSimulator(name, valuesJson) },
+            )
         setScreen(spec.title, back = true, body)
         selectNav(ID_TOOLS)
     }
@@ -180,9 +195,10 @@ class MainActivity : AppCompatActivity() {
     ) {
         Thread {
             try {
-                val result = JSONObject(
-                    api.callAttr("planner_result", name, json).toJava(String::class.java)
-                )
+                val result =
+                    JSONObject(
+                        api.callAttr("planner_result", name, json).toJava(String::class.java),
+                    )
                 handler.post { onResult(result) }
             } catch (e: Exception) {
                 handler.post { onError(cleanError(e)) }
@@ -190,13 +206,17 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun openPlannerSimulator(name: String, valuesJson: String) {
+    private fun openPlannerSimulator(
+        name: String,
+        valuesJson: String,
+    ) {
         val spec = PlannerSpecs.forName(name)
         Thread {
             try {
-                val result = JSONObject(
-                    api.callAttr("planner_to_simulator", name, valuesJson).toJava(String::class.java)
-                )
+                val result =
+                    JSONObject(
+                        api.callAttr("planner_to_simulator", name, valuesJson).toJava(String::class.java),
+                    )
                 handler.post {
                     canonicalPlan = result.getJSONObject("sim_plan").toString()
                     draftInstructions = result.getString("instructions")
@@ -217,9 +237,10 @@ class MainActivity : AppCompatActivity() {
     fun buildSimulation(instructions: String) {
         Thread {
             try {
-                val wrapper = JSONObject(
-                    api.callAttr("build_simulation", instructions, canonicalPlan).toJava(String::class.java)
-                )
+                val wrapper =
+                    JSONObject(
+                        api.callAttr("build_simulation", instructions, canonicalPlan).toJava(String::class.java),
+                    )
                 handler.post {
                     simulation = wrapper.getJSONObject("simulation")
                     simulationIndex = 0
@@ -282,8 +303,7 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- helpers ----------
 
-    private fun cleanError(e: Exception): String =
-        e.message?.substringAfterLast(": ") ?: "unknown error"
+    private fun cleanError(e: Exception): String = e.message?.substringAfterLast(": ") ?: "unknown error"
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 }

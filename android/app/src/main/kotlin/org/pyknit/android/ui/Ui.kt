@@ -10,10 +10,10 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.google.android.material.R as MR
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.R as MR
 
 // ---------- density & theme resolution ----------
 
@@ -21,8 +21,11 @@ fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).toI
 
 fun Context.attrColor(attr: Int): Int {
     val value = TypedValue()
-    return if (theme.resolveAttribute(attr, value, true)) value.data
-    else 0xFF000000.toInt()
+    return if (theme.resolveAttribute(attr, value, true)) {
+        value.data
+    } else {
+        0xFF000000.toInt()
+    }
 }
 
 val Context.colorPrimary: Int get() = attrColor(MR.attr.colorPrimary)
@@ -50,7 +53,11 @@ val MONO_FACE: Typeface = Typeface.MONOSPACE
 
 // ---------- primitives ----------
 
-fun Context.rounded(fill: Int, radiusDp: Int, stroke: Int? = null): GradientDrawable =
+fun Context.rounded(
+    fill: Int,
+    radiusDp: Int,
+    stroke: Int? = null,
+): GradientDrawable =
     GradientDrawable().apply {
         cornerRadius = dp(radiusDp).toFloat()
         setColor(fill)
@@ -64,41 +71,46 @@ fun Context.textView(
     typeface: Typeface = Typeface.DEFAULT,
     lineSpacing: Float = 1.25f,
     maxLines: Int = Int.MAX_VALUE,
-): TextView = TextView(this).apply {
-    this.text = text
-    setTextSize(sizeSp)
-    setTextColor(attrColor(colorAttr))
-    setLineSpacing(0f, lineSpacing)
-    setPadding(dp(2), dp(2), dp(2), dp(2))
-    this.typeface = typeface
-    this.maxLines = maxLines
-    ellipsize = android.text.TextUtils.TruncateAt.END
-}
+): TextView =
+    TextView(this).apply {
+        this.text = text
+        setTextSize(sizeSp)
+        setTextColor(attrColor(colorAttr))
+        setLineSpacing(0f, lineSpacing)
+        setPadding(dp(2), dp(2), dp(2), dp(2))
+        this.typeface = typeface
+        this.maxLines = maxLines
+        ellipsize = android.text.TextUtils.TruncateAt.END
+    }
 
 /** Small uppercase kicker that groups a screen into sections. */
-fun Context.sectionHeader(text: String): TextView = TextView(this).apply {
-    this.text = text.uppercase()
-    setTextSize(12f)
-    letterSpacing = 0.12f
-    setTextColor(attrColor(MR.attr.colorPrimary))
-    typeface = TITLE_FACE
-    setPadding(dp(2), dp(14), dp(2), dp(2))
-}
+fun Context.sectionHeader(text: String): TextView =
+    TextView(this).apply {
+        this.text = text.uppercase()
+        setTextSize(12f)
+        letterSpacing = 0.12f
+        setTextColor(attrColor(MR.attr.colorPrimary))
+        typeface = TITLE_FACE
+        setPadding(dp(2), dp(14), dp(2), dp(2))
+    }
 
 fun Context.screenTitle(text: String): TextView = textView(text, sizeSp = 24f, typeface = TITLE_FACE)
 
-fun Context.screenIntro(text: String): TextView =
-    textView(text, sizeSp = 14f, colorAttr = MR.attr.colorOnSurfaceVariant)
+fun Context.screenIntro(text: String): TextView = textView(text, sizeSp = 14f, colorAttr = MR.attr.colorOnSurfaceVariant)
 
-fun Context.hairline(): View = View(this).apply {
-    setBackgroundColor(attrColor(MR.attr.colorOutlineVariant))
-    minimumHeight = dp(1)
-}
+fun Context.hairline(): View =
+    View(this).apply {
+        setBackgroundColor(attrColor(MR.attr.colorOutlineVariant))
+        minimumHeight = dp(1)
+    }
 
 // ---------- cards & containers ----------
 
 /** Rounded surface card with a hairline border. */
-fun Context.card(paddingDp: Int = 16, radiusDp: Int = 12): LinearLayout =
+fun Context.card(
+    paddingDp: Int = 16,
+    radiusDp: Int = 12,
+): LinearLayout =
     LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         background = rounded(attrColor(MR.attr.colorSurface), radiusDp, stroke = attrColor(MR.attr.colorOutlineVariant))
@@ -106,21 +118,26 @@ fun Context.card(paddingDp: Int = 16, radiusDp: Int = 12): LinearLayout =
     }
 
 /** Column with the standard screen gutters. */
-fun Context.column(): LinearLayout = LinearLayout(this).apply {
-    orientation = LinearLayout.VERTICAL
-    setPadding(dp(16), dp(8), dp(16), dp(28))
-}
+fun Context.column(): LinearLayout =
+    LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(16), dp(8), dp(16), dp(28))
+    }
 
 /** Constrains content to a readable measure on large screens and centers it. */
-fun Context.maxWidthFrame(inner: View): FrameLayout = FrameLayout(this).apply {
-    setBackgroundColor(attrColor(android.R.attr.colorBackground))
-    val max = dp(640)
-    val width = minOf(max, resources.displayMetrics.widthPixels)
-    addView(inner, FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL))
-}
+fun Context.maxWidthFrame(inner: View): FrameLayout =
+    FrameLayout(this).apply {
+        setBackgroundColor(attrColor(android.R.attr.colorBackground))
+        val max = dp(640)
+        val width = minOf(max, resources.displayMetrics.widthPixels)
+        addView(inner, FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL))
+    }
 
 /** A compact vertical stat block: big value over a small label. */
-fun Context.statBlock(value: String, label: String): LinearLayout =
+fun Context.statBlock(
+    value: String,
+    label: String,
+): LinearLayout =
     LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
@@ -130,40 +147,52 @@ fun Context.statBlock(value: String, label: String): LinearLayout =
             textView(value, sizeSp = 20f, typeface = TITLE_FACE, lineSpacing = 1.1f),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
-            }
+            },
         )
         addView(
             textView(label, sizeSp = 11f, colorAttr = MR.attr.colorOnSurfaceVariant, lineSpacing = 1.1f),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
-            }
+            },
         )
     }
 
 // ---------- buttons ----------
 
-fun Context.filledButton(label: String, action: () -> Unit): MaterialButton =
+fun Context.filledButton(
+    label: String,
+    action: () -> Unit,
+): MaterialButton =
     MaterialButton(this, null, MR.attr.materialButtonStyle).apply {
         text = label
         isAllCaps = false
         setOnClickListener { action() }
     }
 
-fun Context.outlinedButton(label: String, action: () -> Unit): MaterialButton =
+fun Context.outlinedButton(
+    label: String,
+    action: () -> Unit,
+): MaterialButton =
     MaterialButton(this, null, MR.attr.materialButtonOutlinedStyle).apply {
         text = label
         isAllCaps = false
         setOnClickListener { action() }
     }
 
-fun Context.tonalButton(label: String, action: () -> Unit): MaterialButton =
+fun Context.tonalButton(
+    label: String,
+    action: () -> Unit,
+): MaterialButton =
     MaterialButton(android.view.ContextThemeWrapper(this, MR.style.Widget_Material3_Button_TonalButton), null, 0).apply {
         text = label
         isAllCaps = false
         setOnClickListener { action() }
     }
 
-fun Context.textButton(label: String, action: () -> Unit): MaterialButton =
+fun Context.textButton(
+    label: String,
+    action: () -> Unit,
+): MaterialButton =
     MaterialButton(android.view.ContextThemeWrapper(this, MR.style.Widget_Material3_Button_TextButton), null, 0).apply {
         text = label
         isAllCaps = false
@@ -178,38 +207,44 @@ fun Context.inputField(
     value: String,
     numeric: Boolean,
     helper: String? = null,
-): TextInputLayout = TextInputLayout(this, null, MR.attr.textInputOutlinedStyle).apply {
-    isHintEnabled = true
-    if (helper != null) helperText = helper
-    val edit = TextInputEditText(this@inputField).apply {
-        setText(value)
-        setHint(hint)
-        setTextSize(16f)
-        setInputType(if (numeric) {
-            android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-        } else {
-            android.text.InputType.TYPE_CLASS_TEXT
-        })
+): TextInputLayout =
+    TextInputLayout(this, null, MR.attr.textInputOutlinedStyle).apply {
+        isHintEnabled = true
+        if (helper != null) helperText = helper
+        val edit =
+            TextInputEditText(this@inputField).apply {
+                setText(value)
+                setHint(hint)
+                setTextSize(16f)
+                setInputType(
+                    if (numeric) {
+                        android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    } else {
+                        android.text.InputType.TYPE_CLASS_TEXT
+                    },
+                )
+            }
+        addView(edit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
-    addView(edit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-}
 
 /** Read-only dropdown built from label -> key pairs; the key is what Python receives. */
 fun Context.choiceField(
     hint: String,
     selectedKey: String,
     choices: List<Pair<String, String>>,
-): TextInputLayout = TextInputLayout(this, null, MR.attr.textInputOutlinedExposedDropdownMenuStyle).apply {
-    isHintEnabled = true
-    val edit = com.google.android.material.textfield.MaterialAutoCompleteTextView(this@choiceField).apply {
-        setHint(hint)
-        setTextSize(16f)
-        setSimpleItems(choices.map { it.first }.toTypedArray())
-        setText(choices.firstOrNull { it.second == selectedKey }?.first ?: selectedKey, false)
-        // Dropdown-only: selections, not free typing.
-        setKeyListener(null)
-        isFocusable = true
-        isFocusableInTouchMode = true
+): TextInputLayout =
+    TextInputLayout(this, null, MR.attr.textInputOutlinedExposedDropdownMenuStyle).apply {
+        isHintEnabled = true
+        val edit =
+            com.google.android.material.textfield.MaterialAutoCompleteTextView(this@choiceField).apply {
+                setHint(hint)
+                setTextSize(16f)
+                setSimpleItems(choices.map { it.first }.toTypedArray())
+                setText(choices.firstOrNull { it.second == selectedKey }?.first ?: selectedKey, false)
+                // Dropdown-only: selections, not free typing.
+                setKeyListener(null)
+                isFocusable = true
+                isFocusableInTouchMode = true
+            }
+        addView(edit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
-    addView(edit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-}

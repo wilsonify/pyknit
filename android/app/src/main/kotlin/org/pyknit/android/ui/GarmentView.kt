@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.DashPathEffect
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
@@ -18,8 +17,8 @@ import android.view.animation.DecelerateInterpolator
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.hypot
-import kotlin.math.min
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Port of the pyscript demo's garment renderer to a native Canvas view.
@@ -31,7 +30,6 @@ import kotlin.math.max
  * short ease-out, matching the demo.
  */
 class GarmentView(context: Context) : View(context) {
-
     private enum class Mode { NONE, SWATCH, SWEATER, RAGLAN, SOCK }
 
     private var mode = Mode.NONE
@@ -39,6 +37,7 @@ class GarmentView(context: Context) : View(context) {
     private var index = 0
     private var sim: JSONObject? = null
     private var reveal = 0f
+
     // Raglan reveal is a (torso, left sleeve, right sleeve) triple, each a
     // length in viewBox units revealed from the top of its piece.
     private var raglanT = 0f
@@ -67,7 +66,12 @@ class GarmentView(context: Context) : View(context) {
         setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     }
 
-    fun setSimulation(sim: JSONObject?, steps: JSONArray, index: Int, animate: Boolean = true) {
+    fun setSimulation(
+        sim: JSONObject?,
+        steps: JSONArray,
+        index: Int,
+        animate: Boolean = true,
+    ) {
         this.sim = sim
         this.steps = steps
         this.index = index.coerceIn(0, (steps.length() - 1).coerceAtLeast(0))
@@ -84,29 +88,33 @@ class GarmentView(context: Context) : View(context) {
         animator?.cancel()
         val animated = animate && mode != Mode.NONE
         if (animated && rgTarget != null && (raglanT != rgTarget.first || raglanSL != rgTarget.second || raglanSR != rgTarget.third)) {
-            val t0 = raglanT; val sl0 = raglanSL; val sr0 = raglanSR
-            animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 220
-                interpolator = DecelerateInterpolator()
-                addUpdateListener {
-                    val k = it.animatedValue as Float
-                    raglanT = t0 + (rgTarget.first - t0) * k
-                    raglanSL = sl0 + (rgTarget.second - sl0) * k
-                    raglanSR = sr0 + (rgTarget.third - sr0) * k
-                    invalidate()
+            val t0 = raglanT
+            val sl0 = raglanSL
+            val sr0 = raglanSR
+            animator =
+                ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = 220
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener {
+                        val k = it.animatedValue as Float
+                        raglanT = t0 + (rgTarget.first - t0) * k
+                        raglanSL = sl0 + (rgTarget.second - sl0) * k
+                        raglanSR = sr0 + (rgTarget.third - sr0) * k
+                        invalidate()
+                    }
+                    start()
                 }
-                start()
-            }
         } else if (animated && rgTarget == null && target != reveal) {
-            animator = ValueAnimator.ofFloat(reveal, target).apply {
-                duration = 220
-                interpolator = DecelerateInterpolator()
-                addUpdateListener {
-                    reveal = it.animatedValue as Float
-                    invalidate()
+            animator =
+                ValueAnimator.ofFloat(reveal, target).apply {
+                    duration = 220
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener {
+                        reveal = it.animatedValue as Float
+                        invalidate()
+                    }
+                    start()
                 }
-                start()
-            }
         } else {
             reveal = target
             if (rgTarget != null) {
@@ -118,7 +126,10 @@ class GarmentView(context: Context) : View(context) {
         invalidate()
     }
 
-    private fun modeFor(sim: JSONObject?, steps: JSONArray): Mode {
+    private fun modeFor(
+        sim: JSONObject?,
+        steps: JSONArray,
+    ): Mode {
         val garment = sim?.optString("garment") ?: "sweater"
         return when (garment) {
             "sock" -> Mode.SOCK
@@ -132,21 +143,25 @@ class GarmentView(context: Context) : View(context) {
         }
     }
 
-    private fun revealFor(mode: Mode, i: Int): Float = when (mode) {
-        Mode.NONE -> 0f
-        Mode.SWATCH -> i.toFloat()
-        Mode.SOCK -> {
-            val total = (steps.length() - 1).coerceAtLeast(1)
-            val f = i.toFloat() / total
-            18f + f * (sockTotalLen() - 18f)
+    private fun revealFor(
+        mode: Mode,
+        i: Int,
+    ): Float =
+        when (mode) {
+            Mode.NONE -> 0f
+            Mode.SWATCH -> i.toFloat()
+            Mode.SOCK -> {
+                val total = (steps.length() - 1).coerceAtLeast(1)
+                val f = i.toFloat() / total
+                18f + f * (sockTotalLen() - 18f)
+            }
+            Mode.RAGLAN -> i.toFloat() // interpreted piece-by-piece in drawRaglan
+            Mode.SWEATER -> {
+                val totalRows = (steps.length() - 1).coerceAtLeast(1)
+                val bandH = (hemY - topY) / totalRows
+                (340f - hemY) + minReveal + i * bandH
+            }
         }
-        Mode.RAGLAN -> i.toFloat() // interpreted piece-by-piece in drawRaglan
-        Mode.SWEATER -> {
-            val totalRows = (steps.length() - 1).coerceAtLeast(1)
-            val bandH = (hemY - topY) / totalRows
-            (340f - hemY) + minReveal + i * bandH
-        }
-    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -165,7 +180,10 @@ class GarmentView(context: Context) : View(context) {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private fun Canvas.fit(vw: Float, vh: Float) {
+    private fun Canvas.fit(
+        vw: Float,
+        vh: Float,
+    ) {
         val sx = width / vw
         val sy = height / vh
         val s = min(sx, sy)
@@ -176,27 +194,36 @@ class GarmentView(context: Context) : View(context) {
         scale(s, s)
     }
 
-    private fun color(hex: Long, alpha: Int = 255): Int =
-        Color.argb(alpha, ((hex shr 16) and 0xFF).toInt(), ((hex shr 8) and 0xFF).toInt(), (hex and 0xFF).toInt())
+    private fun color(
+        hex: Long,
+        alpha: Int = 255,
+    ): Int = Color.argb(alpha, ((hex shr 16) and 0xFF).toInt(), ((hex shr 8) and 0xFF).toInt(), (hex and 0xFF).toInt())
 
     private fun accent(alpha: Int): Int = color(0x5A2A75, alpha)
+
     private fun shade(alpha: Int): Int = color(0x2B2333, alpha)
 
-    private fun knitPattern(color: Int, vw: Float = 12f, vh: Float = 8f): BitmapShader {
+    private fun knitPattern(
+        color: Int,
+        vw: Float = 12f,
+        vh: Float = 8f,
+    ): BitmapShader {
         val bmp = Bitmap.createBitmap(vw.toInt(), vh.toInt(), Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            style = Paint.Style.STROKE
-            strokeWidth = 1.1f
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-        }
-        val path = Path().apply {
-            moveTo(3f, vh - 0.8f)
-            lineTo(vw / 2f, 1.8f)
-            lineTo(vw - 3f, vh - 0.8f)
-        }
+        val p =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = color
+                style = Paint.Style.STROKE
+                strokeWidth = 1.1f
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+            }
+        val path =
+            Path().apply {
+                moveTo(3f, vh - 0.8f)
+                lineTo(vw / 2f, 1.8f)
+                lineTo(vw - 3f, vh - 0.8f)
+            }
         c.drawPath(path, p)
         return BitmapShader(bmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
     }
@@ -204,33 +231,56 @@ class GarmentView(context: Context) : View(context) {
     private fun ribPattern(color: Int): BitmapShader {
         val bmp = Bitmap.createBitmap(7, 7, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            style = Paint.Style.STROKE
-            strokeWidth = 1f
-        }
+        val p =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = color
+                style = Paint.Style.STROKE
+                strokeWidth = 1f
+            }
         c.drawLine(1.8f, 0f, 1.8f, 7f, p)
         c.drawLine(5.2f, 0f, 5.2f, 7f, p)
         return BitmapShader(bmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
     }
 
-    private fun gradient(colors: IntArray, horizontal: Boolean = true): LinearGradient = if (horizontal) {
-        LinearGradient(0f, 0f, 320f, 0f, colors, null, Shader.TileMode.CLAMP)
-    } else {
-        LinearGradient(0f, 0f, 0f, 230f, colors, null, Shader.TileMode.CLAMP)
-    }
+    private fun gradient(
+        colors: IntArray,
+        horizontal: Boolean = true,
+    ): LinearGradient =
+        if (horizontal) {
+            LinearGradient(0f, 0f, 320f, 0f, colors, null, Shader.TileMode.CLAMP)
+        } else {
+            LinearGradient(0f, 0f, 0f, 230f, colors, null, Shader.TileMode.CLAMP)
+        }
 
-    private val fabricColors = intArrayOf(
-        color(0xC4A8D8), color(0xE8DBF1), color(0xC4A8D8),
-    )
-    private val sockColors = intArrayOf(
-        color(0xEEF0FA), color(0xDBE0F3), color(0xC2CBE9),
-    )
+    private val fabricColors =
+        intArrayOf(
+            color(0xC4A8D8),
+            color(0xE8DBF1),
+            color(0xC4A8D8),
+        )
+    private val sockColors =
+        intArrayOf(
+            color(0xEEF0FA),
+            color(0xDBE0F3),
+            color(0xC2CBE9),
+        )
 
     private val knitPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = knitPattern(accent(40)) }
     private val ribPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = ribPattern(accent(36)) }
     private val ribTint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(26, 123, 63, 160) }
-    private val shadePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = LinearGradient(0f, 0f, 320f, 0f, intArrayOf(shade(51), Color.TRANSPARENT, Color.TRANSPARENT, shade(51)), null, Shader.TileMode.CLAMP) }
+    private val shadePaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader =
+                LinearGradient(
+                    0f,
+                    0f,
+                    320f,
+                    0f,
+                    intArrayOf(shade(51), Color.TRANSPARENT, Color.TRANSPARENT, shade(51)),
+                    null,
+                    Shader.TileMode.CLAMP,
+                )
+        }
 
     private fun isRib(step: JSONObject): Boolean {
         val ops = step.optJSONArray("row_ops") ?: return false
@@ -250,12 +300,18 @@ class GarmentView(context: Context) : View(context) {
     // sweater (bottom-up; used for manual sweaters and hat plans)
     // ------------------------------------------------------------------
 
-    private fun sweaterSilhouette(): Path = Path().apply {
-        moveTo(56f, hemY); lineTo(66f, 150f); lineTo(100f, topY); lineTo(108f, topY)
-        cubicTo(130f, 108f, 190f, 108f, 212f, topY)
-        lineTo(220f, topY); lineTo(254f, 150f); lineTo(264f, hemY)
-        close()
-    }
+    private fun sweaterSilhouette(): Path =
+        Path().apply {
+            moveTo(56f, hemY)
+            lineTo(66f, 150f)
+            lineTo(100f, topY)
+            lineTo(108f, topY)
+            cubicTo(130f, 108f, 190f, 108f, 212f, topY)
+            lineTo(220f, topY)
+            lineTo(254f, 150f)
+            lineTo(264f, hemY)
+            close()
+        }
 
     private fun drawSweater(canvas: Canvas) {
         val totalRows = (steps.length() - 1).coerceAtLeast(1)
@@ -282,19 +338,28 @@ class GarmentView(context: Context) : View(context) {
             }
         }
         // separators between bands
-        val sep = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = shade(31); strokeWidth = 1f }
+        val sep =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = shade(31)
+                strokeWidth = 1f
+            }
         for (i in 1 until steps.length() - 1) {
             val y = hemY - i * bandH
             canvas.drawLine(0f, y, 320f, y, sep)
         }
         // neckline + hem
-        val neck = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = color(0xB39BCB)
-            strokeWidth = 11f
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-        }
-        val neckPath = Path().apply { moveTo(108f, topY); cubicTo(130f, 108f, 190f, 108f, 212f, topY) }
+        val neck =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = color(0xB39BCB)
+                strokeWidth = 11f
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+            }
+        val neckPath =
+            Path().apply {
+                moveTo(108f, topY)
+                cubicTo(130f, 108f, 190f, 108f, 212f, topY)
+            }
         canvas.drawPath(neckPath, neck)
         drawHemStrip(canvas, hemY - minReveal)
         canvas.restore()
@@ -302,27 +367,35 @@ class GarmentView(context: Context) : View(context) {
         // outline on top of the reveal
         canvas.save()
         canvas.clipRect(0f, clipTop, 320f, 340f)
-        val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accent(72)
-            strokeWidth = 2f
-            style = Paint.Style.STROKE
-            strokeJoin = Paint.Join.ROUND
-        }
+        val outline =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accent(72)
+                strokeWidth = 2f
+                style = Paint.Style.STROKE
+                strokeJoin = Paint.Join.ROUND
+            }
         canvas.drawPath(sweaterSilhouette(), outline)
         canvas.restore()
 
         canvas.restore()
     }
 
-    private fun drawShadow(canvas: Canvas, rx: Float) {
-        val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = shade(26)
-            maskFilter = android.graphics.BlurMaskFilter(5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
-        }
+    private fun drawShadow(
+        canvas: Canvas,
+        rx: Float,
+    ) {
+        val shadow =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = shade(26)
+                maskFilter = android.graphics.BlurMaskFilter(5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+            }
         canvas.drawOval(RectF(160f - rx, 325f, 160f + rx, 333f), shadow)
     }
 
-    private fun drawHemStrip(canvas: Canvas, y: Float) {
+    private fun drawHemStrip(
+        canvas: Canvas,
+        y: Float,
+    ) {
         canvas.drawRect(0f, y, 320f, y + minReveal, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent(46) })
         canvas.drawRect(0f, y, 320f, y + minReveal, ribPaint)
     }
@@ -331,33 +404,50 @@ class GarmentView(context: Context) : View(context) {
     // raglan (top-down: torso + two sleeves)
     // ------------------------------------------------------------------
 
-    private fun raglanTorsoPath(F: Float): Path = Path().apply {
-        val sx = 108f - 16f * F
-        val ex = 212f + 16f * F
-        moveTo(108f, topY)
-        cubicTo(130f, 108f, 190f, 108f, 212f, topY)
-        lineTo(ex, underarmY); lineTo(ex, hemY); lineTo(sx, hemY); lineTo(sx, underarmY)
-        close()
-    }
-
-    private fun sleevePath(left: Boolean): Path = Path().apply {
-        if (left) {
-            moveTo(74f, 76f); lineTo(108f, 66f); lineTo(92f, underarmY); lineTo(92f, hemY - 12f)
-            quadTo(92f, hemY, 86f, hemY); lineTo(68f, hemY)
-            quadTo(62f, hemY, 62f, hemY - 12f); lineTo(62f, 84f)
-        } else {
-            moveTo(246f, 76f); lineTo(212f, 66f); lineTo(228f, underarmY); lineTo(228f, hemY - 12f)
-            quadTo(228f, hemY, 234f, hemY); lineTo(252f, hemY)
-            quadTo(258f, hemY, 258f, hemY - 12f); lineTo(258f, 84f)
+    private fun raglanTorsoPath(flare: Float): Path =
+        Path().apply {
+            val sx = 108f - 16f * flare
+            val ex = 212f + 16f * flare
+            moveTo(108f, topY)
+            cubicTo(130f, 108f, 190f, 108f, 212f, topY)
+            lineTo(ex, underarmY)
+            lineTo(ex, hemY)
+            lineTo(sx, hemY)
+            lineTo(sx, underarmY)
+            close()
         }
-        close()
-    }
+
+    private fun sleevePath(left: Boolean): Path =
+        Path().apply {
+            if (left) {
+                moveTo(74f, 76f)
+                lineTo(108f, 66f)
+                lineTo(92f, underarmY)
+                lineTo(92f, hemY - 12f)
+                quadTo(92f, hemY, 86f, hemY)
+                lineTo(68f, hemY)
+                quadTo(62f, hemY, 62f, hemY - 12f)
+                lineTo(62f, 84f)
+            } else {
+                moveTo(246f, 76f)
+                lineTo(212f, 66f)
+                lineTo(228f, underarmY)
+                lineTo(228f, hemY - 12f)
+                quadTo(228f, hemY, 234f, hemY)
+                lineTo(252f, hemY)
+                quadTo(258f, hemY, 258f, hemY - 12f)
+                lineTo(258f, 84f)
+            }
+            close()
+        }
 
     private fun raglanSections(): RaglanSections {
         val sections = sim?.optJSONArray("sections")
         var bodyEnd = -1
-        var s1Start = -1; var s1End = -1
-        var s2Start = -1; var s2End = -1
+        var s1Start = -1
+        var s1End = -1
+        var s2Start = -1
+        var s2End = -1
         var lastOtherEnd = 0
         if (sections != null) {
             for (i in 0 until sections.length()) {
@@ -366,26 +456,45 @@ class GarmentView(context: Context) : View(context) {
                 val start = sec.optInt("start")
                 val end = sec.optInt("end")
                 when (id) {
-                    "left_sleeve" -> { s1Start = start; s1End = end }
-                    "right_sleeve" -> { s2Start = start; s2End = end }
+                    "left_sleeve" -> {
+                        s1Start = start
+                        s1End = end
+                    }
+                    "right_sleeve" -> {
+                        s2Start = start
+                        s2End = end
+                    }
                     "body" -> bodyEnd = end
                     else -> lastOtherEnd = max(lastOtherEnd, end)
                 }
             }
         }
         val total = steps.length()
-        if (bodyEnd < 0) bodyEnd = if (sections == null || sections.length() == 0) {
-            (total * 0.6f).toInt().coerceAtLeast(1)
-        } else {
-            lastOtherEnd.coerceAtLeast(1)
+        if (bodyEnd < 0) {
+            bodyEnd =
+                if (sections == null || sections.length() == 0) {
+                    (total * 0.6f).toInt().coerceAtLeast(1)
+                } else {
+                    lastOtherEnd.coerceAtLeast(1)
+                }
         }
-        if (s1Start < 0) { s1Start = bodyEnd; s1End = bodyEnd + (total - bodyEnd) / 3 }
-        if (s2Start < 0) { s2Start = s1End; s2End = total }
+        if (s1Start < 0) {
+            s1Start = bodyEnd
+            s1End = bodyEnd + (total - bodyEnd) / 3
+        }
+        if (s2Start < 0) {
+            s2Start = s1End
+            s2End = total
+        }
         return RaglanSections(bodyEnd, s1Start, s1End, s2Start, s2End)
     }
 
     private data class RaglanSections(
-        val bodyEnd: Int, val s1Start: Int, val s1End: Int, val s2Start: Int, val s2End: Int,
+        val bodyEnd: Int,
+        val s1Start: Int,
+        val s1End: Int,
+        val s2Start: Int,
+        val s2End: Int,
     )
 
     private fun raglanFlare(): Float {
@@ -409,12 +518,17 @@ class GarmentView(context: Context) : View(context) {
     private fun raglanReveals(): Triple<Float, Float, Float> {
         val s = raglanSections()
         val torsoFull = hemY - topY
-        val torso = if (index < s.bodyEnd) {
-            minSliver + (index + 1f) / s.bodyEnd * (torsoFull - minSliver)
-        } else {
-            torsoFull
-        }
-        fun sleeve(start: Int, end: Int): Float {
+        val torso =
+            if (index < s.bodyEnd) {
+                minSliver + (index + 1f) / s.bodyEnd * (torsoFull - minSliver)
+            } else {
+                torsoFull
+            }
+
+        fun sleeve(
+            start: Int,
+            end: Int,
+        ): Float {
             if (index < start) return 0f
             val f = (index - start + 1f) / (end - start).coerceAtLeast(1)
             return minSliver + min(1f, f) * (sleeveLen - minSliver)
@@ -426,42 +540,57 @@ class GarmentView(context: Context) : View(context) {
         val torsoReveal = (topY + raglanT).coerceIn(topY, hemY + 2f)
         val sleeveLReveal = (sleeveTopY + raglanSL).coerceIn(0f, hemY + 2f)
         val sleeveRReveal = (sleeveTopY + raglanSR).coerceIn(0f, hemY + 2f)
-        val F = raglanFlare()
+        val flare = raglanFlare()
 
         canvas.save()
         canvas.fit(320f, 340f)
         drawShadow(canvas, 118f)
 
-        val torso = raglanTorsoPath(F)
+        val torso = raglanTorsoPath(flare)
         drawPiece(canvas, torso, RectF(0f, topY, 320f, torsoReveal), topDown = true) { c ->
             // wedge + seams + hem
-            val wedge = Path().apply {
-                moveTo(108f, topY); lineTo(212f, topY)
-                lineTo(212f + 16f * F, underarmY); lineTo(108f - 16f * F, underarmY)
-                close()
-            }
+            val wedge =
+                Path().apply {
+                    moveTo(108f, topY)
+                    lineTo(212f, topY)
+                    lineTo(212f + 16f * flare, underarmY)
+                    lineTo(108f - 16f * flare, underarmY)
+                    close()
+                }
             val wedgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(31, 123, 63, 160) }
             c.drawPath(wedge, wedgePaint)
-            val seam = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = accent(102)
-                strokeWidth = 2.5f
-                style = Paint.Style.STROKE
-                strokeCap = Paint.Cap.ROUND
-            }
-            c.drawLine(108f, topY, 108f - 16f * F, underarmY, seam)
-            c.drawLine(212f, topY, 212f + 16f * F, underarmY, seam)
+            val seam =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = accent(102)
+                    strokeWidth = 2.5f
+                    style = Paint.Style.STROKE
+                    strokeCap = Paint.Cap.ROUND
+                }
+            c.drawLine(108f, topY, 108f - 16f * flare, underarmY, seam)
+            c.drawLine(212f, topY, 212f + 16f * flare, underarmY, seam)
             drawHemStrip(c, hemY - minReveal)
         }
         drawPieceOutline(canvas, torso, RectF(0f, topY, 320f, torsoReveal), topDown = true) { c ->
-            val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = accent(82); strokeWidth = 2f; style = Paint.Style.STROKE; strokeJoin = Paint.Join.ROUND
-            }
+            val outline =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = accent(82)
+                    strokeWidth = 2f
+                    style = Paint.Style.STROKE
+                    strokeJoin = Paint.Join.ROUND
+                }
             c.drawPath(torso, outline)
-            val neck = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(140, 123, 63, 160)
-                strokeWidth = 6f; style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND
-            }
-            val neckPath = Path().apply { moveTo(108f, topY); cubicTo(130f, 108f, 190f, 108f, 212f, topY) }
+            val neck =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.argb(140, 123, 63, 160)
+                    strokeWidth = 6f
+                    style = Paint.Style.STROKE
+                    strokeCap = Paint.Cap.ROUND
+                }
+            val neckPath =
+                Path().apply {
+                    moveTo(108f, topY)
+                    cubicTo(130f, 108f, 190f, 108f, 212f, topY)
+                }
             c.drawPath(neckPath, neck)
         }
 
@@ -471,18 +600,26 @@ class GarmentView(context: Context) : View(context) {
             drawHemStrip(c, hemY - minReveal)
         }
         drawPieceOutline(canvas, sleeveL, RectF(0f, sleeveTopY, 320f, sleeveLReveal), topDown = true) { c ->
-            val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = accent(82); strokeWidth = 2f; style = Paint.Style.STROKE; strokeJoin = Paint.Join.ROUND
-            }
+            val outline =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = accent(82)
+                    strokeWidth = 2f
+                    style = Paint.Style.STROKE
+                    strokeJoin = Paint.Join.ROUND
+                }
             c.drawPath(sleeveL, outline)
         }
         drawPiece(canvas, sleeveR, RectF(0f, sleeveTopY, 320f, sleeveRReveal), topDown = true) { c ->
             drawHemStrip(c, hemY - minReveal)
         }
         drawPieceOutline(canvas, sleeveR, RectF(0f, sleeveTopY, 320f, sleeveRReveal), topDown = true) { c ->
-            val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = accent(82); strokeWidth = 2f; style = Paint.Style.STROKE; strokeJoin = Paint.Join.ROUND
-            }
+            val outline =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = accent(82)
+                    strokeWidth = 2f
+                    style = Paint.Style.STROKE
+                    strokeJoin = Paint.Join.ROUND
+                }
             c.drawPath(sleeveR, outline)
         }
 
@@ -533,21 +670,29 @@ class GarmentView(context: Context) : View(context) {
         return cuffDepth to ankleDepth
     }
 
-    private fun sockSilhouette(g: Pair<Float, Float>): Path = Path().apply {
-        val (cuff, ankle) = g
-        moveTo(26f, 26f); lineTo(26f, 192f); lineTo(204f, 192f)
-        quadTo(268f, 192f, 268f, 160f)
-        lineTo(26f + ankle, 152f); lineTo(26f + cuff, 26f)
-        close()
-    }
+    private fun sockSilhouette(g: Pair<Float, Float>): Path =
+        Path().apply {
+            val (cuff, ankle) = g
+            moveTo(26f, 26f)
+            lineTo(26f, 192f)
+            lineTo(204f, 192f)
+            quadTo(268f, 192f, 268f, 160f)
+            lineTo(26f + ankle, 152f)
+            lineTo(26f + cuff, 26f)
+            close()
+        }
 
-    private fun sockCenterline(g: Pair<Float, Float>): Path = Path().apply {
-        val (cuff, ankle) = g
-        moveTo(26f, 26f); lineTo(26f + cuff, 26f)
-        lineTo(26f + ankle, 152f); lineTo(26f + ankle, 192f)
-        lineTo(34f, 192f); lineTo(204f, 192f)
-        quadTo(268f, 192f, 268f, 160f)
-    }
+    private fun sockCenterline(g: Pair<Float, Float>): Path =
+        Path().apply {
+            val (cuff, ankle) = g
+            moveTo(26f, 26f)
+            lineTo(26f + cuff, 26f)
+            lineTo(26f + ankle, 152f)
+            lineTo(26f + ankle, 192f)
+            lineTo(34f, 192f)
+            lineTo(204f, 192f)
+            quadTo(268f, 192f, 268f, 160f)
+        }
 
     private fun sockTotalLen(): Float {
         val g = sockGeometry()
@@ -555,7 +700,11 @@ class GarmentView(context: Context) : View(context) {
     }
 
     /** Converts a stroked path to a filled ribbon path (for the reveal mask). */
-    private fun strokeToFill(path: Path, width: Float, step: Float = 2f): Path {
+    private fun strokeToFill(
+        path: Path,
+        width: Float,
+        step: Float = 2f,
+    ): Path {
         val pm = PathMeasure(path, false)
         val len = pm.length
         val left = mutableListOf<FloatArray>()
@@ -593,19 +742,26 @@ class GarmentView(context: Context) : View(context) {
         canvas.save()
         canvas.fit(360f, 230f)
         // shadow
-        val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = shade(26)
-            maskFilter = android.graphics.BlurMaskFilter(5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
-        }
+        val shadow =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = shade(26)
+                maskFilter = android.graphics.BlurMaskFilter(5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+            }
         canvas.drawOval(RectF(18f, 210f, 282f, 218f), shadow)
 
         // fabric clipped to silhouette + revealed mask
         canvas.save()
         canvas.clipPath(silhouette)
         canvas.clipPath(revealedMask)
-        canvas.drawRect(0f, 0f, 360f, 230f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = LinearGradient(0f, 0f, 360f, 230f, sockColors, null, Shader.TileMode.CLAMP)
-        })
+        canvas.drawRect(
+            0f,
+            0f,
+            360f,
+            230f,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, 0f, 360f, 230f, sockColors, null, Shader.TileMode.CLAMP)
+            },
+        )
         canvas.drawRect(0f, 0f, 360f, 230f, Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = knitPattern(accent(38), 11f, 8f) })
         // regions: rib cuff + heel
         val total = (steps.length() - 1).coerceAtLeast(1)
@@ -637,16 +793,24 @@ class GarmentView(context: Context) : View(context) {
         canvas.save()
         canvas.clipPath(silhouette)
         canvas.clipPath(revealedMask)
-        val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accent(82); strokeWidth = 2f; style = Paint.Style.STROKE; strokeJoin = Paint.Join.ROUND
-        }
+        val outline =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accent(82)
+                strokeWidth = 2f
+                style = Paint.Style.STROKE
+                strokeJoin = Paint.Join.ROUND
+            }
         canvas.drawPath(silhouette, outline)
         canvas.restore()
 
         canvas.restore()
     }
 
-    private fun trimmedPath(path: Path, length: Float, step: Float = 2f): Path {
+    private fun trimmedPath(
+        path: Path,
+        length: Float,
+        step: Float = 2f,
+    ): Path {
         val pm = PathMeasure(path, false)
         val total = pm.length
         val out = Path()
@@ -655,7 +819,12 @@ class GarmentView(context: Context) : View(context) {
         var first = true
         while (t <= length.coerceAtMost(total)) {
             pm.getPosTan(t, pts, null)
-            if (first) { out.moveTo(pts[0], pts[1]); first = false } else out.lineTo(pts[0], pts[1])
+            if (first) {
+                out.moveTo(pts[0], pts[1])
+                first = false
+            } else {
+                out.lineTo(pts[0], pts[1])
+            }
             t += step
         }
         return out
@@ -667,7 +836,13 @@ class GarmentView(context: Context) : View(context) {
 
     private fun swatchNeedleY(x: Float): Float = 52f + (x - 28f) * (60f - 52f) / 264f
 
-    private fun swatchStitchPath(code: Int, cx: Float, y: Float, rowH: Float, spacing: Float): Path {
+    private fun swatchStitchPath(
+        code: Int,
+        cx: Float,
+        y: Float,
+        rowH: Float,
+        spacing: Float,
+    ): Path {
         val h = rowH * 0.74f
         val w = (spacing * 0.42f).coerceIn(2.2f, 5f)
         val top = y + rowH * 0.14f
@@ -683,24 +858,35 @@ class GarmentView(context: Context) : View(context) {
                 p.addOval(RectF(cx - max(2.2f, w * 0.6f), top + h * 0.08f, cx + max(2.2f, w * 0.6f), top + h * 0.92f), Path.Direction.CW)
             }
             3, 4 -> { // decrease / bind-off: V + merge mark handled by extra stroke
-                p.moveTo(cx - w, top); p.lineTo(cx, top + h); p.lineTo(cx + w, top)
+                p.moveTo(cx - w, top)
+                p.lineTo(cx, top + h)
+                p.lineTo(cx + w, top)
             }
             else -> { // knit V
-                p.moveTo(cx - w, top); p.lineTo(cx, top + h); p.lineTo(cx + w, top)
+                p.moveTo(cx - w, top)
+                p.lineTo(cx, top + h)
+                p.lineTo(cx + w, top)
             }
         }
         return p
     }
 
-    private fun swatchStitchColor(code: Int): Int = when (code) {
-        1 -> color(0x3F2459)
-        2 -> color(0xB98CD9)
-        3 -> color(0xA33E5C)
-        4 -> color(0x8A6BB0)
-        else -> color(0x7C55B0)
-    }
+    private fun swatchStitchColor(code: Int): Int =
+        when (code) {
+            1 -> color(0x3F2459)
+            2 -> color(0xB98CD9)
+            3 -> color(0xA33E5C)
+            4 -> color(0x8A6BB0)
+            else -> color(0x7C55B0)
+        }
 
-    private fun drawSwatchRow(canvas: Canvas, rowIdx: Int, step: JSONObject, y: Float, rowH: Float) {
+    private fun drawSwatchRow(
+        canvas: Canvas,
+        rowIdx: Int,
+        step: JSONObject,
+        y: Float,
+        rowH: Float,
+    ) {
         val ops = step.optJSONArray("row_ops")
         val worked = ops?.length() ?: 1
         val w = (swX1 - swX0) / max(worked, 1)
@@ -714,27 +900,30 @@ class GarmentView(context: Context) : View(context) {
             val code = ops.optInt(i)
             val cx = swX0 + (i + 0.5f) * w
             val path = swatchStitchPath(code, cx, y, rowH, w)
-            val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = swatchStitchColor(code)
-                style = Paint.Style.STROKE
-                strokeWidth = 2.4f
-                strokeCap = Paint.Cap.ROUND
-                strokeJoin = Paint.Join.ROUND
-            }
+            val stroke =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = swatchStitchColor(code)
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2.4f
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
             canvas.drawPath(path, stroke)
             if (code == 3 || code == 4) { // merge mark above the V
                 val top = y + rowH * 0.14f
                 val h = rowH * 0.74f
-                val merge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = swatchStitchColor(code)
-                    style = Paint.Style.STROKE
-                    strokeWidth = 1.7f
-                    strokeCap = Paint.Cap.ROUND
-                }
-                val mp = Path().apply {
-                    moveTo(cx - w * 1.7f, top + h * 0.16f)
-                    quadTo(cx, top - 3f, cx + w * 1.7f, top + h * 0.16f)
-                }
+                val merge =
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = swatchStitchColor(code)
+                        style = Paint.Style.STROKE
+                        strokeWidth = 1.7f
+                        strokeCap = Paint.Cap.ROUND
+                    }
+                val mp =
+                    Path().apply {
+                        moveTo(cx - w * 1.7f, top + h * 0.16f)
+                        quadTo(cx, top - 3f, cx + w * 1.7f, top + h * 0.16f)
+                    }
                 canvas.drawPath(mp, merge)
             }
         }
@@ -750,26 +939,33 @@ class GarmentView(context: Context) : View(context) {
         canvas.fit(320f, vh)
 
         // fabric panel
-        val panel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = color(0xF7F2FC)
-            style = Paint.Style.FILL
-        }
+        val panel =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = color(0xF7F2FC)
+                style = Paint.Style.FILL
+            }
         canvas.drawRoundRect(RectF(30f, fabricY - 6f, 290f, fabricY + fabH + 6f), 8f, 8f, panel)
-        val panelStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accent(31)
-            style = Paint.Style.STROKE
-            strokeWidth = 1f
-        }
+        val panelStroke =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accent(31)
+                style = Paint.Style.STROKE
+                strokeWidth = 1f
+            }
         canvas.drawRoundRect(RectF(30f, fabricY - 6f, 290f, fabricY + fabH + 6f), 8f, 8f, panelStroke)
 
         // needle
-        val needle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = color(0xA9B0BD)
-            strokeWidth = 5f
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-        }
-        val needlePath = Path().apply { moveTo(28f, 52f); quadTo(160f, 58f, 292f, 60f) }
+        val needle =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = color(0xA9B0BD)
+                strokeWidth = 5f
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+            }
+        val needlePath =
+            Path().apply {
+                moveTo(28f, 52f)
+                quadTo(160f, 58f, 292f, 60f)
+            }
         canvas.drawPath(needlePath, needle)
         canvas.drawCircle(292f, 60f, 7f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = color(0x6B7180) })
 
@@ -797,20 +993,22 @@ class GarmentView(context: Context) : View(context) {
         // live stitches on the needle
         val liveN = steps.getJSONObject(min(index, steps.length() - 1)).optInt("n", 0)
         val lw = (swX1 - swX0) / max(liveN, 1)
-        val loop = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = color(0x7C55B0)
-            strokeWidth = 2.2f
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-        }
+        val loop =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = color(0x7C55B0)
+                strokeWidth = 2.2f
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+            }
         for (i in 0 until liveN) {
             val x = swX0 + (i + 0.5f) * lw
             val ny = swatchNeedleY(x)
-            val p = Path().apply {
-                moveTo(x - 3.5f, ny)
-                quadTo(x - 4f, ny + 9f, x, ny + 9f)
-                quadTo(x + 4f, ny + 9f, x + 3.5f, ny)
-            }
+            val p =
+                Path().apply {
+                    moveTo(x - 3.5f, ny)
+                    quadTo(x - 4f, ny + 9f, x, ny + 9f)
+                    quadTo(x + 4f, ny + 9f, x + 3.5f, ny)
+                }
             canvas.drawPath(p, loop)
         }
 

@@ -2,6 +2,14 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.chaquo.python")
+    id("com.diffplug.spotless")
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint("1.1.1")
+    }
 }
 
 android {

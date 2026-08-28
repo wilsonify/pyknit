@@ -472,6 +472,8 @@ class TestDemoSpecifics:
         import zipfile
 
         wheel = pathlib.Path(__file__).resolve().parents[2] / "demos" / "_wheel" / "pyknit-0.1.4-py3-none-any.whl"
+        if not wheel.exists():
+            pytest.skip("Wheel not built yet; run python-build stage first")
         with zipfile.ZipFile(wheel) as zf:
             names = zf.namelist()
         assert any("symbols/japanese/" in n and n.endswith(".png") for n in names)
