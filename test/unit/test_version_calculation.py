@@ -7,7 +7,6 @@ from scripts.calculate_version import (
     compute_bump_level,
     calculate_version,
     find_last_release_tag,
-    get_changed_files,
     has_test_changes,
     run_git,
 )

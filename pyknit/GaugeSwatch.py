@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments
 
 if TYPE_CHECKING:
-    from .Chart import PatternRow, Stitch
+    from .Chart import PatternRow
 
 
 class GaugeSwatch(BaseModel):

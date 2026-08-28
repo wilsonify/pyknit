@@ -1,7 +1,6 @@
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 import xml.etree.ElementTree as ET
 
 import pyknit.Chart as Chart

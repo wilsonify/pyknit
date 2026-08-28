@@ -1,7 +1,6 @@
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 """Tests for stitch metadata and symbol path resolution."""
 
 import os

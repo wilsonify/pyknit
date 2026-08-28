@@ -54,7 +54,7 @@ def to_html(result):
     dec_numbers = result.get("decrease_row_numbers") or [r + 1 for r in result["schedule"]]
     if dec_numbers:
         dec_list = ", ".join(str(n) for n in dec_numbers)
-        dec_summary = f"<p class='plan-intro'><strong>Decrease rows:</strong> { _esc(dec_list) } (rows { _esc(dec_numbers[0]) }&ndash;{ _esc(dec_numbers[-1]) } of {result['rows']})</p>"
+        dec_summary = f"<p class='plan-intro'><strong>Decrease rows:</strong> { _esc(dec_list) } (rows { _esc(dec_numbers[0]) }&ndash;{ _esc(dec_numbers[-1]) } of {result['rows']})</p>"  # noqa: E501
     else:
         dec_summary = ""
 
@@ -88,11 +88,11 @@ def to_html(result):
     return (
         "<style>"
         ".sleeve-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin:0.6rem 0;}"
-        ".sleeve-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.4rem 0.65rem;background:#fdfcfa;flex:1 1 auto;min-width:90px;text-align:center;}"
-        ".sleeve-pill .label{display:block;font-size:0.72rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"
+        ".sleeve-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.4rem 0.65rem;background:#fdfcfa;flex:1 1 auto;min-width:90px;text-align:center;}"  # noqa: E501
+        ".sleeve-pill .label{display:block;font-size:0.72rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"  # noqa: E501
         ".sleeve-pill .value{font-size:0.95rem;font-weight:700;color:#2b2333;}"
         ".sleeve-rounds{width:100%;border-collapse:collapse;font-size:0.95rem;}"
-        ".sleeve-rounds th,.sleeve-rounds td{border:1px solid #e5e1dc;padding:0.5rem 0.55rem;text-align:left;vertical-align:top;}"
+        ".sleeve-rounds th,.sleeve-rounds td{border:1px solid #e5e1dc;padding:0.5rem 0.55rem;text-align:left;vertical-align:top;}"  # noqa: E501
         ".sleeve-rounds th{background:#f3ecf7;color:#5a2a75;font-weight:700;}"
         "</style>"
         f"<div class='output-box'>{result['svg']}</div>"
@@ -110,7 +110,7 @@ def to_html(result):
         "</section>"
         "<h3 class='plan-title'>Row-by-round instructions</h3>"
         "<section class='plan-section'>"
-        f"<p class='plan-intro'>Work from the upper arm (row 1) toward the cuff (row {result['rows']}). Decrease rows remove {result['decrease_per_row']} sts at the underarm seam; plain rows are knit even.</p>"
+        f"<p class='plan-intro'>Work from the upper arm (row 1) toward the cuff (row {result['rows']}). Decrease rows remove {result['decrease_per_row']} sts at the underarm seam; plain rows are knit even.</p>"  # noqa: E501
         "<table class='sleeve-rounds'>"
         "<thead><tr><th>Row</th><th>Type</th><th>Stitches</th><th>Instruction</th></tr></thead>"
         f"<tbody>{plan_rows}</tbody></table>"

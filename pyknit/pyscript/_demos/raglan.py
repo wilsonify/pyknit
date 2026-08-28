@@ -1487,8 +1487,8 @@ def to_html(result):
     blocks = [
         "<style>"
         ".raglan-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin:0.6rem 0;}"
-        ".raglan-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.4rem 0.65rem;background:#fdfcfa;flex:1 1 auto;min-width:90px;text-align:center;}"
-        ".raglan-pill .label{display:block;font-size:0.72rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"
+        ".raglan-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.4rem 0.65rem;background:#fdfcfa;flex:1 1 auto;min-width:90px;text-align:center;}"  # noqa: E501
+        ".raglan-pill .label{display:block;font-size:0.72rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"  # noqa: E501
         ".raglan-pill .value{font-size:0.95rem;font-weight:700;color:#2b2333;}"
         "</style>",
         f"<div class='output-box'>{result['svg']}</div>",

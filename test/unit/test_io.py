@@ -1,7 +1,6 @@
 # Copyright (C) 2026 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 """Tests for pyknit.io CSV/JSON pattern import and export."""
 
 import json

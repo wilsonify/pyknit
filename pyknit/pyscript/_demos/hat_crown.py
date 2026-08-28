@@ -46,13 +46,13 @@ def to_html(result):
         ".hat-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));"
         "gap:0.7rem;margin:0.7rem 0;}"
         ".hat-pill{border:1px solid #ddd8d4;border-radius:6px;padding:0.55rem 0.7rem;background:#fdfcfa;}"
-        ".hat-pill .label{display:block;font-size:0.78rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"
+        ".hat-pill .label{display:block;font-size:0.78rem;color:#6b6572;text-transform:uppercase;letter-spacing:0.04em;}"  # noqa: E501
         ".hat-pill .value{font-size:1rem;font-weight:700;color:#2b2333;}"
         ".hat-layout{display:grid;grid-template-columns:1fr;gap:0.8rem;}"
         ".hat-note{margin:0.5rem 0 0;padding-left:1.1rem;}"
         ".hat-note li{margin:0.2rem 0;}"
         ".hat-rounds{width:100%;border-collapse:collapse;font-size:0.95rem;}"
-        ".hat-rounds th,.hat-rounds td{border:1px solid #e5e1dc;padding:0.5rem 0.55rem;text-align:left;vertical-align:top;}"
+        ".hat-rounds th,.hat-rounds td{border:1px solid #e5e1dc;padding:0.5rem 0.55rem;text-align:left;vertical-align:top;}"  # noqa: E501
         ".hat-rounds th{background:#f3ecf7;color:#5a2a75;font-weight:700;}"
         ".hat-shapes{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;align-items:start;}"
         ".hat-shapes svg{width:100%;height:auto;background:#fbf7ff;border:1px solid #e3d5f2;border-radius:8px;}"
@@ -72,7 +72,7 @@ def to_html(result):
         "<div class='hat-pill'><span class='label'>Repeats</span>"
         f"<span class='value'>{result['repeats']} decrease repeats</span></div>"
         "<div class='hat-pill'><span class='label'>Math</span>"
-        f"<span class='value'>{result['stitches']} / {result['repeats']} = {result['stitches_per_repeat']} per repeat</span></div>"
+        f"<span class='value'>{result['stitches']} / {result['repeats']} = {result['stitches_per_repeat']} per repeat</span></div>"  # noqa: E501
         "<div class='hat-pill'><span class='label'>Decrease step</span>"
         f"<span class='value'>- {result['repeats']} stitches per decrease round</span></div>"
         "</div>"

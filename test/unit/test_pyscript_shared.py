@@ -94,7 +94,7 @@ def test_bootstrap_demo_binds_and_autoruns(monkeypatch):
     monkeypatch.setattr(shared, "hide_error", lambda _eid: None)
     monkeypatch.setattr(shared, "show_error", lambda _eid, _msg: None)
 
-    run = shared.bootstrap_demo(
+    shared.bootstrap_demo(
         module={
             "DEFAULT_INPUTS": {"n": 1},
             "compute": lambda inputs: {"n": int(inputs["n"]) + 1},

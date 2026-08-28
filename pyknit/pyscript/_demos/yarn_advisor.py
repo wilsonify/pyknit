@@ -349,7 +349,6 @@ def to_html(result):
         parts.append("<h3>Recommendations</h3>")
         for i, rec in enumerate(result["recommendations"]):
             rank = "Best" if i == 0 else f"Alternative {i}"
-            _badge = "best" if i == 0 else "alt"
             reasons_html = (
                 "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
             )

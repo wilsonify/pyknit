@@ -35,11 +35,11 @@ def to_html(result):
         "<div class='output-box'>"
         "<h3>How the math works</h3>"
         "<p><strong>Formula:</strong> total rounds = round(radius × round_gauge).</p>"
-        "<p><strong>Full-circle:</strong> the shawl grows as a circle, so total rounds are estimated with the same input unit on both sides of the formula.</p>"
-        "<p><strong>Half-circle:</strong> the flat version is planned with the same total row count, but the increases happen on lower rows of the same geometric progression.</p>"
-        "<p><strong>Increase logic:</strong> after the first increase on round 2, the number of plain rounds between increases doubles each time: "
+        "<p><strong>Full-circle:</strong> the shawl grows as a circle, so total rounds are estimated with the same input unit on both sides of the formula.</p>"  # noqa: E501
+        "<p><strong>Half-circle:</strong> the flat version is planned with the same total row count, but the increases happen on lower rows of the same geometric progression.</p>"  # noqa: E501
+        "<p><strong>Increase logic:</strong> after the first increase on round 2, the number of plain rounds between increases doubles each time: "  # noqa: E501
         f"{_progression(result['full_pi'])}.</p>"
-        "<p><strong>Rounding assumption:</strong> the planner rounds the final total to the nearest whole round, so measured radius and row gauge must use the same unit.</p>"
+        "<p><strong>Rounding assumption:</strong> the planner rounds the final total to the nearest whole round, so measured radius and row gauge must use the same unit.</p>"  # noqa: E501
         "</div>"
         "<table class='instructions'><tbody>" + rows + "</tbody></table>"
     )

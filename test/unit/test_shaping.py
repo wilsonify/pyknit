@@ -1,7 +1,6 @@
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 import logging
 import re
 
@@ -130,8 +129,6 @@ def test_decrease_evenly_uses_shared_spacing(starting_count, decrease_number, ex
 
 import pydantic
 import pytest
-
-import pyknit
 
 
 def test_raglan_increases_standard_input():
