@@ -1,7 +1,6 @@
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 """
 pyKnit: a set of tools for knitters to do math, create charts, customise
 patterns and more
@@ -9,7 +8,6 @@ patterns and more
 pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 """
 
-import math
 from typing import TYPE_CHECKING, List, Literal, Optional
 
 from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments

@@ -1,2 +1,14 @@
 [flake8]
 max-line-length = 120
+
+# Black compatibility + late imports in integration tests
+extend-ignore =
+    E203,
+    E201,
+    E202,
+    E402
+
+# __init__.py re-exports are intentional
+per-file-ignores =
+    pyknit/__init__.py:F401
+    pyknit/pyscript/__init__.py:F401,F403
