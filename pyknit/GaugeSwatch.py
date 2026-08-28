@@ -8,7 +8,7 @@ patterns and more
 pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 """
 
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments
 

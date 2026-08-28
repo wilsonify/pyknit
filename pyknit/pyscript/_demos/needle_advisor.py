@@ -388,10 +388,10 @@ def to_html(result):
 
     parts.append("<div class='output-box'>")
     parts.append("<h3>Starting needle size</h3>")
-    parts.append(f"<p style='font-size:1.1rem;font-weight:600;color:#5a2a75'>")
+    parts.append("<p style='font-size:1.1rem;font-weight:600;color:#5a2a75'>")
     parts.append(f"{result['recommended_mm']} mm &mdash; US {result['recommended_us']}")
     parts.append("</p>")
-    parts.append(f"<p style='font-size:0.9rem;color:#666'>")
+    parts.append("<p style='font-size:0.9rem;color:#666'>")
     parts.append(f"Your target gauge ({result['target_gauge']} sts/in) is ")
     if result["in_range"]:
         parts.append(

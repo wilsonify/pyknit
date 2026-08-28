@@ -1,7 +1,6 @@
 # Copyright (C) 2026 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-#!python
 """
 pyKnit: a set of tools for knitters to do math, create charts, customise
 patterns and more

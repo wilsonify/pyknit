@@ -13,8 +13,6 @@ the current stitch count, and the stitch count only changes when an
 instruction explicitly changes it (yo, k2tog, ssk, bo).
 """
 
-import json
-
 DEFAULT_INPUTS = {
     "instructions": "co 10\nk2 p2 across\nk2 p2 across\nk all",
 }
@@ -501,7 +499,7 @@ def _row_label(expanded, repeat, width):
 
 def _validate(raw):
     warnings = []
-    lines = [l.strip() for l in raw.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+    lines = [line.strip() for line in raw.strip().split("\n") if line.strip() and not line.strip().startswith("#")]
     if not lines:
         return ["No instructions provided."]
     first = lines[0].lower().split()

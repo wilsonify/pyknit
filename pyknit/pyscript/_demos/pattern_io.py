@@ -36,7 +36,7 @@ def compute(inputs):
     """Parse the pattern, export to the chosen format, and round-trip it."""
     import json as _json
 
-    from pyknit.Chart import parse_chart, stitch_legend
+    from pyknit.Chart import parse_chart
     from pyknit.io import (
         csv_to_pattern,
         json_to_pattern,

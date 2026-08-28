@@ -4,8 +4,6 @@ A deterministic, explainable yarn-selection tool.  Returns recommendations,
 ranges, tradeoffs, and warnings — never a single "perfect" answer.
 """
 
-import math
-
 DEFAULT_INPUTS = {
     "project_type": "scarf",
     "target_gauge": "dk",
@@ -351,7 +349,7 @@ def to_html(result):
         parts.append("<h3>Recommendations</h3>")
         for i, rec in enumerate(result["recommendations"]):
             rank = "Best" if i == 0 else f"Alternative {i}"
-            badge = "best" if i == 0 else "alt"
+            _badge = "best" if i == 0 else "alt"
             reasons_html = (
                 "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
             )

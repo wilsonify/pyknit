@@ -10,7 +10,6 @@ Runs each demo through a headless Chromium via Playwright and verifies:
   - invalid input shows a visible error element
 """
 
-import json
 import os
 import re
 import sys
@@ -419,7 +418,7 @@ def exercise_simulate_nav(page, report, sim):
         # The plan may open with # comment lines (e.g. the raglan plan's
         # section annotations); the first real instruction must match.
         first_line = next(
-            (l for l in txt.splitlines() if l.strip() and not l.strip().startswith("#")),
+            (line for line in txt.splitlines() if line.strip() and not line.strip().startswith("#")),
             "",
         )
         if len(txt) < sim["instr_min_len"] or (prefix and not first_line.startswith(prefix)):
@@ -611,15 +610,6 @@ def _check_no_error(page, eids):
             if BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style:
                 fails.append(f"error #{eid} visible after valid click")
     return fails
-
-
-def _error_visible(page, eid):
-    """True when the error element exists and is displayed."""
-    el = page.query_selector(f"#{eid}")
-    if el is None:
-        return False
-    style = el.get_attribute("style") or ""
-    return BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style
 
 
 def _ensure_clickable(page, bid):

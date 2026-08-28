@@ -88,7 +88,8 @@ def _create_argument_parser(desc: str) -> argparse.ArgumentParser:
     conversion_options_group = parser.add_argument_group("Conversion Options")
     conversion_options_group.add_argument(
         "--convert",
-        help="Convert from one gauge to another. Specify row or stitch to indicate which direction of measurement you need to convert.",
+        help="Convert from one gauge to another. Specify row or stitch to indicate"
+        " which direction of measurement you need to convert.",
         choices=["row", "stitch"],
         type=str,
         action="store",

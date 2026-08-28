@@ -8,11 +8,7 @@ proportional SVG diagram.
 
 import html
 
-from pyknit.Sock import (
-    CUFF_RIB_INCHES,
-    TOE_FINISH_STITCHES,
-    Sock,
-)
+from pyknit.Sock import Sock
 
 DEFAULT_INPUTS = {
     "rows_per_inch": 11,
@@ -48,7 +44,7 @@ def _sim_pattern(sock):
     cast = sock.cast_on_stitches
     ankle = sock.ankle_stitches
     flap = sock.number_of_heel_flap_stitches
-    instep = sock.instep_stitches
+    _instep = sock.instep_stitches
     heel_rem = sock.heel_turn_remaining()
     after_pickup = sock.gusset_stitches_after_pickup()
     toe = sock._toe_row_schedule()

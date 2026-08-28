@@ -108,7 +108,7 @@ def compute_chart(inputs):
 
 def chart_to_html(result):
     svg = shared.chart_svg(result["pattern"])
-    backends = shared.available_backends()
+    _backends = shared.available_backends()
     if svg:
         return f"<div class='info-message'>Rendered with SVG backend.</div>" f"<div class='output-box'>{svg}</div>"
     text = shared.pattern_to_text(result["pattern"])

@@ -227,7 +227,7 @@ def _compute_friendly(inputs):
         f"Project type: {pt['label']} ({shape}), {width} x {height} inches.",
         f"Gauge: {stitch_gauge} sts/in x {row_gauge} rows/in.",
         f"Stitch workload: {stitches_across} across x {rows_tall} tall"
-        + (f" / 2 (triangle) = " if shape == "triangle" else " = ")
+        + (" / 2 (triangle) = " if shape == "triangle" else " = ")
         + f"{project_stitches:,} stitches.",
         f"Yarn pace: {pace_key} ({seconds_per_stitch} sec/stitch).",
         "Yarn estimate is based on typical yardage per stitch for this gauge. "

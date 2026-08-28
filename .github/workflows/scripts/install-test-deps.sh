@@ -5,3 +5,4 @@ set -euo pipefail
 python -m pip install --upgrade pip
 pip install pytest pytest-cov
 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+pip install -e .
