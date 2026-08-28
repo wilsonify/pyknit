@@ -13,9 +13,7 @@ import pyknit
 def count_decrease_rows(instructions: str) -> int:
     """Total number of decrease rows scheduled, expanding ``* N times``."""
     total = 0
-    for segment in re.findall(
-        r"\[[^\]]*decrease row[^\]]*\] \* \d+ times", instructions
-    ):
+    for segment in re.findall(r"\[[^\]]*decrease row[^\]]*\] \* \d+ times", instructions):
         total += int(re.search(r"\* (\d+) times", segment).group(1))
     bare = re.sub(r"\[[^\]]*\]", "", instructions)
     total += len(re.findall(r"\bdecrease row\b", bare))
@@ -30,14 +28,11 @@ def count_decrease_rows(instructions: str) -> int:
             59,
             43,
             2,
-            "[decrease row, do 7 rows in pattern] * 5 times, "
-            "[decrease row, do 6 rows in pattern] * 3 times",
+            "[decrease row, do 7 rows in pattern] * 5 times, " "[decrease row, do 6 rows in pattern] * 3 times",
         ),
     ],
 )
-def test_sleeve_decreases_documented_fixture(
-    rows, starting_count, ending_count, decrease_per_row, expected
-):
+def test_sleeve_decreases_documented_fixture(rows, starting_count, ending_count, decrease_per_row, expected):
     assert (
         pyknit.sleeve_decreases(
             rows,
@@ -65,32 +60,24 @@ def test_sleeve_decreases_padding_modes():
         # each mode schedules the same four decrease rows (8 stitches removed)
         assert count_decrease_rows(instructions) == 4
     assert outputs["after"] == (
-        "[decrease row, do 2 rows in pattern] * 2 times, "
-        "[decrease row, do 1 rows in pattern] * 2 times"
+        "[decrease row, do 2 rows in pattern] * 2 times, " "[decrease row, do 1 rows in pattern] * 2 times"
     )
     assert outputs["before"] == (
-        "[do 1 rows in pattern, decrease row] * 2 times, "
-        "[do 2 rows in pattern, decrease row] * 2 times"
+        "[do 1 rows in pattern, decrease row] * 2 times, " "[do 2 rows in pattern, decrease row] * 2 times"
     )
     assert outputs["both"] == (
         "[do 1 rows in pattern, decrease row, do 1 rows in pattern] * 2 times, "
         "[decrease row, do 1 rows in pattern] * 2 times"
     )
-    assert outputs["none"] == (
-        "decrease row, decrease row, decrease row, decrease row"
-    )
+    assert outputs["none"] == ("decrease row, decrease row, decrease row, decrease row")
 
 
 def test_sleeve_decreases_remainder_schedules_extra_decreases(caplog):
     with caplog.at_level(logging.WARNING):
-        instructions = pyknit.sleeve_decreases(
-            10, starting_count=20, ending_count=11, decrease_per_row=2
-        )
+        instructions = pyknit.sleeve_decreases(10, starting_count=20, ending_count=11, decrease_per_row=2)
     messages = [record.message for record in caplog.records]
     assert not any("add decreases at the end" in message for message in messages)
-    assert not any(
-        "desired decrease doesn't work exactly" in message for message in messages
-    )
+    assert not any("desired decrease doesn't work exactly" in message for message in messages)
     extra = re.search(r"extra decrease: work (\d+) k2tog", instructions)
     assert extra is not None
     assert count_decrease_rows(instructions) * 2 + int(extra.group(1)) == 20 - 11
@@ -131,11 +118,11 @@ def test_calculate_spacing_invalid_count():
         (21, 5, [2, 3]),
     ],
 )
-def test_decrease_evenly_uses_shared_spacing(
-    starting_count, decrease_number, expected_ks
-):
+def test_decrease_evenly_uses_shared_spacing(starting_count, decrease_number, expected_ks):
     plan = sorted(pyknit._calculate_spacing(starting_count, decrease_number))
     assert [size - 2 for size, _ in plan] == expected_ks
+
+
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -226,14 +213,8 @@ def test_raglan_increases_rejects_tiny_bust_negative_markers():
 
 
 def test_sleeve_decreases_repeat_string():
-    expected = (
-        "[decrease row, do 7 rows in pattern] * 5 times, "
-        "[decrease row, do 6 rows in pattern] * 3 times"
-    )
-    assert (
-        pyknit.sleeve_decreases(number_of_rows=61, starting_count=59, ending_count=43)
-        == expected
-    )
+    expected = "[decrease row, do 7 rows in pattern] * 5 times, " "[decrease row, do 6 rows in pattern] * 3 times"
+    assert pyknit.sleeve_decreases(number_of_rows=61, starting_count=59, ending_count=43) == expected
 
 
 @pytest.mark.parametrize(

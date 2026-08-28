@@ -103,15 +103,11 @@ def compute(inputs):
         row_no += 1
         width = len(stitches)
         if not row["repeat"]:
-            wanted = sum(
-                width if count == "all" else max(int(count), 0)
-                for _, count in row["ops"]
-            )
+            wanted = sum(width if count == "all" else max(int(count), 0) for _, count in row["ops"])
             if wanted > width:
                 warnings.append(
                     "Row %d (%s) tries to work %d stitches but only %d are on "
-                    "the needle; the extra stitches were left unworked."
-                    % (row_no, row["line"].strip(), wanted, width)
+                    "the needle; the extra stitches were left unworked." % (row_no, row["line"].strip(), wanted, width)
                 )
         expanded = _expand(row["ops"], width, row["repeat"])
         new_stitches, row_ops, increases, decreases = _apply_row(expanded, stitches)
@@ -208,10 +204,7 @@ def _validate_sections(sections, total):
         cleaned.append({"id": sid, "label": label, "start": start, "end": end})
         prev_end = end
     if prev_end != total:
-        raise ValueError(
-            "The sweater plan's sections do not match the simulation "
-            "(%d steps)." % total
-        )
+        raise ValueError("The sweater plan's sections do not match the simulation " "(%d steps)." % total)
     return cleaned
 
 
@@ -261,9 +254,7 @@ def _compute_from_sock(plan, inputs):
         )
     rounds = plan.get("rounds")
     if not isinstance(rounds, list) or not rounds:
-        raise ValueError(
-            "The Sock Calculator pattern is empty. Re-run the Sock Calculator."
-        )
+        raise ValueError("The Sock Calculator pattern is empty. Re-run the Sock Calculator.")
     cast = plan.get("cast_on_stitches")
     try:
         cast_ok = cast is not None and int(rounds[0]["after"]) == int(cast)
@@ -271,8 +262,7 @@ def _compute_from_sock(plan, inputs):
         cast_ok = False
     if not cast_ok:
         raise ValueError(
-            "The Sock Calculator cast-on count is inconsistent with its "
-            "pattern. Re-run the Sock Calculator."
+            "The Sock Calculator cast-on count is inconsistent with its " "pattern. Re-run the Sock Calculator."
         )
 
     steps = []
@@ -281,10 +271,7 @@ def _compute_from_sock(plan, inputs):
             before = int(rnd.get("before", rnd["after"]))
             after = int(rnd["after"])
         except (KeyError, TypeError, ValueError):
-            raise ValueError(
-                "The Sock Calculator pattern contains an invalid round. "
-                "Re-run the Sock Calculator."
-            )
+            raise ValueError("The Sock Calculator pattern contains an invalid round. " "Re-run the Sock Calculator.")
         removed = after - before
         kind = str(rnd.get("kind") or "row")
         steps.append(
@@ -343,7 +330,7 @@ def _op_name(token):
 
 
 def _trailing_count(token, name):
-    suffix = token[len(name):]
+    suffix = token[len(name) :]
     return int(suffix) if suffix.isdigit() else None
 
 
@@ -466,7 +453,7 @@ def _apply_row(expanded, stitches):
             continue
         if pos + op["consume"] > len(stitches):
             break
-        chunk = stitches[pos:pos + op["consume"]]
+        chunk = stitches[pos : pos + op["consume"]]
         pos += op["consume"]
         if op["produce"] == 1:
             # a decrease merges the consumed stitches into one
@@ -514,11 +501,7 @@ def _row_label(expanded, repeat, width):
 
 def _validate(raw):
     warnings = []
-    lines = [
-        l.strip()
-        for l in raw.strip().split("\n")
-        if l.strip() and not l.strip().startswith("#")
-    ]
+    lines = [l.strip() for l in raw.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
     if not lines:
         return ["No instructions provided."]
     first = lines[0].lower().split()

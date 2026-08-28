@@ -49,8 +49,7 @@ def main() -> int:
         page.click("#run")
         time.sleep(1.0)
 
-        info = page.evaluate(
-            """
+        info = page.evaluate("""
 () => {
   const out = document.querySelector('#demo-output');
   const firstTransition = out?.querySelector('table.hat-rounds tbody tr td:nth-child(3)')?.textContent?.trim() || '';
@@ -60,8 +59,7 @@ def main() -> int:
   const rowCount = out?.querySelectorAll('table.hat-rounds tbody tr').length || 0;
   return {firstTransition, hasStrategy, hasFormula, svgCount, rowCount};
 }
-            """
-        )
+            """)
 
         if info.get("svgCount", 0) != 1:
             failures.append(f"expected 1 crown svg, got {info.get('svgCount')}")

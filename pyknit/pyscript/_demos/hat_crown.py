@@ -91,12 +91,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def compute(inputs):
@@ -156,13 +151,11 @@ def _validate_inputs(repeats, stitches):
         raise ValueError("repeats and stitches must be positive integers")
     if stitches % repeats != 0:
         raise ValueError(
-            "cast-on stitches must divide evenly by decrease repeats "
-            f"({stitches} is not divisible by {repeats})"
+            "cast-on stitches must divide evenly by decrease repeats " f"({stitches} is not divisible by {repeats})"
         )
     if stitches < repeats * 2:
         raise ValueError(
-            "cast-on stitches are too small for this strategy: "
-            "need at least 2 stitches per repeat before decreases"
+            "cast-on stitches are too small for this strategy: " "need at least 2 stitches per repeat before decreases"
         )
 
 
@@ -195,9 +188,7 @@ def _build_plan(repeats, stitches):
         after = before - repeats
 
         if per_repeat - 2 > 0:
-            instruction = (
-                f"*K{per_repeat - 2}, k2tog* around ({repeats} repeats)"
-            )
+            instruction = f"*K{per_repeat - 2}, k2tog* around ({repeats} repeats)"
         else:
             instruction = f"*K2tog* around ({repeats} repeats)"
 
@@ -254,9 +245,7 @@ def _build_plan(repeats, stitches):
             "before": current,
             "after": current,
             "transition": f"{current} -> {current}",
-            "instruction": (
-                "Cut yarn, leave a tail, thread through remaining stitches, and pull closed"
-            ),
+            "instruction": ("Cut yarn, leave a tail, thread through remaining stitches, and pull closed"),
             "per_repeat_before": 1,
             "per_repeat_after": 1,
         }
@@ -300,10 +289,7 @@ def _crown_svg(repeats, counts):
     cx = cy = size / 2
     outer = size / 2 - 20
 
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-        f'viewBox="0 0 {size} {size}">'
-    ]
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" ' f'viewBox="0 0 {size} {size}">']
     if counts:
         max_count = max(counts)
         for count in counts:
@@ -318,17 +304,12 @@ def _crown_svg(repeats, counts):
         angle = 2 * math.pi * i / repeats
         x2 = cx + outer * math.cos(angle)
         y2 = cy + outer * math.sin(angle)
-        parts.append(
-            f'<line x1="{cx}" y1="{cy}" x2="{x2:.1f}" y2="{y2:.1f}" '
-            f'stroke="#7b3fa0" stroke-width="2"/>'
-        )
+        parts.append(f'<line x1="{cx}" y1="{cy}" x2="{x2:.1f}" y2="{y2:.1f}" ' f'stroke="#7b3fa0" stroke-width="2"/>')
         parts.append(f'<circle cx="{x2:.1f}" cy="{y2:.1f}" r="4" fill="#7b3fa0"/>')
     parts.append(f'<circle cx="{cx}" cy="{cy}" r="6" fill="#7b3fa0"/>')
     parts.append(
         f'<text x="{cx}" y="{size - 10}" text-anchor="middle" font-size="13" '
-        'fill="#5a2a75">top-down crown stitch levels: '
-        + (' -> '.join(str(c) for c in counts))
-        + "</text>"
+        'fill="#5a2a75">top-down crown stitch levels: ' + (" -> ".join(str(c) for c in counts)) + "</text>"
     )
     parts.append("</svg>")
     return "\n".join(parts)
@@ -365,8 +346,7 @@ def _crown_profile_svg(stitches, plan):
     silhouette = "M %.1f,%.1f%s%s Z" % (cx - pts[0][0], pts[0][1], right, left)
 
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
-        f'viewBox="0 0 {W} {H}">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" ' f'viewBox="0 0 {W} {H}">',
         "<defs>",
         '<linearGradient id="hatProfGrad" x1="0" y1="0" x2="0" y2="1">',
         '<stop offset="0" stop-color="#e3d3f0"/>',
@@ -392,15 +372,10 @@ def _crown_profile_svg(stitches, plan):
         if row["kind"] != "Decrease":
             continue
         w, y = pts[i]
+        parts.append(f'<circle cx="{cx - w:.1f}" cy="{y:.1f}" r="2.6" fill="#7b3fa0"/>')
+        parts.append(f'<circle cx="{cx + w:.1f}" cy="{y:.1f}" r="2.6" fill="#7b3fa0"/>')
         parts.append(
-            f'<circle cx="{cx - w:.1f}" cy="{y:.1f}" r="2.6" fill="#7b3fa0"/>'
-        )
-        parts.append(
-            f'<circle cx="{cx + w:.1f}" cy="{y:.1f}" r="2.6" fill="#7b3fa0"/>'
-        )
-        parts.append(
-            f'<text x="{cx + w + 5:.1f}" y="{y + 3:.1f}" font-size="8" '
-            f'fill="#5a2a75">{row["after"]}</text>'
+            f'<text x="{cx + w + 5:.1f}" y="{y + 3:.1f}" font-size="8" ' f'fill="#5a2a75">{row["after"]}</text>'
         )
     parts.append("</g>")
     parts.append("</svg>")
@@ -423,7 +398,7 @@ def _sim_plan(repeats, stitches, plan):
             continue
         if row["kind"] == "Decrease":
             k = row["per_repeat_before"] - 2
-            line = (f"k{k} k2tog across" if k > 0 else "k2tog across")
+            line = f"k{k} k2tog across" if k > 0 else "k2tog across"
         else:
             line = "k all"
         execs.append((row["phase"], line))
@@ -431,8 +406,7 @@ def _sim_plan(repeats, stitches, plan):
 
     lines = [
         "# Hat crown · generated by the Hat Crown Planner",
-        f"# {stitches} stitches cast on, {repeats} decrease repeats "
-        f"({stitches // repeats} per repeat).",
+        f"# {stitches} stitches cast on, {repeats} decrease repeats " f"({stitches // repeats} per repeat).",
         "# Tapered dome: 2 plain rounds, then 1, then 0 between decrease rounds.",
         execs[0][1],
     ]

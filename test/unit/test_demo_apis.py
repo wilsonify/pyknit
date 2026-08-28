@@ -24,7 +24,7 @@ class TestGaugeConversion:
             stitch_measure=10,
             row_count=40,
             row_measure=4,
-            units="in"
+            units="in",
         )
         assert gs.stitch_count == pytest.approx(27.5)
         assert gs.stitch_measure == 10
@@ -37,19 +37,19 @@ class TestGaugeConversion:
             stitch_measure=10,
             row_count=40,
             row_measure=4,
-            units="in"
+            units="in",
         )
         my_gauge = GaugeSwatch(
             stitch_count=23.5,
             stitch_measure=10,
             row_count=33,
             row_measure=4,
-            units="in"
+            units="in",
         )
-        
+
         # 42 inches at pattern gauge (27.5 st/10") should convert to my gauge (23.5 st/10")
         result = convert_stitch_measure(42, pattern_gauge, my_gauge)
-        
+
         # Result should be less (my gauge is tighter)
         assert result > 0
         assert isinstance(result, (int, float))
@@ -57,10 +57,18 @@ class TestGaugeConversion:
     def test_zero_measurement(self):
         """Verify zero measurement is rejected by pydantic."""
         pattern_gauge = GaugeSwatch(
-            stitch_count=27.5, stitch_measure=10, row_count=40, row_measure=4, units="in"
+            stitch_count=27.5,
+            stitch_measure=10,
+            row_count=40,
+            row_measure=4,
+            units="in",
         )
         my_gauge = GaugeSwatch(
-            stitch_count=23.5, stitch_measure=10, row_count=33, row_measure=4, units="in"
+            stitch_count=23.5,
+            stitch_measure=10,
+            row_count=33,
+            row_measure=4,
+            units="in",
         )
         # Zero is not allowed - must be PositiveInt
         with pytest.raises((ValueError, Exception)):
@@ -74,7 +82,7 @@ class TestGaugeConversion:
                 stitch_measure=10,
                 row_count=40,
                 row_measure=4,
-                units="in"
+                units="in",
             )
 
 
@@ -171,10 +179,18 @@ class TestErrorHandling:
     def test_invalid_measurement_type(self):
         """Verify invalid measurement type is caught."""
         pattern_gauge = GaugeSwatch(
-            stitch_count=27.5, stitch_measure=10, row_count=40, row_measure=4, units="in"
+            stitch_count=27.5,
+            stitch_measure=10,
+            row_count=40,
+            row_measure=4,
+            units="in",
         )
         my_gauge = GaugeSwatch(
-            stitch_count=23.5, stitch_measure=10, row_count=33, row_measure=4, units="in"
+            stitch_count=23.5,
+            stitch_measure=10,
+            row_count=33,
+            row_measure=4,
+            units="in",
         )
         # This should raise when trying to convert non-numeric value
         with pytest.raises((TypeError, ValueError)):
@@ -197,20 +213,20 @@ class TestIntegration:
             stitch_measure=10,
             row_count=40,
             row_measure=4,
-            units="in"
+            units="in",
         )
         my_gauge = GaugeSwatch(
             stitch_count=23.5,
             stitch_measure=10,
             row_count=33,
             row_measure=4,
-            units="in"
+            units="in",
         )
-        
+
         # Convert measurement
         measurement = 42
         result = convert_stitch_measure(measurement, pattern_gauge, my_gauge)
-        
+
         # Verify result is reasonable
         assert result > 0
         assert result != measurement  # Should be different
@@ -219,14 +235,14 @@ class TestIntegration:
         """Test complete chart parsing and rendering workflow."""
         # Parse pattern
         pattern = parse_chart("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
-        
+
         # Render pattern
         fmt, content = render_pattern(pattern)
-        
+
         # Verify output
         assert fmt in ("svg", "png", "text")
         assert content is not None
-        
+
         # Also verify text fallback works
         text = pattern_to_text(pattern)
         assert isinstance(text, str)
@@ -236,7 +252,7 @@ class TestIntegration:
         """Test that invalid patterns fail with clear errors."""
         with pytest.raises((ValueError, KeyError)):
             parse_chart("invalid xyz")
-        
+
         # No crash - error is catchable
 
 

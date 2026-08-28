@@ -57,9 +57,7 @@ def test_json_round_trip_with_metadata():
 
 def test_json_unknown_schema_version_rejected():
     """Unknown schema_version must be rejected with a clear error."""
-    bad_json = json.dumps(
-        {"schema_version": 2, "legend": "default", "rows": [["k"]]}
-    )
+    bad_json = json.dumps({"schema_version": 2, "legend": "default", "rows": [["k"]]})
     with pytest.raises(ValueError, match="schema_version"):
         io.json_to_pattern(bad_json, stitch_legend)
 
@@ -74,12 +72,8 @@ def test_json_missing_schema_version_rejected():
 def test_exports_are_deterministic():
     """Two exports of the same pattern are byte-identical."""
     pattern = parse_chart("k p k\nkfb yo k2tog", stitch_legend)
-    assert io.pattern_to_csv(pattern, stitch_legend) == io.pattern_to_csv(
-        pattern, stitch_legend
-    )
-    assert io.pattern_to_json(pattern, stitch_legend) == io.pattern_to_json(
-        pattern, stitch_legend
-    )
+    assert io.pattern_to_csv(pattern, stitch_legend) == io.pattern_to_csv(pattern, stitch_legend)
+    assert io.pattern_to_json(pattern, stitch_legend) == io.pattern_to_json(pattern, stitch_legend)
 
 
 def test_json_canonical_key_order():
@@ -87,17 +81,13 @@ def test_json_canonical_key_order():
     pattern = parse_chart("k", stitch_legend)
     payload = json.loads(io.pattern_to_json(pattern, stitch_legend))
     assert list(payload.keys()) == ["schema_version", "legend", "rows"]
-    assert io.pattern_to_json(pattern, stitch_legend).startswith(
-        '{"schema_version": 1,'
-    )
+    assert io.pattern_to_json(pattern, stitch_legend).startswith('{"schema_version": 1,')
 
 
 def test_json_canonical_key_order_with_metadata():
     """metadata is the last key when present."""
     pattern = parse_chart("k", stitch_legend)
-    payload = json.loads(
-        io.pattern_to_json(pattern, stitch_legend, metadata={"name": "x"})
-    )
+    payload = json.loads(io.pattern_to_json(pattern, stitch_legend, metadata={"name": "x"}))
     assert list(payload.keys()) == [
         "schema_version",
         "legend",

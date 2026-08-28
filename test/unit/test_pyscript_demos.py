@@ -31,9 +31,7 @@ DEMO_NAMES = [
 
 
 def load_demo(name):
-    spec = importlib.util.spec_from_file_location(
-        "demo_" + name, DEMOS_DIR / (name + ".py")
-    )
+    spec = importlib.util.spec_from_file_location("demo_" + name, DEMOS_DIR / (name + ".py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -176,7 +174,11 @@ class TestDemoSpecifics:
 
     def test_pi_shawl_rejects_invalid_inputs(self):
         module = load_demo("pi_shawl")
-        for bad in ({"radius": 0, "row_gauge": 4.5}, {"radius": -1, "row_gauge": 4.5}, {"radius": 10, "row_gauge": 0}):
+        for bad in (
+            {"radius": 0, "row_gauge": 4.5},
+            {"radius": -1, "row_gauge": 4.5},
+            {"radius": 10, "row_gauge": 0},
+        ):
             with pytest.raises(ValueError):
                 module.DEMO["compute"](bad)
 
@@ -231,9 +233,7 @@ class TestDemoSpecifics:
             result = module.DEMO["compute"](module.DEMO["DEFAULT_INPUTS"])
             data = result.get("_estimator_data", {})
             assert data.get("project_type") == expected_type
-            assert data.get(key, 0) > 1000, (
-                f"{name} must send a plausible workload, got {data.get(key)}"
-            )
+            assert data.get(key, 0) > 1000, f"{name} must send a plausible workload, got {data.get(key)}"
 
     def test_sock_counts(self):
         module = load_demo("sock_calculator")
@@ -336,8 +336,13 @@ class TestDemoSpecifics:
 
     def test_sleeve_warning_steep_taper(self):
         module = load_demo("sleeve_decreases")
-        inputs = {"number_of_rows": 20, "starting_count": 60, "ending_count": 40,
-                  "decrease_per_row": 2, "padding_mode": "after"}
+        inputs = {
+            "number_of_rows": 20,
+            "starting_count": 60,
+            "ending_count": 40,
+            "decrease_per_row": 2,
+            "padding_mode": "after",
+        }
         result = module.DEMO["compute"](inputs)
         assert len(result["warnings"]) > 0
         assert "steep" in result["warnings"][0].lower() or "apart" in result["warnings"][0].lower()
@@ -466,10 +471,7 @@ class TestDemoSpecifics:
         demo can render japanese legend images as data URIs."""
         import zipfile
 
-        wheel = (
-            pathlib.Path(__file__).resolve().parents[2]
-            / "demos" / "_wheel" / "pyknit-0.1.4-py3-none-any.whl"
-        )
+        wheel = pathlib.Path(__file__).resolve().parents[2] / "demos" / "_wheel" / "pyknit-0.1.4-py3-none-any.whl"
         with zipfile.ZipFile(wheel) as zf:
             names = zf.namelist()
         assert any("symbols/japanese/" in n and n.endswith(".png") for n in names)
@@ -502,9 +504,18 @@ class TestDemoSpecifics:
         index_path = pathlib.Path(__file__).resolve().parents[2] / "demos" / "index.html"
         html = index_path.read_text(encoding="utf-8")
         demos = [
-            "gauge-conversion", "chart-renderer", "even-shaping", "hat-crown",
-            "pi-shawl", "raglan-sweater", "shawl-shapes", "sleeve-decreases",
-            "sock-calculator", "yarn-estimator", "yarn-advisor", "needle-advisor",
+            "gauge-conversion",
+            "chart-renderer",
+            "even-shaping",
+            "hat-crown",
+            "pi-shawl",
+            "raglan-sweater",
+            "shawl-shapes",
+            "sleeve-decreases",
+            "sock-calculator",
+            "yarn-estimator",
+            "yarn-advisor",
+            "needle-advisor",
             "knit-simulator",
         ]
         for demo in demos:
@@ -613,11 +624,17 @@ class TestDemoSpecifics:
         """The row diagram must never draw cells beyond its viewBox."""
         module = load_demo("shaping")
         result = module.DEMO["compute"](
-            {"operation": "increase", "in_the_round": "true", "starting_count": 240, "number": 20}
+            {
+                "operation": "increase",
+                "in_the_round": "true",
+                "starting_count": 240,
+                "number": 20,
+            }
         )
         svg = result["svg"]
         # viewBox width must accommodate every drawn rect
         import re
+
         vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', svg)
         assert vb is not None
         vb_width = int(vb.group(1))
@@ -628,9 +645,15 @@ class TestDemoSpecifics:
     def test_shaping_svg_caps_visible_cells_for_huge_rounds(self):
         module = load_demo("shaping")
         result = module.DEMO["compute"](
-            {"operation": "increase", "in_the_round": "true", "starting_count": 240, "number": 20}
+            {
+                "operation": "increase",
+                "in_the_round": "true",
+                "starting_count": 240,
+                "number": 20,
+            }
         )
         import re
+
         rect_count = len(re.findall(r"<rect ", result["svg"]))
         assert rect_count <= 40
         assert "more stitches" in result["svg"]
@@ -670,6 +693,7 @@ class TestDemoSpecifics:
     def test_gauge_conversion_rejects_bad_measurement(self):
         module = _load_gauge_conversion()
         import pytest
+
         with pytest.raises(ValueError):
             module.compute_calc(
                 {
@@ -742,9 +766,9 @@ class TestDemoSpecifics:
                         continue
                     expr = val.value
                     if expr.lineno == expr.end_lineno:
-                        seg = lines[expr.lineno - 1][expr.col_offset:expr.end_col_offset]
+                        seg = lines[expr.lineno - 1][expr.col_offset : expr.end_col_offset]
                     else:
-                        seg = "\\n".join(lines[expr.lineno - 1:expr.end_lineno])
+                        seg = "\\n".join(lines[expr.lineno - 1 : expr.end_lineno])
                     if "\\" in seg:
                         bad.append(f"{path.name}:{expr.lineno}: {seg.strip()}")
         assert bad == []
@@ -789,7 +813,16 @@ class TestYarnAdvisor:
 
     def test_all_project_types(self):
         module = load_demo("yarn_advisor")
-        for pt in ("scarf", "hat", "sock", "sweater", "shawl", "blanket", "mittens", "baby"):
+        for pt in (
+            "scarf",
+            "hat",
+            "sock",
+            "sweater",
+            "shawl",
+            "blanket",
+            "mittens",
+            "baby",
+        ):
             inputs = dict(module.DEMO["DEFAULT_INPUTS"])
             inputs["project_type"] = pt
             result = module.DEMO["compute"](inputs)
@@ -798,7 +831,16 @@ class TestYarnAdvisor:
 
     def test_all_gauge_categories(self):
         module = load_demo("yarn_advisor")
-        for g in ("lace", "fingering", "sport", "dk", "worsted", "aran", "bulky", "super_bulky"):
+        for g in (
+            "lace",
+            "fingering",
+            "sport",
+            "dk",
+            "worsted",
+            "aran",
+            "bulky",
+            "super_bulky",
+        ):
             inputs = dict(module.DEMO["DEFAULT_INPUTS"])
             inputs["target_gauge"] = g
             result = module.DEMO["compute"](inputs)
@@ -847,7 +889,16 @@ class TestNeedleAdvisor:
 
     def test_all_yarn_weights(self):
         module = load_demo("needle_advisor")
-        for w in ("lace", "fingering", "sport", "dk", "worsted", "aran", "bulky", "super_bulky"):
+        for w in (
+            "lace",
+            "fingering",
+            "sport",
+            "dk",
+            "worsted",
+            "aran",
+            "bulky",
+            "super_bulky",
+        ):
             inputs = dict(module.DEMO["DEFAULT_INPUTS"])
             inputs["yarn_weight"] = w
             result = module.DEMO["compute"](inputs)
@@ -856,7 +907,16 @@ class TestNeedleAdvisor:
 
     def test_all_project_types(self):
         module = load_demo("needle_advisor")
-        for pt in ("scarf", "hat", "sock", "sweater", "shawl", "blanket", "mittens", "baby"):
+        for pt in (
+            "scarf",
+            "hat",
+            "sock",
+            "sweater",
+            "shawl",
+            "blanket",
+            "mittens",
+            "baby",
+        ):
             inputs = dict(module.DEMO["DEFAULT_INPUTS"])
             inputs["project_type"] = pt
             result = module.DEMO["compute"](inputs)
@@ -1023,9 +1083,7 @@ class TestKnitSimulator:
         """'k2 p2 across' tiles the sequence across the whole row; a plain
         'k2 p2' only works the stitches it names."""
         module = load_demo("knit_simulator")
-        across = module.DEMO["compute"](
-            {"instructions": "co 10\nk2 p2 across"}
-        )
+        across = module.DEMO["compute"]({"instructions": "co 10\nk2 p2 across"})
         assert across["steps"][1]["worked"] == 10
         assert across["steps"][1]["row_ops"] == [0, 0, 1, 1, 0, 0, 1, 1, 0, 0]
 
@@ -1062,7 +1120,15 @@ class TestKnitSimulator:
         module = load_demo("knit_simulator")
         result = module.DEMO["compute"]({"instructions": "co 10\nk all\nbo 5"})
         for step in result["steps"]:
-            for key in ("kind", "row", "worked", "row_ops", "increases", "decreases", "progress"):
+            for key in (
+                "kind",
+                "row",
+                "worked",
+                "row_ops",
+                "increases",
+                "decreases",
+                "progress",
+            ):
                 assert key in step, f"step missing {key}"
         assert result["steps"][0]["kind"] == "cast_on"
         assert result["steps"][2]["kind"] == "bind_off"
@@ -1094,12 +1160,12 @@ class TestKnitSimulator:
         if not html_path.exists():
             pytest.skip("demo.html not found")
         import re
+
         content = html_path.read_text()
         js_blocks = re.findall(r"<script>(?!.*type=)(.*?)</script>", content, re.DOTALL)
         for block in js_blocks:
             assert "shared." not in block, (
-                "JS block references 'shared' (a Python module). "
-                "Use window.sim_steps instead."
+                "JS block references 'shared' (a Python module). " "Use window.sim_steps instead."
             )
 
     def test_demo_html_has_sim_steps_bridge(self):
@@ -1127,13 +1193,13 @@ class TestKnitSimulator:
         if not html_path.exists():
             pytest.skip("demo.html not found")
         import re
+
         content = html_path.read_text()
         py_blocks = re.findall(r'<script type="py">(.*?)</script>', content, re.DOTALL)
         for block in py_blocks:
             # Must extract dict from module before subscripting
             assert "mod.DEMO" in block or "_DEMO" in block, (
-                "Python block never extracts DEMO dict from module. "
-                "Use: _DEMO = mod.DEMO"
+                "Python block never extracts DEMO dict from module. " "Use: _DEMO = mod.DEMO"
             )
 
 
@@ -1176,9 +1242,7 @@ class TestSockCalculatorToSimulator:
         # counts stay consistent calculator -> pattern -> simulator
         assert result["cast_on"] == plan["cast_on_stitches"]
         assert result["cast_on"] == result["steps"][0]["n"]
-        assert result["final_stitches"] == list(
-            range(1, plan["rounds"][-1]["after"] + 1)
-        )
+        assert result["final_stitches"] == list(range(1, plan["rounds"][-1]["after"] + 1))
 
     def test_simulator_reports_sock_summary(self):
         plan = self._sock_plan()
@@ -1216,9 +1280,7 @@ class TestSockCalculatorToSimulator:
     def test_empty_sock_plan_raises(self):
         module = load_demo("knit_simulator")
         with pytest.raises(ValueError, match="empty"):
-            module.DEMO["compute"](
-                {"sock_plan": {"source": "sock_calculator", "rounds": []}}
-            )
+            module.DEMO["compute"]({"sock_plan": {"source": "sock_calculator", "rounds": []}})
 
 
 class TestHatCrownToSimulator:
@@ -1256,8 +1318,15 @@ class TestHatCrownToSimulator:
         # 9 decrease rounds; the last is followed by the finish (gap 0)
         assert self._plain_gaps(plan) == [2, 2, 1, 1, 1, 0, 0, 0, 0]
         assert [d["phase"] for d in decs] == [
-            "curve", "curve", "steady", "steady", "steady",
-            "top", "top", "top", "top",
+            "curve",
+            "curve",
+            "steady",
+            "steady",
+            "steady",
+            "top",
+            "top",
+            "top",
+            "top",
         ]
         # ends with the drawstring cinch on the final repeats
         assert plan[-1]["kind"] == "Finish"
@@ -1345,16 +1414,13 @@ class TestRaglanToSimulator:
         meta = result["meta"]
         instr = result["sim_instructions"]
         assert instr and instr.startswith("# Raglan sweater")
-        lines = [
-            ln for ln in instr.splitlines()
-            if ln.strip() and not ln.strip().startswith("#")
-        ]
+        lines = [ln for ln in instr.splitlines() if ln.strip() and not ln.strip().startswith("#")]
         # cast on the neck, then the collar rib, then the yoke
         assert lines[0] == "co %d" % meta["neck"]
         assert "k2 p2 across" in lines[: meta["collar_rounds"]]
-        assert any("yo" in ln for ln in lines)      # raglan increases
-        assert any("k2tog" in ln for ln in lines)   # sleeve decreases
-        assert lines.count("bo all") == 3           # body hem + 2 cuffs
+        assert any("yo" in ln for ln in lines)  # raglan increases
+        assert any("k2tog" in ln for ln in lines)  # sleeve decreases
+        assert lines.count("bo all") == 3  # body hem + 2 cuffs
         assert lines.count("co %d" % meta["arm"]) == 2  # the two sleeves
         # the sleeve separation casts the body on at the planner's real bust
         # count, so the body/hem rounds are never run at the yoke's count
@@ -1388,9 +1454,7 @@ class TestRaglanToSimulator:
         what gets simulated, so a user edit changes the simulation."""
         plan = self._plan()
         module = load_demo("knit_simulator")
-        edited = plan["sim_instructions"].replace(
-            "k2 p2 across" + chr(10), "k all" + chr(10), 1
-        )
+        edited = plan["sim_instructions"].replace("k2 p2 across" + chr(10), "k all" + chr(10), 1)
         result = module.DEMO["compute"]({"instructions": edited})
         assert result["steps"][1]["op"] == "knit all"
 
@@ -1418,10 +1482,7 @@ class TestRaglanToSimulator:
         """The canonical plan's section boundaries are indices into the
         non-comment instruction lines, so they map 1:1 onto steps."""
         sim = self._plan()["sim_plan"]
-        lines = [
-            ln for ln in sim["instructions"].splitlines()
-            if ln.strip() and not ln.strip().startswith("#")
-        ]
+        lines = [ln for ln in sim["instructions"].splitlines() if ln.strip() and not ln.strip().startswith("#")]
         secs = sim["sections"]
         assert secs[0]["start"] == 0
         assert secs[-1]["end"] == len(lines)
@@ -1430,8 +1491,14 @@ class TestRaglanToSimulator:
             assert sec["start"] == prev and sec["end"] > sec["start"]
             prev = sec["end"]
         assert [sec["id"] for sec in secs] == [
-            "neckline", "yoke", "body", "hem", "left_sleeve", "left_cuff",
-            "right_sleeve", "right_cuff",
+            "neckline",
+            "yoke",
+            "body",
+            "hem",
+            "left_sleeve",
+            "left_cuff",
+            "right_sleeve",
+            "right_cuff",
         ]
 
     def test_plan_driven_steps_are_section_aware(self):
@@ -1439,15 +1506,24 @@ class TestRaglanToSimulator:
         concise operation label derived from the step's own data."""
         sim = self._plan()["sim_plan"]
         module = load_demo("knit_simulator")
-        result = module.DEMO["compute"]({
-            "instructions": sim["instructions"], "plan": sim,
-        })
+        result = module.DEMO["compute"](
+            {
+                "instructions": sim["instructions"],
+                "plan": sim,
+            }
+        )
         assert result["garment"] == "raglan"
         assert result["sections"] == sim["sections"]
         for i, st in enumerate(result["steps"]):
             assert st["section"] in (
-                "neckline", "yoke", "body", "hem", "left_sleeve",
-                "left_cuff", "right_sleeve", "right_cuff",
+                "neckline",
+                "yoke",
+                "body",
+                "hem",
+                "left_sleeve",
+                "left_cuff",
+                "right_sleeve",
+                "right_cuff",
             )
             assert st["section_label"]
             assert st["sec_row"] >= 1 and st["sec_rows"] >= 1
@@ -1464,12 +1540,15 @@ class TestRaglanToSimulator:
         meta = plan["meta"]
         sim = plan["sim_plan"]
         module = load_demo("knit_simulator")
-        steps = module.DEMO["compute"]({
-            "instructions": sim["instructions"], "plan": sim,
-        })["steps"]
+        steps = module.DEMO["compute"](
+            {
+                "instructions": sim["instructions"],
+                "plan": sim,
+            }
+        )["steps"]
 
         yoke = [s for s in steps if s["section"] == "yoke"]
-        assert yoke[-1]["n"] == meta["working"]      # yoke ends at working count
+        assert yoke[-1]["n"] == meta["working"]  # yoke ends at working count
         inc_steps = [s for s in yoke if s["increases"] > 0]
         assert inc_steps
         assert all(s["increases"] == meta["inc"] for s in inc_steps)
@@ -1481,13 +1560,15 @@ class TestRaglanToSimulator:
         assert body[0]["kind"] == "cast_on" and body[0]["n"] == meta["bust"]
         assert body[1]["op_short"] == "Knit all"
 
-        for side, cuff_id in (("left_sleeve", "left_cuff"),
-                              ("right_sleeve", "right_cuff")):
+        for side, cuff_id in (
+            ("left_sleeve", "left_cuff"),
+            ("right_sleeve", "right_cuff"),
+        ):
             sec = [s for s in steps if s["section"] == side]
             assert sec[0]["kind"] == "cast_on" and sec[0]["n"] == meta["arm"]
             cuff = [s for s in steps if s["section"] == cuff_id]
             rib = next(s for s in cuff if "ribbing" in s["op_short"])
-            assert rib["n"] == meta["wrist"]       # cuff starts at wrist count
+            assert rib["n"] == meta["wrist"]  # cuff starts at wrist count
             assert cuff[-1]["kind"] == "bind_off"
             assert cuff[-1]["worked"] == meta["wrist"]
 
@@ -1503,15 +1584,18 @@ class TestRaglanToSimulator:
         plan = self._plan()
         sim = plan["sim_plan"]
         module = load_demo("knit_simulator")
-        steps = module.DEMO["compute"]({
-            "instructions": sim["instructions"], "plan": sim,
-        })["steps"]
+        steps = module.DEMO["compute"](
+            {
+                "instructions": sim["instructions"],
+                "plan": sim,
+            }
+        )["steps"]
         for st in steps:
             if st["kind"] == "cast_on":
-                continue   # a cast-on creates the stitches from nothing
+                continue  # a cast-on creates the stitches from nothing
             if st["kind"] == "bind_off":
                 assert st["before"] - st["worked"] == st["n"], st
-                continue   # bind-off removes stitches, no k2tog-style count
+                continue  # bind-off removes stitches, no k2tog-style count
             assert st["before"] + st["increases"] - st["decreases"] == st["n"], st
         # the first yoke round is the first raglan increase: 72 -> 80 (+8)
         yoke = next(s for s in steps if s["section"] == "yoke")
@@ -1524,9 +1608,11 @@ class TestRaglanToSimulator:
 
     def test_manual_steps_carry_before_counts(self):
         module = load_demo("knit_simulator")
-        result = module.DEMO["compute"]({
-            "instructions": "co 10\nk2 p2 across\nk2tog across\nbo 4",
-        })
+        result = module.DEMO["compute"](
+            {
+                "instructions": "co 10\nk2 p2 across\nk2tog across\nbo 4",
+            }
+        )
         for st in result["steps"]:
             if st["kind"] == "cast_on":
                 continue
@@ -1543,9 +1629,12 @@ class TestRaglanToSimulator:
         meta = plan["meta"]
         sim = plan["sim_plan"]
         module = load_demo("knit_simulator")
-        steps = module.DEMO["compute"]({
-            "instructions": sim["instructions"], "plan": sim,
-        })["steps"]
+        steps = module.DEMO["compute"](
+            {
+                "instructions": sim["instructions"],
+                "plan": sim,
+            }
+        )["steps"]
         body = [s for s in steps if s["section"] == "body"]
         hem = [s for s in steps if s["section"] == "hem"]
         # separation cast-on, then every body/hem round at bust
@@ -1580,23 +1669,32 @@ class TestRaglanToSimulator:
         bad_sections = [dict(s) for s in sim["sections"]]
         bad_sections[-1]["end"] += 1
         with pytest.raises(ValueError, match="do not match the simulation"):
-            module.DEMO["compute"]({
-                "instructions": sim["instructions"],
-                "plan": {"instructions": sim["instructions"], "sections": bad_sections},
-            })
+            module.DEMO["compute"](
+                {
+                    "instructions": sim["instructions"],
+                    "plan": {
+                        "instructions": sim["instructions"],
+                        "sections": bad_sections,
+                    },
+                }
+            )
         with pytest.raises(ValueError, match="missing its instructions"):
-            module.DEMO["compute"]({
-                "instructions": sim["instructions"],
-                "plan": {"sections": sim["sections"]},
-            })
+            module.DEMO["compute"](
+                {
+                    "instructions": sim["instructions"],
+                    "plan": {"sections": sim["sections"]},
+                }
+            )
 
     def test_overflow_row_is_warned(self):
         """A row that names more stitches than are on the needle is reported
         instead of silently producing a misleading garment."""
         module = load_demo("knit_simulator")
-        result = module.DEMO["compute"]({
-            "instructions": "co 10\nk 15\nk2 p2 across",
-        })
+        result = module.DEMO["compute"](
+            {
+                "instructions": "co 10\nk 15\nk2 p2 across",
+            }
+        )
         assert any("15" in w and "10" in w for w in result["warnings"])
 
     def test_raglan_page_publishes_plan(self):
@@ -1622,9 +1720,7 @@ class TestRaglanToSimulator:
 
 def _load_gauge_conversion():
     """Load the legacy dual-section gauge-conversion page module."""
-    spec = importlib.util.spec_from_file_location(
-        "gauge_conversion_page", DEMOS_DIR / "gauge_conversion_page.py"
-    )
+    spec = importlib.util.spec_from_file_location("gauge_conversion_page", DEMOS_DIR / "gauge_conversion_page.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

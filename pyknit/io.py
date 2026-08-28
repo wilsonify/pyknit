@@ -116,9 +116,7 @@ def pattern_to_json(
     return json.dumps(payload)
 
 
-def json_to_pattern(
-    json_string: str, legend: Optional[Legend] = None
-) -> Pattern:
+def json_to_pattern(json_string: str, legend: Optional[Legend] = None) -> Pattern:
     """Parse a JSON string into a Pattern, resolving codes via the legend.
 
     Rejects JSON without a schema_version field or with an unsupported
@@ -135,16 +133,12 @@ def json_to_pattern(
         raise ValueError("Pattern JSON must contain a 'schema_version' field")
     version = data["schema_version"]
     if version != 1:
-        raise ValueError(
-            f"Unsupported schema_version {version}; expected schema_version 1"
-        )
+        raise ValueError(f"Unsupported schema_version {version}; expected schema_version 1")
     pattern = [[legend[cell] for cell in row] for row in data["rows"]]
     return pattern
 
 
-def pattern_to_instructions(
-    pattern: Pattern, legend: Optional[Legend] = None
-) -> str:
+def pattern_to_instructions(pattern: Pattern, legend: Optional[Legend] = None) -> str:
     """Convert a Pattern into written instructions, one row per pattern row.
 
     Consecutive identical stitches are grouped with a count, e.g. "k2, p1".
@@ -162,9 +156,5 @@ def pattern_to_instructions(
                 runs[-1][1] += 1
             else:
                 runs.append([code, 1])
-        lines.append(
-            ", ".join(
-                f"{code}{count}" if count > 1 else code for code, count in runs
-            )
-        )
+        lines.append(", ".join(f"{code}{count}" if count > 1 else code for code, count in runs))
     return "\n".join(lines)

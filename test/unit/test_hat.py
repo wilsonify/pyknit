@@ -16,8 +16,7 @@ class TestCrownDecreases:
             "Knit 1 round",
             "k2tog 8 times (8 stitches)",
             "Knit 1 round",
-            "Cut yarn leaving 4 inch tail, thread through remaining "
-            "stitches and pull closed",
+            "Cut yarn leaving 4 inch tail, thread through remaining " "stitches and pull closed",
         ]
 
     @pytest.mark.parametrize(

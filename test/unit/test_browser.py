@@ -28,9 +28,7 @@ def test_render_pattern_returns_svg_when_svg_available(small_pattern):
     assert content.startswith("<?xml") or content.startswith("<svg")
 
 
-def test_render_pattern_svg_branch_when_render_chart_svg_exists(
-    small_pattern, monkeypatch
-):
+def test_render_pattern_svg_branch_when_render_chart_svg_exists(small_pattern, monkeypatch):
     """Verify SVG backend is tried when render_chart_svg exists."""
     import pyknit.Chart as chart_module
 

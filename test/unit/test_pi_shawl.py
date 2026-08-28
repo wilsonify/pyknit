@@ -34,12 +34,8 @@ def test_half_pi_increase_rows_start_at_2_are_strictly_increasing_and_in_bounds(
 
 
 def test_half_pi_increase_rows_is_deterministic():
-    assert pi_shawl.half_pi_increase_rows(5, 5) == pi_shawl.half_pi_increase_rows(
-        5, 5
-    )
-    assert pi_shawl.half_pi_increase_rows(50, 3) == pi_shawl.half_pi_increase_rows(
-        50, 3
-    )
+    assert pi_shawl.half_pi_increase_rows(5, 5) == pi_shawl.half_pi_increase_rows(5, 5)
+    assert pi_shawl.half_pi_increase_rows(50, 3) == pi_shawl.half_pi_increase_rows(50, 3)
 
 
 def test_half_pi_increase_rows_matches_documented_values():
@@ -48,16 +44,19 @@ def test_half_pi_increase_rows_matches_documented_values():
 
 
 def test_total_rows_half_pi_matches_full_pi_rounds():
-    assert pi_shawl.total_rows_half_pi(5, 5) == pi_shawl.total_rounds_for_pi_shawl(
-        5, 5
-    )
-    assert pi_shawl.total_rows_half_pi(50, 3) == pi_shawl.total_rounds_for_pi_shawl(
-        50, 3
-    )
+    assert pi_shawl.total_rows_half_pi(5, 5) == pi_shawl.total_rounds_for_pi_shawl(5, 5)
+    assert pi_shawl.total_rows_half_pi(50, 3) == pi_shawl.total_rounds_for_pi_shawl(50, 3)
 
 
 def test_invalid_pi_shawl_inputs_raise_value_error():
-    for args in [(0, 5), (-1, 5), (10, 0), (10, -1), (float("nan"), 5), (10, float("nan"))]:
+    for args in [
+        (0, 5),
+        (-1, 5),
+        (10, 0),
+        (10, -1),
+        (float("nan"), 5),
+        (10, float("nan")),
+    ]:
         with pytest.raises(ValueError):
             pi_shawl.total_rounds_for_pi_shawl(*args)
 

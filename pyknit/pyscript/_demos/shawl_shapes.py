@@ -19,10 +19,7 @@ TITLE = "Shawl Shapes"
 
 def to_html(result):
     """Render the shape silhouette plus the instruction list and assumptions."""
-    steps = "".join(
-        f"<tr><td class='mono'>{_esc(step)}</td></tr>"
-        for step in result["instructions"]
-    )
+    steps = "".join(f"<tr><td class='mono'>{_esc(step)}</td></tr>" for step in result["instructions"])
     est = result.get("_estimator_data", {})
     assumptions = result.get("assumptions", [])
     assumption_html = ""
@@ -47,12 +44,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def compute(inputs):
@@ -62,9 +54,7 @@ def compute(inputs):
 
     shape = inputs.get("shape", "crescent")
     if shape not in shawl_shapes.SUPPORTED_SHAPES:
-        raise ValueError(
-            "shape must be one of " + ", ".join(shawl_shapes.SUPPORTED_SHAPES)
-        )
+        raise ValueError("shape must be one of " + ", ".join(shawl_shapes.SUPPORTED_SHAPES))
 
     width = float(inputs["width"])
     length = float(inputs["length"])
@@ -92,7 +82,7 @@ def compute(inputs):
         "assumptions": _build_assumptions(shape, width, length, gauge),
         "_estimator_data": {
             "stitch_count": est_stitches,
-            "project_type": f"shawl_{shape}" if shape in ("triangle", "crescent", "rectangle") else "custom",
+            "project_type": (f"shawl_{shape}" if shape in ("triangle", "crescent", "rectangle") else "custom"),
             "source": "shawl_shapes_planner",
         },
     }
@@ -125,8 +115,7 @@ def _build_assumptions(shape, width, length, gauge):
         )
     elif shape == "square":
         assumptions.append(
-            "Square shawls are worked from the centre outward, with "
-            "increases at four corners each round."
+            "Square shawls are worked from the centre outward, with " "increases at four corners each round."
         )
     elif shape == "rectangle":
         assumptions.append(
@@ -146,20 +135,14 @@ def _shape_svg(shape):
     elif shape == "rectangle":
         parts.append(f'<rect x="40" y="120" width="240" height="120" {stroke}/>')
     elif shape == "triangle":
-        parts.append(
-            f'<polygon points="160,30 60,290 260,290" {stroke}/>'
-        )
+        parts.append(f'<polygon points="160,30 60,290 260,290" {stroke}/>')
     elif shape == "crescent":
-        parts.append(
-            f'<path d="M 40 250 C 40 100 160 60 280 180 '
-            f'C 200 230 90 250 40 250 Z" {stroke}/>'
-        )
-    parts.append(
-        f'<text x="160" y="{size - 12}" text-anchor="middle" font-size="13" '
-        f'fill="#5a2a75">{shape}</text>'
-    )
+        parts.append(f'<path d="M 40 250 C 40 100 160 60 280 180 ' f'C 200 230 90 250 40 250 Z" {stroke}/>')
+    parts.append(f'<text x="160" y="{size - 12}" text-anchor="middle" font-size="13" ' f'fill="#5a2a75">{shape}</text>')
     parts.append("</svg>")
     return "\n".join(parts)
+
+
 DEMO = {
     "TITLE": TITLE,
     "DEFAULT_INPUTS": DEFAULT_INPUTS,

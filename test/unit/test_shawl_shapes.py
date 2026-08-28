@@ -28,9 +28,7 @@ def test_each_shape_is_non_empty_and_deterministic(shape):
     instructions = generate_shawl(shape, width=20, length=30, gauge=make_swatch())
     assert len(instructions) > 0
     assert all(isinstance(line, str) and line for line in instructions)
-    assert instructions == generate_shawl(
-        shape, width=20, length=30, gauge=make_swatch()
-    )
+    assert instructions == generate_shawl(shape, width=20, length=30, gauge=make_swatch())
 
 
 def test_rectangle_counts_come_from_gauge_swatch():

@@ -80,15 +80,13 @@ def _summary(name, result):
             "cast_on": result["cast_on_stitches"],
             "rows": rounds,
             "message": (
-                f"Cast on {result['cast_on_stitches']} sts · "
-                f"{result['ankle_stitches']} ankle sts · {rounds} rounds"
+                f"Cast on {result['cast_on_stitches']} sts · " f"{result['ankle_stitches']} ankle sts · {rounds} rounds"
             ),
         }
     return {
         "title": "Yarn & Time Estimator",
         "message": (
-            f"{result['project_stitches']:,} stitches · "
-            f"{result['yards']:.0f} yd · {result['grams']:.0f} g"
+            f"{result['project_stitches']:,} stitches · " f"{result['yards']:.0f} yd · {result['grams']:.0f} g"
         ),
         "yards": result["yards"],
         "grams": result["grams"],
@@ -186,9 +184,12 @@ def planner_to_simulator(name, inputs_json="{}"):
     if not isinstance(plan, dict) or not plan.get("instructions"):
         raise ValueError(f"{name} did not produce simulator instructions")
     simulation = _simulation(plan["instructions"], plan)
-    return json.dumps({
-        "planner": _payload(name, planner),
-        "instructions": plan["instructions"],
-        "sim_plan": plan,
-        "simulation": simulation,
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "planner": _payload(name, planner),
+            "instructions": plan["instructions"],
+            "sim_plan": plan,
+            "simulation": simulation,
+        },
+        ensure_ascii=False,
+    )

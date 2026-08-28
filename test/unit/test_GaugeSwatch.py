@@ -73,6 +73,7 @@ class TestGaugeSwatch:
 
 # Tests for stitch counting functions
 
+
 class TestStitchCountingFunctions:
     """Test explicit stitch counting APIs that distinguish different concepts."""
 
@@ -113,7 +114,7 @@ class TestStitchCountingFunctions:
         """k2tog and ssk decrease consume 2 stitches."""
         k2tog_row = parse_row("k2tog k", stitch_legend)
         assert stitches_consumed(k2tog_row) == 3  # 2 + 1
-        
+
         ssk_row = parse_row("ssk k", stitch_legend)
         assert stitches_consumed(ssk_row) == 3  # 2 + 1
 
@@ -142,7 +143,7 @@ class TestStitchCountingFunctions:
         """Decreases produce 1 stitch."""
         k2tog_row = parse_row("k2tog k", stitch_legend)
         assert stitches_produced(k2tog_row) == 2  # 1 + 1
-        
+
         ssk_row = parse_row("ssk k", stitch_legend)
         assert stitches_produced(ssk_row) == 2  # 1 + 1
 
@@ -167,7 +168,7 @@ class TestStitchCountingFunctions:
         # C1-1L has width=2
         row = parse_row("C1-1L", stitch_legend)
         assert chart_width(row) == 2
-        
+
         # C2-2L has width=4
         row = parse_row("C2-2L", stitch_legend)
         assert chart_width(row) == 4
@@ -206,7 +207,7 @@ class TestStitchCountingFunctions:
         row = parse_row("k k k k k k k k k kfb", stitch_legend)
         assert stitches_consumed(row) == 10
         assert stitches_produced(row) == 11
-        
+
         # Row that decreases: 11 consumed, 10 produced
         # We need to have 11 consumed, so use 10 k + 1 k2tog (which consumes 2)
         row = parse_row("k k k k k k k k k k2tog", stitch_legend)

@@ -20,9 +20,7 @@ DEMOS_DIR = pathlib.Path(__file__).parent.parent.parent / "pyknit" / "pyscript" 
 
 
 def _load_demo():
-    spec = importlib.util.spec_from_file_location(
-        "demo_raglan", DEMOS_DIR / "raglan.py"
-    )
+    spec = importlib.util.spec_from_file_location("demo_raglan", DEMOS_DIR / "raglan.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -48,9 +46,16 @@ class TestRaglanSweaterPlan:
         headings = [s["heading"] for s in self._sections(result)]
         assert len(headings) == 10
         for expected in (
-            "math", "gauge and finished measurements", "cast on",
-            "marker setup", "increase schedule", "underarm cast-on",
-            "body instructions", "hem", "sleeve instructions", "cuff",
+            "math",
+            "gauge and finished measurements",
+            "cast on",
+            "marker setup",
+            "increase schedule",
+            "underarm cast-on",
+            "body instructions",
+            "hem",
+            "sleeve instructions",
+            "cuff",
         ):
             assert any(expected in h.lower() for h in headings), expected
 
@@ -114,9 +119,7 @@ class TestRaglanSweaterPlan:
 
     def test_neck_increase_row_emitted_when_needed(self):
         _, result = self._compute()
-        text = " ".join(
-            " ".join(s.get("steps", [])) for s in self._sections(result)
-        ).lower()
+        text = " ".join(" ".join(s.get("steps", [])) for s in self._sections(result)).lower()
         assert "neck increase round" in text
 
     def test_no_neck_increase_when_evenly_divisible(self):
@@ -125,16 +128,12 @@ class TestRaglanSweaterPlan:
         m = result["meta"]
         assert m["pre"] == 0
         assert "Increase row" not in result["result"]
-        text = " ".join(
-            " ".join(s.get("steps", [])) for s in self._sections(result)
-        ).lower()
+        text = " ".join(" ".join(s.get("steps", [])) for s in self._sections(result)).lower()
         assert "neck increase round" not in text
 
     def test_marker_setup_matches_pyknit(self):
         _, result = self._compute()
-        assert result["meta"]["marker"] == (
-            "k15, pm, k6 (arm), pm, k30, pm, k6 (arm), pm k15"
-        )
+        assert result["meta"]["marker"] == ("k15, pm, k6 (arm), pm, k30, pm, k6 (arm), pm k15")
 
     def test_sleeve_schedule_uses_sleeve_decreases(self):
         _, result = self._compute()

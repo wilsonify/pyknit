@@ -56,14 +56,16 @@ def _sim_pattern(sock):
     rounds = []
 
     def add(kind, label, before, after, removed, texture):
-        rounds.append({
-            "kind": kind,
-            "label": label,
-            "before": before,
-            "after": after,
-            "removed": removed,
-            "texture": texture,
-        })
+        rounds.append(
+            {
+                "kind": kind,
+                "label": label,
+                "before": before,
+                "after": after,
+                "removed": removed,
+                "texture": texture,
+            }
+        )
 
     # Cast-on edge: the cuff begins here.
     add("cast_on", "cast on {0}".format(cast), 0, cast, 0, "rib")
@@ -74,18 +76,21 @@ def _sim_pattern(sock):
 
     # Leg: plain stockinette rounds with the calculated decrease rounds
     # dropped in at their exact positions.
-    dec_by_plain = {
-        round_no - sock.rib_rounds: removed
-        for round_no, _before, removed in sock.leg_decrease_plan()
-    }
+    dec_by_plain = {round_no - sock.rib_rounds: removed for round_no, _before, removed in sock.leg_decrease_plan()}
     current = cast
     for i in range(1, sock.plain_leg_rounds + 1):
         removed = dec_by_plain.get(i)
         if removed is None:
             add("knit", "leg · stockinette", current, current, 0, "stockinette")
         else:
-            add("leg_decrease", "leg decrease · -{0}".format(removed),
-                current, current - removed, removed, "stockinette")
+            add(
+                "leg_decrease",
+                "leg decrease · -{0}".format(removed),
+                current,
+                current - removed,
+                removed,
+                "stockinette",
+            )
             current -= removed
 
     # Heel flap: slip-stitch rows back and forth over the flap stitches.
@@ -102,8 +107,14 @@ def _sim_pattern(sock):
     # Gusset: pick up the edge stitches (the count on the needle jumps
     # from the heel-turn remainder to the full after-pickup count), then
     # decrease back to the ankle count.
-    add("gusset", "gusset · pick up stitches", heel_rem,
-        after_pickup, heel_rem - after_pickup, "gusset")
+    add(
+        "gusset",
+        "gusset · pick up stitches",
+        heel_rem,
+        after_pickup,
+        heel_rem - after_pickup,
+        "gusset",
+    )
     current = after_pickup
     gusset_first, gusset_rest = sock.gusset_decrease_rounds()
     if gusset_first:
@@ -137,9 +148,7 @@ def _sim_pattern(sock):
         "source": "sock_calculator",
         "cast_on_stitches": cast,
         "ankle_stitches": ankle,
-        "gauge": "{0:g} sts/in × {1:g} rows/in".format(
-            sock.stitches_per_inch, sock.rows_per_inch
-        ),
+        "gauge": "{0:g} sts/in × {1:g} rows/in".format(sock.stitches_per_inch, sock.rows_per_inch),
         "total_rounds": len(rounds) - 1,
         "rounds": rounds,
     }
@@ -153,9 +162,7 @@ def compute(inputs):
         stitches_per_inch=_pos(inputs, "stitches_per_inch"),
         circumference_at_top=_pos(inputs, "circumference_at_top"),
         circumference_of_ankle=_pos(inputs, "circumference_of_ankle"),
-        length_from_sock_top_to_heel_bottom=_pos(
-            inputs, "length_from_sock_top_to_heel_bottom"
-        ),
+        length_from_sock_top_to_heel_bottom=_pos(inputs, "length_from_sock_top_to_heel_bottom"),
         length_from_heel_to_toe=_pos(inputs, "length_from_heel_to_toe"),
         negative_ease=_ease_factor(inputs),
     )
@@ -171,13 +178,9 @@ def compute(inputs):
         "negative_ease_percent": round((1 - sock.negative_ease) * 100),
         "length_of_heel_flap": sock.length_of_heel_flap,
         "length_from_sock_top_to_heel_flap": sock.length_from_sock_top_to_heel_flap,
-        "length_from_sock_top_to_heel_bottom": (
-            sock.length_from_sock_top_to_heel_bottom
-        ),
+        "length_from_sock_top_to_heel_bottom": (sock.length_from_sock_top_to_heel_bottom),
         "length_of_toe_decrease": sock.length_of_toe_decrease,
-        "length_from_heel_to_beginning_of_toe_decrease": (
-            sock.length_from_heel_to_beginning_of_toe_decrease
-        ),
+        "length_from_heel_to_beginning_of_toe_decrease": (sock.length_from_heel_to_beginning_of_toe_decrease),
         "length_from_heel_to_toe": sock.length_from_heel_to_toe,
         "rib_rounds": sock.rib_rounds,
         "plain_leg_rounds": sock.plain_leg_rounds,
@@ -276,15 +279,13 @@ def _sock_svg(m):
         f"L {instep_end[0]:.1f} {instep_end[1]:.1f} "
         f"L {cuff_front[0]:.1f} {cuff_front[1]:.1f} Z"
     )
-    parts.append(
-        f'<path d="{body}" fill="#eef0fa" stroke="#7b3fa0" stroke-width="2"/>'
-    )
+    parts.append(f'<path d="{body}" fill="#eef0fa" stroke="#7b3fa0" stroke-width="2"/>')
 
     # --- cuff ribbing band ---
     if rib_y > ty + 3:
         parts.append(
             f'<path d="M {bx} {ty} L {bx} {rib_y:.1f} '
-            f'L {cuff_front[0]:.1f} {rib_y:.1f} '
+            f"L {cuff_front[0]:.1f} {rib_y:.1f} "
             f'L {cuff_front[0]:.1f} {ty} Z" '
             'fill="#d9cceb" stroke="#7b3fa0" stroke-width="2"/>'
         )
@@ -309,15 +310,11 @@ def _sock_svg(m):
             f'y2="{top_y:.1f}" stroke="#7b3fa0" stroke-width="1" '
             'stroke-dasharray="3 3"/>'
         )
-        parts.append(
-            f'<text x="{x + 4:.1f}" y="{sole_y - 8:.1f}" font-size="11" '
-            'fill="#5a2a75">toe starts</text>'
-        )
+        parts.append(f'<text x="{x + 4:.1f}" y="{sole_y - 8:.1f}" font-size="11" ' 'fill="#5a2a75">toe starts</text>')
 
     # --- section labels on the left ---
     parts.append(
-        f'<text x="{bx + 4}" y="{ty - 6}" font-size="12" font-weight="600" '
-        f'fill="#5a2a75">cast on {cast} sts</text>'
+        f'<text x="{bx + 4}" y="{ty - 6}" font-size="12" font-weight="600" ' f'fill="#5a2a75">cast on {cast} sts</text>'
     )
     parts.append(
         f'<text x="{bx + 4}" y="{min(sole_y - 4, max(ty + 14, rib_y + 14)):.1f}" '
@@ -327,7 +324,7 @@ def _sock_svg(m):
         parts.append(
             f'<text x="{bx - 9}" y="{(ankle_y + heel_y) / 2:.1f}" '
             'font-size="11" fill="#5a2a75" text-anchor="end">'
-            f'heel flap · {flap} sts</text>'
+            f"heel flap · {flap} sts</text>"
         )
     parts.append(
         f'<text x="{bx + 4}" y="{min(sole_y - 4, max(rib_y, ty + 18) + 16):.1f}" '
@@ -335,8 +332,7 @@ def _sock_svg(m):
         f'{m["number_of_decrease_rows"]} decrease rounds</text>'
     )
     parts.append(
-        f'<text x="{bx + 4}" y="{sole_y + 18:.1f}" font-size="11" '
-        f'fill="#5a2a75">foot · {ankle} sts</text>'
+        f'<text x="{bx + 4}" y="{sole_y + 18:.1f}" font-size="11" ' f'fill="#5a2a75">foot · {ankle} sts</text>'
     )
     parts.append(
         f'<text x="{toe_end_x - 6:.1f}" y="{sole_y - toe_rise - 6:.1f}" '
@@ -350,24 +346,19 @@ def _sock_svg(m):
     def dim_vertical(y1, y2, label, at_x):
         mid = (y1 + y2) / 2
         parts.append(
-            f'<line x1="{at_x}" y1="{y1:.1f}" x2="{at_x}" y2="{y2:.1f}" '
-            'stroke="#4aa3a2" stroke-width="1"/>'
+            f'<line x1="{at_x}" y1="{y1:.1f}" x2="{at_x}" y2="{y2:.1f}" ' 'stroke="#4aa3a2" stroke-width="1"/>'
         )
         for yy in (y1, y2):
             parts.append(
                 f'<line x1="{at_x - 4}" y1="{yy:.1f}" x2="{at_x + 4}" '
                 f'y2="{yy:.1f}" stroke="#4aa3a2" stroke-width="1"/>'
             )
-        parts.append(
-            f'<text x="{at_x + 7}" y="{mid:.1f}" font-size="11" fill="#16707f">'
-            f"{label}</text>"
-        )
+        parts.append(f'<text x="{at_x + 7}" y="{mid:.1f}" font-size="11" fill="#16707f">' f"{label}</text>")
 
     def dim_horizontal(x1, x2, label, at_y):
         mid = (x1 + x2) / 2
         parts.append(
-            f'<line x1="{x1:.1f}" y1="{at_y}" x2="{x2:.1f}" y2="{at_y}" '
-            'stroke="#4aa3a2" stroke-width="1"/>'
+            f'<line x1="{x1:.1f}" y1="{at_y}" x2="{x2:.1f}" y2="{at_y}" ' 'stroke="#4aa3a2" stroke-width="1"/>'
         )
         for xx in (x1, x2):
             parts.append(
@@ -435,8 +426,10 @@ def _render_table(table):
 def _render_sections(plan):
     blocks = []
     for section in plan["sections"]:
-        parts = ['<section class="plan-section">',
-                 f'<h4>{_esc(section["heading"])}</h4>']
+        parts = [
+            '<section class="plan-section">',
+            f'<h4>{_esc(section["heading"])}</h4>',
+        ]
         if section.get("intro"):
             parts.append(f'<p class="plan-intro">{_esc(section["intro"])}</p>')
         if section.get("steps"):
@@ -455,24 +448,14 @@ def to_html(result):
 
     warnings = ""
     if result["warnings"]:
-        items = "".join(
-            f"<li>{_esc(w)}</li>" for w in result["warnings"]
-        )
-        warnings = (
-            f"<div class='warning-box'><strong>Before you start</strong>"
-            f"<ul>{items}</ul></div>"
-        )
+        items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
+        warnings = f"<div class='warning-box'><strong>Before you start</strong>" f"<ul>{items}</ul></div>"
 
-    assumptions = "".join(
-        f"<li>{_esc(a)}</li>" for a in plan["assumptions"]
-    )
+    assumptions = "".join(f"<li>{_esc(a)}</li>" for a in plan["assumptions"])
 
     rows = ""
     for key, (label, value, unit) in plan["measurements"].items():
-        rows += (
-            f"<tr><th>{_esc(label)}</th>"
-            f"<td class='mono'>{value}</td><td class='mono unit'>{unit}</td></tr>"
-        )
+        rows += f"<tr><th>{_esc(label)}</th>" f"<td class='mono'>{value}</td><td class='mono unit'>{unit}</td></tr>"
 
     est = result.get("_estimator_data", {})
     send_to = ""
@@ -483,23 +466,25 @@ def to_html(result):
             "Send to Yarn Estimator &rarr;</button></div>"
         )
 
-    return "\n".join([
-        f"<div class='output-box'>{result['svg']}</div>",
-        send_to,
-        warnings,
-        "<section class='plan-section'>",
-        "<h4>How this sock is built</h4>",
-        f"<ul class='plan-assumptions'>{assumptions}</ul>",
-        SECTION_END,
-        "<section class='plan-section'>",
-        "<h4>Your numbers at a glance</h4>",
-        "<table class='plan-table measure-table'><tbody>",
-        rows,
-        "</tbody></table>",
-        SECTION_END,
-        "<h3 class='plan-title'>Knit along</h3>",
-        _render_sections(plan),
-    ])
+    return "\n".join(
+        [
+            f"<div class='output-box'>{result['svg']}</div>",
+            send_to,
+            warnings,
+            "<section class='plan-section'>",
+            "<h4>How this sock is built</h4>",
+            f"<ul class='plan-assumptions'>{assumptions}</ul>",
+            SECTION_END,
+            "<section class='plan-section'>",
+            "<h4>Your numbers at a glance</h4>",
+            "<table class='plan-table measure-table'><tbody>",
+            rows,
+            "</tbody></table>",
+            SECTION_END,
+            "<h3 class='plan-title'>Knit along</h3>",
+            _render_sections(plan),
+        ]
+    )
 
 
 DEMO = {

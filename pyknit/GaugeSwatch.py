@@ -149,17 +149,17 @@ class GaugeSwatch(BaseModel):
 
 def stitch_operations(row: "PatternRow") -> int:
     """Count the number of stitch operations/symbols in a row.
-    
+
     This counts the number of distinct stitch objects in the row,
     preserving duplicates and order. Useful for counting chart cells
     or display width.
-    
+
     Args:
         row: List of Stitch objects representing a knitting row
-    
+
     Returns:
         The number of stitch symbols in the row
-    
+
     Examples:
         >>> from pyknit.Chart import stitch_legend, parse_row
         >>> row = parse_row("k k k p")
@@ -174,18 +174,18 @@ def stitch_operations(row: "PatternRow") -> int:
 
 def stitches_consumed(row: "PatternRow") -> int:
     """Count the total number of stitches consumed by a row.
-    
+
     Stitches consumed = the number of working stitches used up
     by executing the row. For most stitches this is 1, but decreases
     consume multiple stitches (e.g., k2tog consumes 2).
     Yarn-overs and no-stitch operations consume 0.
-    
+
     Args:
         row: List of Stitch objects representing a knitting row
-    
+
     Returns:
         Total stitches consumed by all operations in the row
-    
+
     Examples:
         >>> from pyknit.Chart import stitch_legend, parse_row
         >>> row = parse_row("k k k p")
@@ -200,19 +200,19 @@ def stitches_consumed(row: "PatternRow") -> int:
 
 def stitches_produced(row: "PatternRow") -> int:
     """Count the total number of stitches produced by a row.
-    
+
     Stitches produced = the number of working stitches created
     by executing the row. For most stitches this is 1, but increases
     produce multiple stitches (e.g., kfb produces 2).
     Decreases produce fewer stitches (e.g., k2tog produces 1).
     Yarn-overs produce 1, and no-stitch operations produce 0.
-    
+
     Args:
         row: List of Stitch objects representing a knitting row
-    
+
     Returns:
         Total stitches produced by all operations in the row
-    
+
     Examples:
         >>> from pyknit.Chart import stitch_legend, parse_row
         >>> row = parse_row("k k k p")
@@ -227,17 +227,17 @@ def stitches_produced(row: "PatternRow") -> int:
 
 def chart_width(row: "PatternRow") -> int:
     """Calculate the display width of a row in chart cells.
-    
+
     The width is determined by the sum of the width attributes
     of all stitches. Most stitches have width=1, but multi-stitch
     cables may have width > 1 (e.g., a 4-stitch cable has width=4).
-    
+
     Args:
         row: List of Stitch objects representing a knitting row
-    
+
     Returns:
         Total display width in chart cells
-    
+
     Examples:
         >>> from pyknit.Chart import stitch_legend, parse_row
         >>> row = parse_row("k k k p")
@@ -252,23 +252,23 @@ def chart_width(row: "PatternRow") -> int:
 
 def stitch_count(row: "PatternRow") -> int:
     """Deprecated: Count stitch operations in a row.
-    
+
     This function is kept for backward compatibility but is ambiguous.
     For a knitting row (PatternRow), it returns the number of stitch
     operations, which is equivalent to stitch_operations().
-    
+
     New code should use:
     - stitch_operations() for number of symbols
     - stitches_consumed() for stitches consumed by execution
     - stitches_produced() for stitches produced by execution
     - chart_width() for display width
-    
+
     Args:
         row: List of Stitch objects representing a knitting row
-    
+
     Returns:
         The number of stitch operations/symbols in the row
-    
+
     Note:
         The original implementation took a Set[str] which was incorrect
         (sets remove duplicates and lose order). This version accepts
@@ -276,10 +276,9 @@ def stitch_count(row: "PatternRow") -> int:
     """
     return stitch_operations(row)
 
+
 @validate_arguments
-def convert_stitch_measure(
-    measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
-) -> float:
+def convert_stitch_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch) -> float:
     """
     Given a measurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
@@ -298,14 +297,11 @@ def convert_stitch_measure(
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement
-    return new_gauge.stitches_to_measurement(
-        old_gauge.measurement_to_stitches(measurement)
-    )
+    return new_gauge.stitches_to_measurement(old_gauge.measurement_to_stitches(measurement))
+
 
 @validate_arguments
-def convert_row_measure(
-    measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch
-) -> float:
+def convert_row_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch) -> float:
     """
     Given a measurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
@@ -324,6 +320,4 @@ def convert_row_measure(
     """
     # Convert my measurement to stitches in original gauge, then
     # use the new gauge to convert the stitch count back to a measurement
-    return new_gauge.rows_to_measurement(
-        old_gauge.measurement_to_rows(measurement)
-    )
+    return new_gauge.rows_to_measurement(old_gauge.measurement_to_rows(measurement))

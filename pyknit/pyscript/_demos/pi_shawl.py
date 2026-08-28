@@ -41,9 +41,7 @@ def to_html(result):
         f"{_progression(result['full_pi'])}.</p>"
         "<p><strong>Rounding assumption:</strong> the planner rounds the final total to the nearest whole round, so measured radius and row gauge must use the same unit.</p>"
         "</div>"
-        "<table class='instructions'><tbody>"
-        + rows
-        + "</tbody></table>"
+        "<table class='instructions'><tbody>" + rows + "</tbody></table>"
     )
 
 
@@ -85,10 +83,7 @@ def _rings_svg(total_rounds, increase_rows):
     size = 360
     cx = cy = size / 2
     max_radius = size / 2 - 70
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
-        f'height="{size}" viewBox="0 0 {size} {size}">'
-    ]
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" ' f'height="{size}" viewBox="0 0 {size} {size}">']
 
     for r in increase_rows:
         ratio = r / total_rounds
@@ -102,10 +97,7 @@ def _rings_svg(total_rounds, increase_rows):
             f'<text x="{cx + radius * 0.72:.1f}" y="{cy - radius * 0.60:.1f}" '
             f'font-size="10" fill="#5a2a75">round {r}</text>'
         )
-        parts.append(
-            f'<circle cx="{cx + radius * 0.72:.1f}" cy="{cy - radius * 0.60:.1f}" '
-            'r="2" fill="#f3ecf7"/>'
-        )
+        parts.append(f'<circle cx="{cx + radius * 0.72:.1f}" cy="{cy - radius * 0.60:.1f}" ' 'r="2" fill="#f3ecf7"/>')
 
     parts.append(f'<circle cx="{cx}" cy="{cy}" r="10" fill="#c9a7e0"/>')
     parts.append(

@@ -22,7 +22,6 @@ import base64
 import html
 import math
 
-
 # --------------------------------------------------------------------------
 # DOM access helpers (safe outside the browser)
 # --------------------------------------------------------------------------
@@ -218,9 +217,7 @@ def available_backends() -> List[str]:
         return ["svg", "text"]
 
 
-def chart_svg(
-    pattern, lr_direction: str = "lr", tb_direction: str = "tb"
-) -> str:
+def chart_svg(pattern, lr_direction: str = "lr", tb_direction: str = "tb") -> str:
     """Return an inline SVG document for a parsed pattern, with a text-grid
     fallback rendered as an SVG <text> blob when the pyknit renderer is
     missing (old PyPI releases)."""
@@ -235,15 +232,16 @@ def chart_svg(
     return _text_as_svg(pattern)
 
 
-def render_html(
-    pattern, lr_direction: str = "lr", tb_direction: str = "tb"
-) -> Tuple[str, List[str]]:
+def render_html(pattern, lr_direction: str = "lr", tb_direction: str = "tb") -> Tuple[str, List[str]]:
     """Render a pattern to HTML (SVG preferred, PNG bytes base64 as a
     fallback), returned with the list of backends actually used."""
     backends = available_backends()
     svg = chart_svg(pattern, lr_direction, tb_direction)
     if svg:
-        return f"<textarea class='mono' rows='10'>{html.escape(svg)}</textarea><svg-hint></svg-hint>", backends
+        return (
+            f"<textarea class='mono' rows='10'>{html.escape(svg)}</textarea><svg-hint></svg-hint>",
+            backends,
+        )
     return _text_as_html(pattern), backends
 
 
@@ -255,25 +253,20 @@ def _text_as_svg(pattern) -> str:
     height = 30 + len(rows) * 22
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">',
-        '<rect x="1" y="1" width="{}" height="{}" fill="white" stroke="#999"/>'.format(
-            width - 2, height - 2
-        ),
+        '<rect x="1" y="1" width="{}" height="{}" fill="white" stroke="#999"/>'.format(width - 2, height - 2),
         f'<text x="{width//2}" y="16" text-anchor="middle" font-size="12" fill="#7b3fa0">'
         "text fallback (SVG backend unavailable)</text>",
     ]
     for i, row in enumerate(rows):
         parts.append(
-            f'<text x="20" y="{34 + i * 22}" font-family="monospace" '
-            f'font-size="14">{html.escape(row)}</text>'
+            f'<text x="20" y="{34 + i * 22}" font-family="monospace" ' f'font-size="14">{html.escape(row)}</text>'
         )
     parts.append("</svg>")
     return "\n".join(parts)
 
 
 def _text_as_html(pattern) -> str:
-    return (
-        f"<pre class='mono'>{html.escape(pattern_to_text(pattern))}</pre>"
-    )
+    return f"<pre class='mono'>{html.escape(pattern_to_text(pattern))}</pre>"
 
 
 def svg_to_data_uri(png_bytes: bytes) -> str:
@@ -414,8 +407,10 @@ def export_pattern_text(result: Any) -> str:
                 if isinstance(value, str):
                     if key != "text" and value.strip():
                         return value.strip()
-                    if key == "text" and value.strip() and not any(
-                        k in result for k in ("instructions", "result", "pattern")
+                    if (
+                        key == "text"
+                        and value.strip()
+                        and not any(k in result for k in ("instructions", "result", "pattern"))
                     ):
                         return value.strip()
                 if isinstance(value, list):
@@ -491,7 +486,11 @@ def bind_export_pattern(
         safe = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in safe)
         filename = f"{safe or 'pyknit-pattern'}.txt"
         if not _download_text_file(filename, text):
-            set_status("ready", "Export is ready", "This browser does not support file downloads.")
+            set_status(
+                "ready",
+                "Export is ready",
+                "This browser does not support file downloads.",
+            )
 
     callback = handler
     try:
@@ -642,9 +641,7 @@ def bootstrap_demo(
         bind_export_pattern(
             export_button_id,
             lambda: latest_result,
-            filename_prefix=(demo.get("TITLE", "pyknit") or "pyknit")
-            .lower()
-            .replace(" ", "-"),
+            filename_prefix=(demo.get("TITLE", "pyknit") or "pyknit").lower().replace(" ", "-"),
             title=demo.get("TITLE", "pyknit"),
         )
     set_status(
@@ -664,10 +661,6 @@ def _default_result_html(result: Any) -> str:
         for key, value in result.items():
             if key in ("svg", "pattern"):
                 continue
-            rows.append(
-                f"<tr><th>{key}</th><td class='mono'>{html.escape(str(value))}</td></tr>"
-            )
-        return "<table class='instructions'><tbody>" + "".join(
-            rows
-        ) + "</tbody></table>"
+            rows.append(f"<tr><th>{key}</th><td class='mono'>{html.escape(str(value))}</td></tr>")
+        return "<table class='instructions'><tbody>" + "".join(rows) + "</tbody></table>"
     return f"<pre class='mono'>{html.escape(str(result))}</pre>"

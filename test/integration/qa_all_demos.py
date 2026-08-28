@@ -17,6 +17,7 @@ Tunables via environment:
 
 Exit code 0 = all demos passed; 1 = at least one failure.
 """
+
 import os
 import sys
 from multiprocessing import Pool
@@ -95,8 +96,7 @@ def _print_report(r):
 
 def main():
     specs = qa_demos.DEMOS
-    print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers "
-          f"(BASE={BASE})")
+    print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE})")
     chunks = [c for c in _chunked(specs, WORKERS) if c]
     with Pool(WORKERS) as pool:
         per_worker = pool.map(worker, chunks)

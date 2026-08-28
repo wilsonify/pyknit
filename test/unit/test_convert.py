@@ -54,19 +54,13 @@ def swatch():
         (34, 40.0),  # README 34in -> 40in
     ],
 )
-def test_convert_stitch_measure_readme_example(
-    pattern_gauge, my_gauge, measurement, expected
-):
-    assert convert_stitch_measure(
-        measurement, pattern_gauge, my_gauge
-    ) == pytest.approx(expected)
+def test_convert_stitch_measure_readme_example(pattern_gauge, my_gauge, measurement, expected):
+    assert convert_stitch_measure(measurement, pattern_gauge, my_gauge) == pytest.approx(expected)
 
 
 def test_convert_row_measure(pattern_gauge, my_gauge):
     # 40 rows/4in -> 33 rows/4in; 10in in pattern gauge = 12.12in in mine
-    assert convert_row_measure(10, pattern_gauge, my_gauge) == pytest.approx(
-        12.121212121212121
-    )
+    assert convert_row_measure(10, pattern_gauge, my_gauge) == pytest.approx(12.121212121212121)
 
 
 @pytest.mark.parametrize("measurement", [0, -5])

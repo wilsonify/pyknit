@@ -32,14 +32,54 @@ DEFAULT_INPUTS = {
 TITLE = "Yarn & Time Estimator"
 
 PROJECT_TYPES = {
-    "hat": {"label": "Hat / Beanie", "default_width": 20, "default_height": 9, "shape": "rectangle"},
-    "scarf": {"label": "Scarf / Cowl", "default_width": 6, "default_height": 60, "shape": "rectangle"},
-    "shawl_triangle": {"label": "Triangular Shawl", "default_width": 30, "default_height": 30, "shape": "triangle"},
-    "shawl_rectangle": {"label": "Rectangle Shawl / Wrap", "default_width": 30, "default_height": 60, "shape": "rectangle"},
-    "shawl_crescent": {"label": "Crescent Shawl", "default_width": 30, "default_height": 15, "shape": "triangle"},
-    "sweater": {"label": "Sweater (body only)", "default_width": 36, "default_height": 28, "shape": "rectangle"},
-    "blanket": {"label": "Baby Blanket", "default_width": 30, "default_height": 40, "shape": "rectangle"},
-    "custom": {"label": "Custom dimensions", "default_width": 20, "default_height": 20, "shape": "rectangle"},
+    "hat": {
+        "label": "Hat / Beanie",
+        "default_width": 20,
+        "default_height": 9,
+        "shape": "rectangle",
+    },
+    "scarf": {
+        "label": "Scarf / Cowl",
+        "default_width": 6,
+        "default_height": 60,
+        "shape": "rectangle",
+    },
+    "shawl_triangle": {
+        "label": "Triangular Shawl",
+        "default_width": 30,
+        "default_height": 30,
+        "shape": "triangle",
+    },
+    "shawl_rectangle": {
+        "label": "Rectangle Shawl / Wrap",
+        "default_width": 30,
+        "default_height": 60,
+        "shape": "rectangle",
+    },
+    "shawl_crescent": {
+        "label": "Crescent Shawl",
+        "default_width": 30,
+        "default_height": 15,
+        "shape": "triangle",
+    },
+    "sweater": {
+        "label": "Sweater (body only)",
+        "default_width": 36,
+        "default_height": 28,
+        "shape": "rectangle",
+    },
+    "blanket": {
+        "label": "Baby Blanket",
+        "default_width": 30,
+        "default_height": 40,
+        "shape": "rectangle",
+    },
+    "custom": {
+        "label": "Custom dimensions",
+        "default_width": 20,
+        "default_height": 20,
+        "shape": "rectangle",
+    },
 }
 
 PACE_PRESETS = {
@@ -71,7 +111,11 @@ def to_html(result):
         f"<span class='stat-pill'>{result['yards_low']}&ndash;{result['yards_high']} yd</span>"
         f"<span class='stat-pill'>{result['grams_low']}&ndash;{result['grams_high']} g</span>"
         f"<span class='stat-pill'><em>{result['balls_yard']}</em> balls (by length)"
-        + (f" / <em>{result['balls_weight']}</em> balls (by weight)" if result['balls_yard'] != result['balls_weight'] else "")
+        + (
+            f" / <em>{result['balls_weight']}</em> balls (by weight)"
+            if result["balls_yard"] != result["balls_weight"]
+            else ""
+        )
         + "</span>"
         f"<span class='stat-pill'>~ <em>{result['time_text']}</em></span>"
         f"<span class='stat-pill'>{result['project_stitches']:,} stitches</span>"
@@ -80,10 +124,7 @@ def to_html(result):
 
     if result.get("warnings"):
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        parts.append(
-            "<div class='warning-box'><strong>Worth a second look</strong>"
-            f"<ul>{items}</ul></div>"
-        )
+        parts.append("<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>")
 
     parts.append("<div class='output-box'>")
     parts.append("<h3>How this was calculated</h3>")
@@ -137,9 +178,7 @@ def _compute_friendly(inputs):
 
     project_type = inputs.get("project_type", "hat")
     if project_type not in PROJECT_TYPES:
-        raise ValueError(
-            "project_type must be one of " + ", ".join(PROJECT_TYPES.keys())
-        )
+        raise ValueError("project_type must be one of " + ", ".join(PROJECT_TYPES.keys()))
     pt = PROJECT_TYPES[project_type]
 
     width = _pos_float(inputs, "project_width", "project width")
@@ -151,14 +190,18 @@ def _compute_friendly(inputs):
     pace_key = inputs.get("knitting_pace", "medium")
 
     if pace_key not in PACE_PRESETS:
-        raise ValueError(
-            "knitting_pace must be one of " + ", ".join(PACE_PRESETS.keys())
-        )
+        raise ValueError("knitting_pace must be one of " + ", ".join(PACE_PRESETS.keys()))
     seconds_per_stitch = PACE_PRESETS[pace_key]["seconds_per_stitch"]
 
     warnings = _plausibility_checks(
-        stitch_gauge, row_gauge, width, height, ball_yards, ball_grams,
-        seconds_per_stitch, project_type,
+        stitch_gauge,
+        row_gauge,
+        width,
+        height,
+        ball_yards,
+        ball_grams,
+        seconds_per_stitch,
+        project_type,
     )
 
     shape = pt["shape"]
@@ -195,24 +238,41 @@ def _compute_friendly(inputs):
     math_rows = [
         ("Stitches across", f"{width} in x {stitch_gauge} sts/in = {stitches_across}"),
         ("Rows tall", f"{height} in x {row_gauge} rows/in = {rows_tall}"),
-        ("Total stitches", f"{stitches_across} x {rows_tall}"
-         + (" / 2" if shape == "triangle" else "")
-         + f" = {project_stitches:,}"),
-        ("Yards needed", f"~{yards:.0f} yd (range: {yards_low:.0f}&ndash;{yards_high:.0f})"),
-        ("Grams needed", f"~{grams:.0f} g (range: {grams_low:.0f}&ndash;{grams_high:.0f})"),
-        ("Knitting time", f"{project_stitches:,} stitches x {seconds_per_stitch} sec = {time_text}"),
+        (
+            "Total stitches",
+            f"{stitches_across} x {rows_tall}" + (" / 2" if shape == "triangle" else "") + f" = {project_stitches:,}",
+        ),
+        (
+            "Yards needed",
+            f"~{yards:.0f} yd (range: {yards_low:.0f}&ndash;{yards_high:.0f})",
+        ),
+        (
+            "Grams needed",
+            f"~{grams:.0f} g (range: {grams_low:.0f}&ndash;{grams_high:.0f})",
+        ),
+        (
+            "Knitting time",
+            f"{project_stitches:,} stitches x {seconds_per_stitch} sec = {time_text}",
+        ),
     ]
 
     balls_detail = [
-        ("By length", f"ceil({yards:.0f} yd / {ball_yards} yd/ball) = {balls_yard} ball{'s' if balls_yard != 1 else ''}"),
-        ("By weight", f"ceil({grams:.0f} g / {ball_grams} g/ball) = {balls_weight} ball{'s' if balls_weight != 1 else ''}"),
+        (
+            "By length",
+            f"ceil({yards:.0f} yd / {ball_yards} yd/ball) = {balls_yard} ball{'s' if balls_yard != 1 else ''}",
+        ),
+        (
+            "By weight",
+            f"ceil({grams:.0f} g / {ball_grams} g/ball) = {balls_weight} ball{'s' if balls_weight != 1 else ''}",
+        ),
     ]
     if balls_yard != balls_weight:
-        balls_detail.append((
-            "Why the difference?",
-            "Yarn balls vary: some are sold by weight, some by length. "
-            "Buy the higher number to be safe.",
-        ))
+        balls_detail.append(
+            (
+                "Why the difference?",
+                "Yarn balls vary: some are sold by weight, some by length. " "Buy the higher number to be safe.",
+            )
+        )
 
     return {
         "project_stitches": project_stitches,
@@ -277,9 +337,7 @@ def _compute_advanced(inputs):
 
     yards = gs.estimate_yardage(project_stitches)
     grams = gs.estimate_weight(project_stitches)
-    time_delta = estimate_knitting_time(
-        project_stitches, float(inputs["seconds_per_stitch"])
-    )
+    time_delta = estimate_knitting_time(project_stitches, float(inputs["seconds_per_stitch"]))
     time_text = format_knitting_time(time_delta)
 
     yards_low, yards_high = _range(yards)
@@ -289,9 +347,14 @@ def _compute_advanced(inputs):
     balls_weight = max(1, math.ceil(grams / ball_grams))
 
     warnings = _plausibility_checks(
-        gs.stitch_gauge(), gs.row_gauge(),
-        None, None, ball_yards, ball_grams,
-        float(inputs["seconds_per_stitch"]), "advanced",
+        gs.stitch_gauge(),
+        gs.row_gauge(),
+        None,
+        None,
+        ball_yards,
+        ball_grams,
+        float(inputs["seconds_per_stitch"]),
+        "advanced",
     )
 
     assumptions = [
@@ -303,14 +366,29 @@ def _compute_advanced(inputs):
     ]
 
     math_rows = [
-        ("Yards", f"{float(inputs['yards_per_stitch']):.4f} yd/st x {project_stitches:,} sts = {yards:.1f} yd"),
-        ("Grams", f"{float(inputs['grams_per_stitch']):.4f} g/st x {project_stitches:,} sts = {grams:.1f} g"),
-        ("Time", f"{project_stitches:,} sts x {float(inputs['seconds_per_stitch'])} sec = {time_text}"),
+        (
+            "Yards",
+            f"{float(inputs['yards_per_stitch']):.4f} yd/st x {project_stitches:,} sts = {yards:.1f} yd",
+        ),
+        (
+            "Grams",
+            f"{float(inputs['grams_per_stitch']):.4f} g/st x {project_stitches:,} sts = {grams:.1f} g",
+        ),
+        (
+            "Time",
+            f"{project_stitches:,} sts x {float(inputs['seconds_per_stitch'])} sec = {time_text}",
+        ),
     ]
 
     balls_detail = [
-        ("By length", f"ceil({yards:.1f} yd / {ball_yards} yd/ball) = {balls_yard} ball{'s' if balls_yard != 1 else ''}"),
-        ("By weight", f"ceil({grams:.1f} g / {ball_grams} g/ball) = {balls_weight} ball{'s' if balls_weight != 1 else ''}"),
+        (
+            "By length",
+            f"ceil({yards:.1f} yd / {ball_yards} yd/ball) = {balls_yard} ball{'s' if balls_yard != 1 else ''}",
+        ),
+        (
+            "By weight",
+            f"ceil({grams:.1f} g / {ball_grams} g/ball) = {balls_weight} ball{'s' if balls_weight != 1 else ''}",
+        ),
     ]
 
     return {
@@ -407,8 +485,14 @@ def _range(central):
 
 
 def _plausibility_checks(
-    stitch_gauge, row_gauge, width, height, ball_yards, ball_grams,
-    seconds_per_stitch, project_type,
+    stitch_gauge,
+    row_gauge,
+    width,
+    height,
+    ball_yards,
+    ball_grams,
+    seconds_per_stitch,
+    project_type,
 ):
     """Run sanity checks and return a list of warning strings."""
     warnings = []
@@ -419,10 +503,7 @@ def _plausibility_checks(
             "Typical range is 2-15 sts/in. Double-check your swatch."
         )
     if row_gauge < 3 or row_gauge > 20:
-        warnings.append(
-            f"Row gauge of {row_gauge} rows/in is unusual. "
-            "Typical range is 3-20 rows/in."
-        )
+        warnings.append(f"Row gauge of {row_gauge} rows/in is unusual. " "Typical range is 3-20 rows/in.")
     if ball_yards > 0 and ball_grams > 0:
         ratio = ball_yards / ball_grams
         if ratio < 2 or ratio > 12:
@@ -431,10 +512,7 @@ def _plausibility_checks(
                 "typical range (2-12 yd/g). Check your ball label."
             )
     if seconds_per_stitch < 0.5 or seconds_per_stitch > 10:
-        warnings.append(
-            f"Pace of {seconds_per_stitch} sec/stitch is unusual. "
-            "Typical range is 0.5-10 sec/stitch."
-        )
+        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. " "Typical range is 0.5-10 sec/stitch.")
     if width is not None and height is not None:
         if project_type == "hat" and (width > 30 or height > 15):
             warnings.append(
@@ -442,10 +520,7 @@ def _plausibility_checks(
                 "Typical hat is 18-24 in circumference, 7-10 in tall."
             )
         if width > 72 or height > 72:
-            warnings.append(
-                f"Dimensions {width} x {height} in are very large. "
-                "Consider whether this is correct."
-            )
+            warnings.append(f"Dimensions {width} x {height} in are very large. " "Consider whether this is correct.")
     return warnings
 
 
@@ -455,45 +530,30 @@ def _estimator_svg(yards, grams, project_stitches):
     height = 140
     margin = 40
     parts = [
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        '<svg xmlns="http://www.w3.org/2000/svg" ' f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
     ]
     max_val = max(yards, grams)
     scale = (width - margin - 20) / max(max_val, 1)
 
     parts.append(f'<text x="{margin}" y="16" font-size="11" fill="#5a2a75">yards</text>')
+    parts.append(f'<rect x="{margin}" y="24" width="{yards * scale:.1f}" height="16" ' 'fill="#7b3fa0" rx="4"/>')
     parts.append(
-        f'<rect x="{margin}" y="24" width="{yards * scale:.1f}" height="16" '
-        'fill="#7b3fa0" rx="4"/>'
-    )
-    parts.append(
-        f'<text x="{margin + yards * scale + 6:.1f}" y="36" font-size="11" '
-        f'fill="#5a2a75">{yards:.0f} yd</text>'
+        f'<text x="{margin + yards * scale + 6:.1f}" y="36" font-size="11" ' f'fill="#5a2a75">{yards:.0f} yd</text>'
     )
     parts.append(f'<text x="{margin}" y="62" font-size="11" fill="#4aa3a2">grams</text>')
+    parts.append(f'<rect x="{margin}" y="70" width="{grams * scale:.1f}" height="16" ' 'fill="#4aa3a2" rx="4"/>')
     parts.append(
-        f'<rect x="{margin}" y="70" width="{grams * scale:.1f}" height="16" '
-        'fill="#4aa3a2" rx="4"/>'
+        f'<text x="{margin + grams * scale + 6:.1f}" y="82" font-size="11" ' f'fill="#4aa3a2">{grams:.0f} g</text>'
     )
     parts.append(
-        f'<text x="{margin + grams * scale + 6:.1f}" y="82" font-size="11" '
-        f'fill="#4aa3a2">{grams:.0f} g</text>'
-    )
-    parts.append(
-        f'<text x="{margin}" y="115" font-size="11" fill="#888">'
-        f"{project_stitches:,} stitches total</text>"
+        f'<text x="{margin}" y="115" font-size="11" fill="#888">' f"{project_stitches:,} stitches total</text>"
     )
     parts.append("</svg>")
     return "\n".join(parts)
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 DEMO = {

@@ -16,12 +16,7 @@ import importlib.resources as ir
 from pathlib import Path
 
 DEFAULT_INPUTS = {
-    "pattern": (
-        "k2 yo k2tog yo k1\n"
-        "p1 k2 yo k2tog p2\n"
-        "k2tog yo k3 yo\n"
-        "p3 k2tog yo p1"
-    ),
+    "pattern": ("k2 yo k2tog yo k1\n" "p1 k2 yo k2tog p2\n" "k2tog yo k3 yo\n" "p3 k2tog yo p1"),
     "legend": "default",
     "lr": "lr",
     "tb": "tb",
@@ -112,11 +107,7 @@ def to_html(result):
             f"data-stitches='{est['stitch_count']}' data-type='{est.get('project_type', 'scarf')}'>"
             "Send to Yarn Estimator &rarr;</button></div>"
         )
-    return (
-        f"{send_to}"
-        "<div class='stat-row'>" + "".join(pills) + "</div>"
-        f"<div class='output-box'>{svg}</div>"
-    )
+    return f"{send_to}" "<div class='stat-row'>" + "".join(pills) + "</div>" f"<div class='output-box'>{svg}</div>"
 
 
 def _chart_svg(pattern, lr_direction="lr", tb_direction="tb"):
@@ -142,8 +133,7 @@ def _minimal_svg(pattern):
     width = max(280, cols * cell + 20)
     height = max(80, rows * cell + 26)
     parts = [
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        '<svg xmlns="http://www.w3.org/2000/svg" ' f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
     ]
     for y, row in enumerate(pattern):
         for x, st in enumerate(row):
@@ -232,12 +222,9 @@ def _read_symbol_bytes(symbol, name):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 DEMO = {
     "TITLE": TITLE,
     "DEFAULT_INPUTS": DEFAULT_INPUTS,

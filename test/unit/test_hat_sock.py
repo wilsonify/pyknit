@@ -2,10 +2,7 @@
 from pyknit.Hat import Hat
 from pyknit.Sock import Sock
 
-BIND_OFF = (
-    "Cut yarn leaving 4 inch tail, thread through remaining stitches "
-    "and pull closed"
-)
+BIND_OFF = "Cut yarn leaving 4 inch tail, thread through remaining stitches " "and pull closed"
 
 
 def _stitch_counts(instructions):
@@ -28,9 +25,7 @@ def test_hat_crown_even_division_format_unchanged():
 
 def test_hat_crown_remainder_distributes_extra_decreases():
     instructions = Hat().crown_decreases(8, 26)
-    assert instructions[0] == (
-        "[k1, k2tog] repeat 8 times, k2tog 2 times (16 stitches)"
-    )
+    assert instructions[0] == ("[k1, k2tog] repeat 8 times, k2tog 2 times (16 stitches)")
     assert instructions[2] == "k2tog 8 times (8 stitches)"
     assert instructions[-1] == BIND_OFF
     counts = _stitch_counts(instructions)
@@ -74,9 +69,7 @@ def test_sock_number_of_decrease_rows_formula():
     # cast-on and ankle counts rounded even, the leg must land exactly on the
     # ankle count.
     if sock.cast_on_stitches > sock.ankle_stitches:
-        assert sock.cast_on_stitches - sock.ankle_stitches == (
-            sock.number_of_decrease_rows * 2
-        )
+        assert sock.cast_on_stitches - sock.ankle_stitches == (sock.number_of_decrease_rows * 2)
     else:
         assert sock.number_of_decrease_rows == 0
 
@@ -92,9 +85,7 @@ def test_sock_heel_flap_is_square():
     sock = Sock()
     sock.init()
     # A well-fitting flap has as many rows as stitches in it.
-    assert sock.length_of_heel_flap == round(
-        sock.number_of_heel_flap_stitches / sock.rows_per_inch, 2
-    )
+    assert sock.length_of_heel_flap == round(sock.number_of_heel_flap_stitches / sock.rows_per_inch, 2)
 
 
 def test_sock_lengths_add_up():
@@ -102,10 +93,7 @@ def test_sock_lengths_add_up():
     sock.init()
     leg = sock.length_from_sock_top_to_heel_flap + sock.length_of_heel_flap
     assert round(leg, 2) == round(sock.length_from_sock_top_to_heel_bottom, 2)
-    foot = (
-        sock.length_from_heel_to_beginning_of_toe_decrease
-        + sock.length_of_toe_decrease
-    )
+    foot = sock.length_from_heel_to_beginning_of_toe_decrease + sock.length_of_toe_decrease
     assert round(foot, 2) == round(sock.length_from_heel_to_toe, 2)
 
 
@@ -183,9 +171,7 @@ def test_sock_plan_toe_reaches_finish():
     assert 0 < toe["finish_stitches"] <= 8
     assert toe["phase1_decrease_rounds"] > 0
     assert toe["phase2_decrease_rounds"] > 0
-    assert toe["total_rows"] == (
-        toe["phase1_span_rows"] + toe["phase2_decrease_rounds"]
-    )
+    assert toe["total_rows"] == (toe["phase1_span_rows"] + toe["phase2_decrease_rounds"])
     assert sock.length_of_toe_decrease > 0
 
 

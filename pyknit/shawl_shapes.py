@@ -43,9 +43,7 @@ TRIANGLE_INCREASE_PER_ROW = 2
 CRESCENT_INCREASE_INTERVAL = 4
 
 
-def generate_shawl(
-    shape: str, width: float, length: float, gauge: GaugeSwatch
-) -> List[str]:
+def generate_shawl(shape: str, width: float, length: float, gauge: GaugeSwatch) -> List[str]:
     """Return a deterministic list of written instructions for a shawl shape.
 
     Args:
@@ -68,9 +66,7 @@ def generate_shawl(
         return _triangle_shape(width, length, gauge)
     if shape == "crescent":
         return _crescent_shape(width, length, gauge)
-    raise ValueError(
-        f"Unknown shawl shape {shape!r}; expected one of {SUPPORTED_SHAPES}."
-    )
+    raise ValueError(f"Unknown shawl shape {shape!r}; expected one of {SUPPORTED_SHAPES}.")
 
 
 def _square_shape(width: float, gauge: GaugeSwatch) -> List[str]:
@@ -80,8 +76,7 @@ def _square_shape(width: float, gauge: GaugeSwatch) -> List[str]:
     rows = gauge.measurement_to_rows(width)
     return [
         f"Cast on {stitches} stitches for a square shawl.",
-        f"Work {rows} rows flat in stockinette stitch (no shaping; a square "
-        "needs no increases or decreases).",
+        f"Work {rows} rows flat in stockinette stitch (no shaping; a square " "needs no increases or decreases).",
         f"Bind off all {stitches} stitches.",
     ]
 
@@ -112,9 +107,7 @@ def _triangle_shape(width: float, length: float, gauge: GaugeSwatch) -> List[str
     target_stitches = gauge.measurement_to_stitches(width)
     max_rows = gauge.measurement_to_rows(length)
     current_stitches = TRIANGLE_START_STITCHES
-    instructions = [
-        f"Cast on {TRIANGLE_START_STITCHES} stitches at the point of the triangle."
-    ]
+    instructions = [f"Cast on {TRIANGLE_START_STITCHES} stitches at the point of the triangle."]
     row = 1
     while current_stitches < target_stitches and row <= max_rows:
         spacing = increase_evenly(current_stitches, TRIANGLE_INCREASE_PER_ROW)
@@ -144,9 +137,7 @@ def _crescent_shape(width: float, length: float, gauge: GaugeSwatch) -> List[str
     ]
     for increase_number in range(1, num_increase_rows + 1):
         row_number = increase_number * CRESCENT_INCREASE_INTERVAL
-        instructions.append(
-            f"Row {row_number}: kfb, k across, kfb (1 stitch increased at each end)."
-        )
+        instructions.append(f"Row {row_number}: kfb, k across, kfb (1 stitch increased at each end).")
     instructions.append("Knit all remaining rows plain.")
     final_stitches = start_stitches + 2 * num_increase_rows
     instructions.append(f"Bind off all {final_stitches} stitches.")

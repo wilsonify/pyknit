@@ -78,13 +78,9 @@ class TestInstructionToPlotOrder:
             ("tb", "rl", [[".", " "], [" ", "."]]),
         ],
     )
-    def test_reorders(
-        self, pattern, vertical_order, horizontal_order, expected_symbols
-    ):
+    def test_reorders(self, pattern, vertical_order, horizontal_order, expected_symbols):
         result = instruction_to_plot_order(pattern, vertical_order, horizontal_order)
         assert [[stitch.symbol for stitch in row] for row in result] == expected_symbols
 
     def test_defaults_are_bt_rl(self, pattern):
-        assert instruction_to_plot_order(pattern) == instruction_to_plot_order(
-            pattern, "bt", "rl"
-        )
+        assert instruction_to_plot_order(pattern) == instruction_to_plot_order(pattern, "bt", "rl")

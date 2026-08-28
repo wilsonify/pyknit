@@ -99,9 +99,7 @@ def test_wasm_served_gzip_encoded(demo_url):
 
 
 def test_every_asset_referenced_by_pages_resolves(demo_url):
-    pages = [REPO_ROOT / "demos" / "index.html"] + [
-        REPO_ROOT / "demos" / d / "demo.html" for d in DEMOS
-    ]
+    pages = [REPO_ROOT / "demos" / "index.html"] + [REPO_ROOT / "demos" / d / "demo.html" for d in DEMOS]
     refs = set()
     for page in pages:
         html = page.read_text(encoding="utf-8")
@@ -125,15 +123,11 @@ def test_demo_boots_and_computes_in_browser(demo_url, browser, demo):
     console_errors = []
     page.on(
         "response",
-        lambda r: failed_requests.append((r.status, r.url))
-        if r.status >= 400
-        else None,
+        lambda r: (failed_requests.append((r.status, r.url)) if r.status >= 400 else None),
     )
     page.on(
         "console",
-        lambda m: console_errors.append(m.text)
-        if m.type == "error" and "Traceback" in m.text
-        else None,
+        lambda m: (console_errors.append(m.text) if m.type == "error" and "Traceback" in m.text else None),
     )
     try:
         page.goto(f"{demo_url}/{demo}/demo.html", wait_until="domcontentloaded", timeout=30000)
@@ -143,8 +137,7 @@ def test_demo_boots_and_computes_in_browser(demo_url, browser, demo):
 
         selectors = OUTPUT_SELECTORS.get(demo, ["#demo-output"])
         before = sum(
-            page.evaluate(f"(document.querySelector('{s}')||{{innerHTML:''}}).innerHTML.length")
-            for s in selectors
+            page.evaluate(f"(document.querySelector('{s}')||{{innerHTML:''}}).innerHTML.length") for s in selectors
         )
         assert before > 0, f"{demo} rendered no output on load"
 
@@ -153,8 +146,7 @@ def test_demo_boots_and_computes_in_browser(demo_url, browser, demo):
         btn.click()
         page.wait_for_timeout(2000)
         after = sum(
-            page.evaluate(f"(document.querySelector('{s}')||{{innerHTML:''}}).innerHTML.length")
-            for s in selectors
+            page.evaluate(f"(document.querySelector('{s}')||{{innerHTML:''}}).innerHTML.length") for s in selectors
         )
         assert after > 0, f"{demo} produced no output after clicking run"
         assert before <= after, f"{demo} output shrank after clicking run"
@@ -182,7 +174,11 @@ def test_send_to_estimator_flow(demo_url, browser, planner, expected_mode, statu
     """
     page = browser.new_page()
     try:
-        page.goto(f"{demo_url}/{planner}/demo.html", wait_until="domcontentloaded", timeout=30000)
+        page.goto(
+            f"{demo_url}/{planner}/demo.html",
+            wait_until="domcontentloaded",
+            timeout=30000,
+        )
         _wait_ready(page)
         page.wait_for_timeout(500)
         send = page.query_selector(".send-to-estimator")
@@ -198,9 +194,7 @@ def test_send_to_estimator_flow(demo_url, browser, planner, expected_mode, statu
         joined = " / ".join(status)
         assert status_contains in joined, f"unexpected status after {planner} prefill: {status}"
 
-        out = page.evaluate(
-            "(document.querySelector('#demo-output') || {textContent:''}).textContent"
-        )
+        out = page.evaluate("(document.querySelector('#demo-output') || {textContent:''}).textContent")
         assert out.strip(), f"{planner} flow produced blank estimator output"
         if expected_mode == "advanced":
             assert "yd/st" in out, "advanced estimate must use per-stitch yardage"

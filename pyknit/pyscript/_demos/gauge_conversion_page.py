@@ -26,6 +26,7 @@ latest_chart_result = None
 # Gauge conversion compute
 # --------------------------------------------------------------------------
 
+
 def compute_calc(inputs):
     """Convert a measurement between two gauges."""
     pattern_st = float(inputs.get("pattern-stitch-count", 27.5))
@@ -109,10 +110,7 @@ def chart_to_html(result):
     svg = shared.chart_svg(result["pattern"])
     backends = shared.available_backends()
     if svg:
-        return (
-            f"<div class='info-message'>Rendered with SVG backend.</div>"
-            f"<div class='output-box'>{svg}</div>"
-        )
+        return f"<div class='info-message'>Rendered with SVG backend.</div>" f"<div class='output-box'>{svg}</div>"
     text = shared.pattern_to_text(result["pattern"])
     return (
         f"<div class='info-message'>Rendered with text backend.</div>"
@@ -123,6 +121,7 @@ def chart_to_html(result):
 # --------------------------------------------------------------------------
 # Runtime bootstrap
 # --------------------------------------------------------------------------
+
 
 def _bootstrap_runtime():
     global READY, BOOT_ERROR, parse_chart, GaugeSwatch, convert_stitch_measure
@@ -225,11 +224,7 @@ def bootstrap_page():
     )
     shared.bind_export_pattern(
         "export-chart",
-        lambda: (
-            shared.export_pattern_text(latest_chart_result)
-            if latest_chart_result
-            else ""
-        ),
+        lambda: (shared.export_pattern_text(latest_chart_result) if latest_chart_result else ""),
         title="gauge-conversion-chart",
     )
 

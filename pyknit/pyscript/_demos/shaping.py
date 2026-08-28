@@ -24,12 +24,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def compute(inputs):
@@ -82,8 +77,7 @@ def _row_svg(starting, number, increasing):
     width = max(560, margin * 2 + shown * cell)
 
     parts = [
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        '<svg xmlns="http://www.w3.org/2000/svg" ' f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
     ]
     x = margin
     marker = "+" if increasing else "-"
@@ -102,8 +96,7 @@ def _row_svg(starting, number, increasing):
         x += cell
     if total > shown:
         parts.append(
-            f'<text x="{x + 10}" y="26" font-size="12" fill="#8a8391">'
-            f"… {total - shown} more stitches</text>"
+            f'<text x="{x + 10}" y="26" font-size="12" fill="#8a8391">' f"… {total - shown} more stitches</text>"
         )
     parts.append(
         f'<text x="{margin}" y="{height - 4}" font-size="11" fill="#5a2a75">'
@@ -111,6 +104,8 @@ def _row_svg(starting, number, increasing):
     )
     parts.append("</svg>")
     return "\n".join(parts)
+
+
 DEMO = {
     "TITLE": TITLE,
     "DEFAULT_INPUTS": DEFAULT_INPUTS,

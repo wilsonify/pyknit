@@ -12,7 +12,6 @@ import warnings
 import pyknit
 from pyknit import Chart
 
-
 COLOR_SYMBOL = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -30,9 +29,7 @@ def test_stitch_metadata_defaults():
 
 def test_stitch_equality():
     """Two Stitches built the same way compare equal."""
-    assert Chart.Stitch("knit", symbol=" ", width=1) == Chart.Stitch(
-        "knit", symbol=" ", width=1
-    )
+    assert Chart.Stitch("knit", symbol=" ", width=1) == Chart.Stitch("knit", symbol=" ", width=1)
     increase = Chart.Stitch(
         "knit front and back",
         symbol="V",

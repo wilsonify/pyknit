@@ -5,10 +5,7 @@ the re-imported pattern so the demo works with a pure pyknit import.
 """
 
 DEFAULT_INPUTS = {
-    "pattern": (
-        "k2 yo k2tog yo k1\n"
-        "p1 k2 yo k2tog p2"
-    ),
+    "pattern": ("k2 yo k2tog yo k1\n" "p1 k2 yo k2tog p2"),
     "format": "json",
 }
 
@@ -23,9 +20,7 @@ def to_html(result):
         f"<em>{result['roundtrip_stitches']}</em></span>"
     )
     return (
-        "<div class='stat-row'>"
-        + pills
-        + "</div>"
+        "<div class='stat-row'>" + pills + "</div>"
         f"<div class='output-box'><pre class='mono'>{_esc(result['exported'])}</pre></div>"
         f"<div class='output-box'>{result['svg']}</div>"
         "<h3>Recovered instructions</h3>"
@@ -34,12 +29,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def compute(inputs):
@@ -105,8 +95,7 @@ def _chart_svg(pattern):
     width = max(240, cols * cell + 20)
     height = max(60, rows * cell + 26)
     parts = [
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        '<svg xmlns="http://www.w3.org/2000/svg" ' f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
     ]
     for y, row in enumerate(pattern):
         for x, st in enumerate(row):
@@ -123,6 +112,8 @@ def _chart_svg(pattern):
             )
     parts.append("</svg>")
     return "\n".join(parts)
+
+
 DEMO = {
     "TITLE": TITLE,
     "DEFAULT_INPUTS": DEFAULT_INPUTS,

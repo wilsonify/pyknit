@@ -17,16 +17,11 @@ import pytest
 
 from pyknit.Sock import NEGATIVE_EASE, Sock
 
-DEMOS_DIR = (
-    pathlib.Path(__file__).parent.parent.parent
-    / "pyknit" / "pyscript" / "_demos"
-)
+DEMOS_DIR = pathlib.Path(__file__).parent.parent.parent / "pyknit" / "pyscript" / "_demos"
 
 
 def load_sock_demo():
-    spec = importlib.util.spec_from_file_location(
-        "demo_sock_calculator", DEMOS_DIR / "sock_calculator.py"
-    )
+    spec = importlib.util.spec_from_file_location("demo_sock_calculator", DEMOS_DIR / "sock_calculator.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -38,35 +33,91 @@ SIZES = [
     (dict(rows_per_inch=7, stitches_per_inch=5.5), "bulky"),
     (dict(rows_per_inch=9, stitches_per_inch=6), "fingering-loose"),
     (dict(rows_per_inch=12, stitches_per_inch=8), "fingering-tight"),
-    (dict(circumference_at_top=7.5, circumference_of_ankle=6.5,
-          length_from_sock_top_to_heel_bottom=4.5, length_from_heel_to_toe=6.5),
-     "child"),
-    (dict(circumference_at_top=9.5, circumference_of_ankle=8,
-          length_from_sock_top_to_heel_bottom=6, length_from_heel_to_toe=8.5),
-     "womens-S"),
-    (dict(circumference_at_top=10.25, circumference_of_ankle=8.5,
-          length_from_sock_top_to_heel_bottom=6.5, length_from_heel_to_toe=9.25),
-     "womens-M"),
-    (dict(circumference_at_top=11, circumference_of_ankle=9,
-          length_from_sock_top_to_heel_bottom=7, length_from_heel_to_toe=10),
-     "womens-L"),
-    (dict(circumference_at_top=11.5, circumference_of_ankle=9.5,
-          length_from_sock_top_to_heel_bottom=7.25, length_from_heel_to_toe=10.5),
-     "mens-S"),
-    (dict(circumference_at_top=12.5, circumference_of_ankle=10.25,
-          length_from_sock_top_to_heel_bottom=7.75, length_from_heel_to_toe=11),
-     "mens-M"),
-    (dict(circumference_at_top=13.5, circumference_of_ankle=11,
-          length_from_sock_top_to_heel_bottom=8.25, length_from_heel_to_toe=11.75),
-     "mens-L"),
+    (
+        dict(
+            circumference_at_top=7.5,
+            circumference_of_ankle=6.5,
+            length_from_sock_top_to_heel_bottom=4.5,
+            length_from_heel_to_toe=6.5,
+        ),
+        "child",
+    ),
+    (
+        dict(
+            circumference_at_top=9.5,
+            circumference_of_ankle=8,
+            length_from_sock_top_to_heel_bottom=6,
+            length_from_heel_to_toe=8.5,
+        ),
+        "womens-S",
+    ),
+    (
+        dict(
+            circumference_at_top=10.25,
+            circumference_of_ankle=8.5,
+            length_from_sock_top_to_heel_bottom=6.5,
+            length_from_heel_to_toe=9.25,
+        ),
+        "womens-M",
+    ),
+    (
+        dict(
+            circumference_at_top=11,
+            circumference_of_ankle=9,
+            length_from_sock_top_to_heel_bottom=7,
+            length_from_heel_to_toe=10,
+        ),
+        "womens-L",
+    ),
+    (
+        dict(
+            circumference_at_top=11.5,
+            circumference_of_ankle=9.5,
+            length_from_sock_top_to_heel_bottom=7.25,
+            length_from_heel_to_toe=10.5,
+        ),
+        "mens-S",
+    ),
+    (
+        dict(
+            circumference_at_top=12.5,
+            circumference_of_ankle=10.25,
+            length_from_sock_top_to_heel_bottom=7.75,
+            length_from_heel_to_toe=11,
+        ),
+        "mens-M",
+    ),
+    (
+        dict(
+            circumference_at_top=13.5,
+            circumference_of_ankle=11,
+            length_from_sock_top_to_heel_bottom=8.25,
+            length_from_heel_to_toe=11.75,
+        ),
+        "mens-L",
+    ),
     # awkward but buildable: steep taper, very short leg, fine gauge
-    (dict(circumference_at_top=11, circumference_of_ankle=8, rows_per_inch=9,
-          stitches_per_inch=8, length_from_sock_top_to_heel_bottom=5.5),
-     "steep-taper"),
-    (dict(rows_per_inch=14, stitches_per_inch=10,
-          circumference_at_top=8, circumference_of_ankle=7.5,
-          length_from_sock_top_to_heel_bottom=4, length_from_heel_to_toe=7),
-     "fine-small"),
+    (
+        dict(
+            circumference_at_top=11,
+            circumference_of_ankle=8,
+            rows_per_inch=9,
+            stitches_per_inch=8,
+            length_from_sock_top_to_heel_bottom=5.5,
+        ),
+        "steep-taper",
+    ),
+    (
+        dict(
+            rows_per_inch=14,
+            stitches_per_inch=10,
+            circumference_at_top=8,
+            circumference_of_ankle=7.5,
+            length_from_sock_top_to_heel_bottom=4,
+            length_from_heel_to_toe=7,
+        ),
+        "fine-small",
+    ),
 ]
 
 
@@ -107,9 +158,7 @@ def test_whole_numbers_and_consistency(kwargs, _name):
     assert 1 <= remaining <= flap
     assert len(turn_rows) >= 1
     side_seq = [r["side"] for r in turn_rows]
-    assert side_seq == ["RS", "WS"] * (len(turn_rows) // 2) + (
-        ["RS"] if len(turn_rows) % 2 else []
-    )
+    assert side_seq == ["RS", "WS"] * (len(turn_rows) // 2) + (["RS"] if len(turn_rows) % 2 else [])
 
     # ---- gusset: pick-ups decreased back to exactly the ankle ----
     first, rest = sock.gusset_decrease_rounds()
@@ -121,11 +170,8 @@ def test_whole_numbers_and_consistency(kwargs, _name):
     toe = sock._toe_row_schedule()
     assert 4 <= toe["finish_stitches"] <= 8
     assert toe["finish_stitches"] % 2 == 0
-    assert toe["phase1_end_stitches"] == (
-        toe["finish_stitches"] + 4 * toe["phase2_decrease_rounds"]
-    )
-    assert toe["total_rows"] == toe["phase1_span_rows"] + toe[
-        "phase2_decrease_rounds"]
+    assert toe["phase1_end_stitches"] == (toe["finish_stitches"] + 4 * toe["phase2_decrease_rounds"])
+    assert toe["total_rows"] == toe["phase1_span_rows"] + toe["phase2_decrease_rounds"]
 
     # ---- the pieces add up to the sections the knitter actually knits ----
     plan_dict = sock.get_plan()
@@ -140,13 +186,16 @@ def test_whole_numbers_and_consistency(kwargs, _name):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("value,down,up", [
-    (68.4, 68, 70),
-    (33.5, 32, 34),
-    (72.0, 72, 72),
-    (0.4, 0, 2),
-    (7.9, 6, 8),
-])
+@pytest.mark.parametrize(
+    "value,down,up",
+    [
+        (68.4, 68, 70),
+        (33.5, 32, 34),
+        (72.0, 72, 72),
+        (0.4, 0, 2),
+        (7.9, 6, 8),
+    ],
+)
 def test_round_to_even_helpers(value, down, up):
     sock = Sock()
     assert sock.round_down_even(value) == down
@@ -165,24 +214,23 @@ def test_round_helpers_return_whole_even_numbers():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("ease,expected_percent", [
-    (NEGATIVE_EASE, 20),
-    (1.0, 0),
-    (0.9, 10),
-    (0.6, 40),
-])
+@pytest.mark.parametrize(
+    "ease,expected_percent",
+    [
+        (NEGATIVE_EASE, 20),
+        (1.0, 0),
+        (0.9, 10),
+        (0.6, 40),
+    ],
+)
 def test_negative_ease_configurable(ease, expected_percent):
     sock = Sock()
     sock.init(negative_ease=ease)
     assert sock.negative_ease == ease
     assert round((1 - sock.negative_ease) * 100) == expected_percent
     # ease applies to both cast-on and ankle counts
-    assert sock.cast_on_stitches == sock.round_down_even(
-        sock.stitches_per_inch * sock.circumference_at_top * ease
-    )
-    assert sock.ankle_stitches == sock.round_down_even(
-        sock.stitches_per_inch * sock.circumference_of_ankle * ease
-    )
+    assert sock.cast_on_stitches == sock.round_down_even(sock.stitches_per_inch * sock.circumference_at_top * ease)
+    assert sock.ankle_stitches == sock.round_down_even(sock.stitches_per_inch * sock.circumference_of_ankle * ease)
 
 
 @pytest.mark.parametrize("bad", [0, -0.1, 1.3, 5])
@@ -195,9 +243,7 @@ def test_negative_ease_invalid_raises(bad):
 def test_no_ease_means_counts_equal_measured_stitches():
     sock = Sock()
     sock.init(negative_ease=1.0)
-    assert sock.cast_on_stitches == sock.round_down_even(
-        sock.stitches_per_inch * sock.circumference_at_top
-    )
+    assert sock.cast_on_stitches == sock.round_down_even(sock.stitches_per_inch * sock.circumference_at_top)
 
 
 # ---------------------------------------------------------------------------
@@ -221,18 +267,22 @@ def test_validation_raises_when_leg_cannot_fit_decreases():
     sock = Sock()
     with pytest.raises(ValueError, match="[Ll]eg"):
         sock.init(
-            circumference_at_top=10, circumference_of_ankle=8,
+            circumference_at_top=10,
+            circumference_of_ankle=8,
             length_from_sock_top_to_heel_bottom=2.5,
-            rows_per_inch=11, stitches_per_inch=9,
+            rows_per_inch=11,
+            stitches_per_inch=9,
         )
 
 
 def test_validation_raises_when_flap_longer_than_leg():
     sock = Sock()
     sock.init(
-        circumference_at_top=9, circumference_of_ankle=9,
+        circumference_at_top=9,
+        circumference_of_ankle=9,
         length_from_sock_top_to_heel_bottom=1.0,
-        rows_per_inch=11, stitches_per_inch=9,
+        rows_per_inch=11,
+        stitches_per_inch=9,
     )
     with pytest.raises(ValueError, match="[Hh]eel flap"):
         sock.get_plan()
@@ -241,8 +291,10 @@ def test_validation_raises_when_flap_longer_than_leg():
 def test_validation_raises_for_too_few_ankle_stitches():
     sock = Sock()
     sock.init(
-        circumference_at_top=4, circumference_of_ankle=3.5,
-        stitches_per_inch=2.5, rows_per_inch=3,
+        circumference_at_top=4,
+        circumference_of_ankle=3.5,
+        stitches_per_inch=2.5,
+        rows_per_inch=3,
     )
     with pytest.raises(ValueError):
         sock.get_plan()
@@ -265,10 +317,7 @@ def test_instructions_number_consistency():
     sock = Sock()
     sock.init()
     plan = sock.get_plan()
-    joined = "\n".join(
-        (s.get("intro") or "") + "\n" + "\n".join(s.get("steps") or [])
-        for s in plan["sections"]
-    )
+    joined = "\n".join((s.get("intro") or "") + "\n" + "\n".join(s.get("steps") or []) for s in plan["sections"])
 
     # numbers in the instructions agree with the computed plan
     assert f"Cast on {sock.cast_on_stitches} stitches" in joined
@@ -350,11 +399,14 @@ def test_demo_defaults_and_ease_wiring():
     assert "20% negative ease" in html
 
 
-@pytest.mark.parametrize("pct,expected_cast_direction", [
-    (0, 1.0),
-    (10, 0.9),
-    (25, 0.75),
-])
+@pytest.mark.parametrize(
+    "pct,expected_cast_direction",
+    [
+        (0, 1.0),
+        (10, 0.9),
+        (25, 0.75),
+    ],
+)
 def test_demo_ease_percent_maps_to_factor(pct, expected_cast_direction):
     module = load_sock_demo()
     sock = Sock()
@@ -388,9 +440,7 @@ def test_svg_has_no_negative_geometry_across_sizes():
         except ValueError:
             # some of the awkward combos legitimately refuse to make a sock
             continue
-        numbers = re.findall(
-            r'(?:width|height|x|y)="(-?\d*\.?\d+)"', result["svg"]
-        )
+        numbers = re.findall(r'(?:width|height|x|y)="(-?\d*\.?\d+)"', result["svg"])
         assert not any(float(n) < 0 for n in numbers), kwargs
 
 
@@ -402,8 +452,7 @@ def test_plan_measurements_match_computed_sock():
     assert ms["cast_on_stitches"][1] == sock.cast_on_stitches
     assert ms["ankle_stitches"][1] == sock.ankle_stitches
     assert ms["number_of_decrease_rows"][1] == sock.number_of_decrease_rows
-    assert ms["number_of_heel_flap_stitches"][1] == \
-        sock.number_of_heel_flap_stitches
+    assert ms["number_of_heel_flap_stitches"][1] == sock.number_of_heel_flap_stitches
 
 
 if __name__ == "__main__":

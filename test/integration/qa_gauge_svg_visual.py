@@ -48,8 +48,7 @@ def main() -> int:
         if "<svg" not in chart_html:
             failures.append("chart-output does not contain <svg>")
 
-        info = page.evaluate(
-            """
+        info = page.evaluate("""
 () => {
   const svg = document.querySelector('#chart-output svg');
   if (!svg) return { missing: true };
@@ -74,8 +73,7 @@ def main() -> int:
     hasDoubleBraceCss: styleText.includes('{{') || styleText.includes('}}'),
   };
 }
-            """
-        )
+            """)
 
         if info.get("missing"):
             failures.append("svg element missing in chart-output")

@@ -24,6 +24,7 @@ def test_svg_dimensions_match_plot_chart():
         chart_image = Chart.plot_chart(pattern)
     except OSError:
         import pytest
+
         pytest.skip("Inkfree.ttf font not available")
     root = ET.fromstring(Chart.render_chart_svg(pattern))
     assert root.attrib["width"] == str(chart_image.width)
@@ -48,11 +49,7 @@ def test_svg_renders_char_and_color_symbols():
 def test_svg_multi_width_cable_spans_cells():
     pattern = [[Chart.Stitch("C2-1L", symbol="#00ff00", width=3)]]
     root = ET.fromstring(Chart.render_chart_svg(pattern))
-    cable_rects = [
-        e
-        for e in root.iter()
-        if e.tag.endswith("rect") and e.attrib["fill"] == "#00ff00"
-    ]
+    cable_rects = [e for e in root.iter() if e.tag.endswith("rect") and e.attrib["fill"] == "#00ff00"]
     assert len(cable_rects) == 1
     assert cable_rects[0].attrib["width"] == str(3 * Chart.cell_width)
 
@@ -134,10 +131,7 @@ def test_svg_stitch_labels_have_distinct_colors():
     pattern = Chart.parse_chart("k2 yo k2tog\np1 yo k2tog")
     root = ET.fromstring(Chart.render_chart_svg(pattern))
     fills = {
-        e.attrib["fill"]
-        for e in root.iter()
-        if e.tag.endswith("text")
-        and e.attrib.get("class") == "stitch-label"
+        e.attrib["fill"] for e in root.iter() if e.tag.endswith("text") and e.attrib.get("class") == "stitch-label"
     }
     assert len(fills) >= 3
     assert "blue" not in fills

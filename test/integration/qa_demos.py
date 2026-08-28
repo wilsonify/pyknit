@@ -23,45 +23,144 @@ from playwright.sync_api import sync_playwright
 BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
 
 DEMOS = [
-    {"dir": "gauge-conversion", "buttons": ["run-calc", "run-chart"],
-     "outputs": ["calc-output", "chart-output"], "errors": ["calc-error", "chart-error"]},
-    {"dir": "chart-renderer", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "even-shaping", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "hat-crown", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
-     "extra": "simulate-nav",
-     "sim": {"button": "simulate-hat", "target": "knit-simulator",
-             "note": "hat-plan-note", "min_steps": 10,
-             "instr_min_len": 200, "instr_prefix": "co"}},
-    {"dir": "pi-shawl", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "pattern-io", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "raglan-sweater", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
-     "extra": "simulate-nav",
-     "sim": {"button": "simulate-sweater", "target": "knit-simulator",
-             "note": "raglan-plan-note", "min_steps": 100,
-             "instr_min_len": 1000, "instr_prefix": "co"}},
-    {"dir": "shawl-shapes", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "sleeve-decreases", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "sock-calculator", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"],
-     "extra": "simulate-nav",
-     "sim": {"button": "simulate-sock", "target": "knit-simulator",
-             "note": "sock-plan-note", "min_steps": 50}},
-    {"dir": "yarn-estimator", "buttons": ["run", "run-advanced"], "outputs": ["demo-output"], "errors": ["demo-error"]},
-    {"dir": "knit-simulator", "buttons": ["run"], "outputs": ["sim-section"], "errors": ["demo-error"], "extra": "knit-simulator"},
-    {"dir": "needle-advisor", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"], "needs_svg": False},
-    {"dir": "yarn-advisor", "buttons": ["run"], "outputs": ["demo-output"], "errors": ["demo-error"], "needs_svg": False},
+    {
+        "dir": "gauge-conversion",
+        "buttons": ["run-calc", "run-chart"],
+        "outputs": ["calc-output", "chart-output"],
+        "errors": ["calc-error", "chart-error"],
+    },
+    {
+        "dir": "chart-renderer",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "even-shaping",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "hat-crown",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-hat",
+            "target": "knit-simulator",
+            "note": "hat-plan-note",
+            "min_steps": 10,
+            "instr_min_len": 200,
+            "instr_prefix": "co",
+        },
+    },
+    {
+        "dir": "pi-shawl",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "pattern-io",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "raglan-sweater",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-sweater",
+            "target": "knit-simulator",
+            "note": "raglan-plan-note",
+            "min_steps": 100,
+            "instr_min_len": 1000,
+            "instr_prefix": "co",
+        },
+    },
+    {
+        "dir": "shawl-shapes",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "sleeve-decreases",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "sock-calculator",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-sock",
+            "target": "knit-simulator",
+            "note": "sock-plan-note",
+            "min_steps": 50,
+        },
+    },
+    {
+        "dir": "yarn-estimator",
+        "buttons": ["run", "run-advanced"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "knit-simulator",
+        "buttons": ["run"],
+        "outputs": ["sim-section"],
+        "errors": ["demo-error"],
+        "extra": "knit-simulator",
+    },
+    {
+        "dir": "needle-advisor",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "needs_svg": False,
+    },
+    {
+        "dir": "yarn-advisor",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "needs_svg": False,
+    },
 ]
 
 SKIP_JS_NOISE = (
-    "favicon", "DevTools", "Third-party cookie", "Autofill", "cache",
-    "GetUserMedia", "Offline", "deprecated", "Source map",
+    "favicon",
+    "DevTools",
+    "Third-party cookie",
+    "Autofill",
+    "cache",
+    "GetUserMedia",
+    "Offline",
+    "deprecated",
+    "Source map",
 )
 
 # pyknit logs progress to stderr (surfaced as console errors by PyScript);
 # these are benign. Real failures are tracebacks or JS errors.
 BENIGN_STDERR = (
-    "Attempting to import", "pyknit imported", "Running default",
-    "SVG generated", "PNG generated", "Text generated", "Using text",
-    "Error: Pattern cannot", "Available backends",
+    "Attempting to import",
+    "pyknit imported",
+    "Running default",
+    "SVG generated",
+    "PNG generated",
+    "Text generated",
+    "Using text",
+    "Error: Pattern cannot",
+    "Available backends",
 )
 
 INNER_HTML = "el => el.innerHTML"
@@ -82,7 +181,7 @@ class QAReport:
         self.name = name
         self.failures = []
         self.notes = []
-        self.console_errors = []       # boot-time console errors (failures)
+        self.console_errors = []  # boot-time console errors (failures)
         self.interaction_console = []  # post-ready console errors (notes)
         self.page_errors = []
         self.failed_requests = []
@@ -151,6 +250,7 @@ def _console_handler(report, ready_flag):
                 report.console_errors.append(text[:400])
         if msg.type in ("warning", "log", "info") and "pyknit" in text.lower():
             report.note(f"console[{msg.type}]: {text[:120]}")
+
     return on_console
 
 
@@ -159,6 +259,7 @@ def _requestfailed_handler(report):
         url = req.url
         if url.startswith("http"):
             report.failed_requests.append(f"{url} :: {req.failure}")
+
     return on_requestfailed
 
 
@@ -166,12 +267,14 @@ def _response_handler(report):
     def on_response(resp):
         if resp.status >= 400:
             report.failed_requests.append(f"{resp.status} {resp.url[:160]}")
+
     return on_response
 
 
 def _pageerror_handler(report):
     def on_pageerror(exc):
         report.page_errors.append(str(exc)[:400])
+
     return on_pageerror
 
 
@@ -229,8 +332,7 @@ def exercise_knit_simulator_controls(page, report):
     if title.strip() == "Swatch" and "swatch-loops" in svg and "swatch-rows" in svg:
         report.ok("default small pattern rendered as a stitch swatch (title 'Swatch')")
     else:
-        report.fail("default pattern did not render as a swatch",
-                    f"title={title.strip()!r}")
+        report.fail("default pattern did not render as a swatch", f"title={title.strip()!r}")
 
     n0 = _step_num(page)
     page.click("#sim-next")
@@ -321,8 +423,7 @@ def exercise_simulate_nav(page, report, sim):
             "",
         )
         if len(txt) < sim["instr_min_len"] or (prefix and not first_line.startswith(prefix)):
-            report.fail(f"instructions field not prefilled with the plan "
-                        f"({len(txt)} chars, starts {txt[:20]!r})")
+            report.fail(f"instructions field not prefilled with the plan " f"({len(txt)} chars, starts {txt[:20]!r})")
     total = 0
     for _ in range(30):
         try:
@@ -386,15 +487,21 @@ def run_demo(browser, spec):
 
     # interactive: click each button with default inputs
     for bid in spec["buttons"]:
-        _apply_checks(report, exercise(page, bid, spec),
-                      f"default click on #{bid} produced output")
+        _apply_checks(
+            report,
+            exercise(page, bid, spec),
+            f"default click on #{bid} produced output",
+        )
 
     # verify rendered content (SVG chart or table/pre) is present after a run
     _apply_checks(report, check_rendered(page, spec), "rendered chart/svg output verified")
 
     # invalid input path (on this demo's own page, before any cross-demo navigation)
-    _apply_checks(report, exercise_invalid(page, spec, name),
-                  "invalid input produced a visible error")
+    _apply_checks(
+        report,
+        exercise_invalid(page, spec, name),
+        "invalid input produced a visible error",
+    )
 
     # demo-specific extra workflows (simulator controls, cross-demo navigation)
     extra = spec.get("extra")
@@ -418,8 +525,7 @@ def check_rendered(page, spec):
             return fails
 
         # Ensure symbols are concise and visually distinct (not verbose black text).
-        gauge_svg_info = page.evaluate(
-            """
+        gauge_svg_info = page.evaluate("""
 () => {
   const svg = document.querySelector('#chart-output svg');
   if (!svg) {
@@ -440,8 +546,7 @@ def check_rendered(page, spec):
     styleText: styleTag ? styleTag.textContent : "",
   };
 }
-            """
-        )
+            """)
 
         if gauge_svg_info.get("missing"):
             fails.append("gauge-conversion: chart svg missing from DOM")
@@ -520,7 +625,8 @@ def _error_visible(page, eid):
 def _ensure_clickable(page, bid):
     """Open any collapsed <details> ancestors so the button is visible."""
     try:
-        page.evaluate("""
+        page.evaluate(
+            """
             bid => {
               var el = document.getElementById(bid);
               while (el) {
@@ -528,7 +634,9 @@ def _ensure_clickable(page, bid):
                 el = el.parentElement;
               }
             }
-        """, bid)
+        """,
+            bid,
+        )
     except Exception:
         pass
 
@@ -582,9 +690,7 @@ def change_input_and_compare(page, oids, eids, bid):
         page.query_selector(f"#{bid}").click()
         time.sleep(1.2)
         after = out_text(page, out_id)
-        page.query_selector(target).fill(
-            "k2 yo k2tog yo k1\np1 k2 yo k2tog p2"
-        )
+        page.query_selector(target).fill("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
         page.query_selector(f"#{bid}").click()
         time.sleep(1.2)
         return after != before and bool(after.strip())
@@ -754,9 +860,7 @@ def check_index(browser):
             problems.append(f"index.html status {resp.status if resp else 'None'}")
             page.close()
             return problems
-        links = page.eval_on_selector_all(
-            "a[href$='.html']", "els => els.map(e => e.getAttribute('href'))"
-        )
+        links = page.eval_on_selector_all("a[href$='.html']", "els => els.map(e => e.getAttribute('href'))")
         for href in links:
             full = href if href.startswith("http") else f"{BASE}/{href.lstrip('/')}"
             try:

@@ -83,10 +83,7 @@ def test_stitch_unknown_stitch():
     ],
 )
 def test_increase_evenly(starting_count, increase_number, in_the_round, expected):
-    assert (
-        pyknit.increase_evenly(starting_count, increase_number, in_the_round)
-        == expected
-    )
+    assert pyknit.increase_evenly(starting_count, increase_number, in_the_round) == expected
 
 
 @pytest.mark.parametrize(
@@ -111,28 +108,26 @@ def test_increase_evenly_error(starting_count, increase_number, in_the_round, ex
     [
         (11, 3, True, "k2, k2tog, k1, k2tog, k2, k2tog"),
         (11, 3, False, "k1, k2tog, k2, k2tog, k2, k2tog"),
-
         (19, 5, True, "[k2, k2tog] * 2 times, k1, k2tog, [k2, k2tog] * 2 times"),
         (19, 5, False, "k1, [k2tog, k2] * 2 times, [k2tog, k2] * 2 times, k2tog"),
-
         (20, 5, True, "[k2, k2tog] * 5 times"),
         (20, 5, False, "k1, [k2tog, k2] * 4 times, k2tog, k1"),
-
         (21, 5, True, "[k2, k2tog] * 2 times, k3, k2tog, [k2, k2tog] * 2 times"),
         (21, 5, False, "k2, [k2tog, k2] * 2 times, [k2tog, k2] * 2 times, k2tog k1"),
-
         # 4-decrease rounds (used by a short sock leg) must never crash
         (10, 4, True, "k2tog, [k1, k2tog] * 2 times, k2tog"),
         (14, 4, True, "k1, k2tog, [k2, k2tog] * 2 times, k1, k2tog"),
-
     ],
 )
 def test_decrease_evenly(starting_count, decrease_number, in_the_round, expected):
-    assert pyknit.decrease_evenly(
-        starting_count=starting_count,
-        decrease_number=decrease_number,
-        in_the_round=in_the_round
-    ) == expected
+    assert (
+        pyknit.decrease_evenly(
+            starting_count=starting_count,
+            decrease_number=decrease_number,
+            in_the_round=in_the_round,
+        )
+        == expected
+    )
 
 
 @pytest.mark.parametrize(

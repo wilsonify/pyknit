@@ -1,4 +1,5 @@
 """Probe a new-style demo after the bind_click fix."""
+
 import os
 import sys
 import time
@@ -24,7 +25,10 @@ with sync_playwright() as p:
         time.sleep(0.5)
 
     print("banner:", page.eval_on_selector("#status-banner", "el => el.className"))
-    print("message:", repr(page.eval_on_selector("#status-message", "el => el.textContent")))
+    print(
+        "message:",
+        repr(page.eval_on_selector("#status-message", "el => el.textContent")),
+    )
 
     # Check python globals via pyodide
     info = page.evaluate("""
@@ -42,7 +46,10 @@ with sync_playwright() as p:
     time.sleep(2)
     html = page.eval_on_selector("#demo-output", "el => el.innerHTML") or ""
     print("demo-output len:", len(html), "head:", html[:120])
-    print("demo-error display:", page.eval_on_selector("#demo-error", "el => el.style.display"))
+    print(
+        "demo-error display:",
+        page.eval_on_selector("#demo-error", "el => el.style.display"),
+    )
 
     print("--- console/page events ---")
     for e in events:

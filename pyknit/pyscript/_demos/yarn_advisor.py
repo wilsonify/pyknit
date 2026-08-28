@@ -24,19 +24,35 @@ PROJECT_TYPES = {
     "sweater": {"label": "Sweater", "needs_drape": True, "needs_structure": True},
     "shawl": {"label": "Shawl / Wrap", "needs_drape": True, "needs_structure": False},
     "blanket": {"label": "Blanket", "needs_drape": True, "needs_structure": False},
-    "mittens": {"label": "Mittens / Gloves", "needs_drape": False, "needs_structure": True},
+    "mittens": {
+        "label": "Mittens / Gloves",
+        "needs_drape": False,
+        "needs_structure": True,
+    },
     "baby": {"label": "Baby garment", "needs_drape": True, "needs_structure": False},
 }
 
 GAUGE_CATEGORIES = {
     "lace": {"label": "Lace (30+ sts/in)", "sts_per_in": 32, "weight": "lace"},
-    "fingering": {"label": "Fingering (27-32 sts/in)", "sts_per_in": 28, "weight": "fingering"},
+    "fingering": {
+        "label": "Fingering (27-32 sts/in)",
+        "sts_per_in": 28,
+        "weight": "fingering",
+    },
     "sport": {"label": "Sport (23-26 sts/in)", "sts_per_in": 24, "weight": "sport"},
     "dk": {"label": "DK (21-24 sts/in)", "sts_per_in": 22, "weight": "dk"},
-    "worsted": {"label": "Worsted (18-20 sts/in)", "sts_per_in": 19, "weight": "worsted"},
+    "worsted": {
+        "label": "Worsted (18-20 sts/in)",
+        "sts_per_in": 19,
+        "weight": "worsted",
+    },
     "aran": {"label": "Aran (16-18 sts/in)", "sts_per_in": 17, "weight": "aran"},
     "bulky": {"label": "Bulky (14-17 sts/in)", "sts_per_in": 15, "weight": "bulky"},
-    "super_bulky": {"label": "Super Bulky (9-12 sts/in)", "sts_per_in": 10, "weight": "super bulky"},
+    "super_bulky": {
+        "label": "Super Bulky (9-12 sts/in)",
+        "sts_per_in": 10,
+        "weight": "super bulky",
+    },
 }
 
 DRAPE_LEVELS = {
@@ -56,23 +72,107 @@ WARMTH_LEVELS = {
 }
 
 FIBER_TYPES = {
-    "merino": {"label": "Merino Wool", "warmth": 0.8, "drape": 0.6, "elasticity": 0.8, "washable": True, "breathable": True, "durability": 0.7},
-    "wool": {"label": "Non-superwash Wool", "warmth": 0.85, "drape": 0.5, "elasticity": 0.7, "washable": False, "breathable": True, "durability": 0.8},
-    "alpaca": {"label": "Alpaca", "warmth": 0.95, "drape": 0.8, "elasticity": 0.3, "washable": False, "breathable": True, "durability": 0.6},
-    "cotton": {"label": "Cotton", "warmth": 0.1, "drape": 0.4, "elasticity": 0.1, "washable": True, "breathable": True, "durability": 0.9},
-    "silk": {"label": "Silk blend", "warmth": 0.3, "drape": 0.9, "elasticity": 0.2, "washable": False, "breathable": True, "durability": 0.7},
-    "acrylic": {"label": "Acrylic", "warmth": 0.5, "drape": 0.5, "elasticity": 0.5, "washable": True, "breathable": False, "durability": 0.8},
-    "linen": {"label": "Linen", "warmth": 0.05, "drape": 0.3, "elasticity": 0.05, "washable": True, "breathable": True, "durability": 0.95},
-    "blends": {"label": "Wool blends", "warmth": 0.65, "drape": 0.55, "elasticity": 0.6, "washable": True, "breathable": True, "durability": 0.75},
-    "any": {"label": "No preference", "warmth": 0.5, "drape": 0.5, "elasticity": 0.5, "washable": True, "breathable": True, "durability": 0.7},
+    "merino": {
+        "label": "Merino Wool",
+        "warmth": 0.8,
+        "drape": 0.6,
+        "elasticity": 0.8,
+        "washable": True,
+        "breathable": True,
+        "durability": 0.7,
+    },
+    "wool": {
+        "label": "Non-superwash Wool",
+        "warmth": 0.85,
+        "drape": 0.5,
+        "elasticity": 0.7,
+        "washable": False,
+        "breathable": True,
+        "durability": 0.8,
+    },
+    "alpaca": {
+        "label": "Alpaca",
+        "warmth": 0.95,
+        "drape": 0.8,
+        "elasticity": 0.3,
+        "washable": False,
+        "breathable": True,
+        "durability": 0.6,
+    },
+    "cotton": {
+        "label": "Cotton",
+        "warmth": 0.1,
+        "drape": 0.4,
+        "elasticity": 0.1,
+        "washable": True,
+        "breathable": True,
+        "durability": 0.9,
+    },
+    "silk": {
+        "label": "Silk blend",
+        "warmth": 0.3,
+        "drape": 0.9,
+        "elasticity": 0.2,
+        "washable": False,
+        "breathable": True,
+        "durability": 0.7,
+    },
+    "acrylic": {
+        "label": "Acrylic",
+        "warmth": 0.5,
+        "drape": 0.5,
+        "elasticity": 0.5,
+        "washable": True,
+        "breathable": False,
+        "durability": 0.8,
+    },
+    "linen": {
+        "label": "Linen",
+        "warmth": 0.05,
+        "drape": 0.3,
+        "elasticity": 0.05,
+        "washable": True,
+        "breathable": True,
+        "durability": 0.95,
+    },
+    "blends": {
+        "label": "Wool blends",
+        "warmth": 0.65,
+        "drape": 0.55,
+        "elasticity": 0.6,
+        "washable": True,
+        "breathable": True,
+        "durability": 0.75,
+    },
+    "any": {
+        "label": "No preference",
+        "warmth": 0.5,
+        "drape": 0.5,
+        "elasticity": 0.5,
+        "washable": True,
+        "breathable": True,
+        "durability": 0.7,
+    },
 }
 
 USE_CASES = {
-    "everyday": {"label": "Everyday wear", "durability_need": 0.7, "washable_need": 0.6},
+    "everyday": {
+        "label": "Everyday wear",
+        "durability_need": 0.7,
+        "washable_need": 0.6,
+    },
     "gift": {"label": "Gift", "durability_need": 0.5, "washable_need": 0.5},
-    "luxury": {"label": "Luxury / heirloom", "durability_need": 0.3, "washable_need": 0.2},
+    "luxury": {
+        "label": "Luxury / heirloom",
+        "durability_need": 0.3,
+        "washable_need": 0.2,
+    },
     "baby": {"label": "Baby / child", "durability_need": 0.8, "washable_need": 0.9},
-    "outdoor": {"label": "Outdoor / active", "durability_need": 0.9, "washable_need": 0.7},
+    "outdoor": {
+        "label": "Outdoor / active",
+        "durability_need": 0.9,
+        "washable_need": 0.7,
+    },
     "home": {"label": "Home decor", "durability_need": 0.6, "washable_need": 0.5},
 }
 
@@ -105,9 +205,7 @@ def compute(inputs):
     fiber_pref = FIBER_TYPES[fiber_key]
     use_case = USE_CASES[use_key]
 
-    recommendations = _score_fibers(
-        project, drape, warmth_pref, fiber_pref, use_case
-    )
+    recommendations = _score_fibers(project, drape, warmth_pref, fiber_pref, use_case)
 
     warnings = _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref)
 
@@ -136,15 +234,17 @@ def compute(inputs):
         "best_score": best["score"] if best else 0,
         "best_confidence": best["confidence"] if best else "low",
         "recommendations": [
-            {"fiber": r["fiber"], "label": r["label"], "score": r["score"],
-             "reasons": r["reasons"], "tradeoffs": r["tradeoffs"],
-             "confidence": r["confidence"]}
+            {
+                "fiber": r["fiber"],
+                "label": r["label"],
+                "score": r["score"],
+                "reasons": r["reasons"],
+                "tradeoffs": r["tradeoffs"],
+                "confidence": r["confidence"],
+            }
             for r in recommendations
         ],
-        "alternatives": [
-            {"label": a["label"], "score": a["score"], "reasons": a["reasons"]}
-            for a in alternatives
-        ],
+        "alternatives": [{"label": a["label"], "score": a["score"], "reasons": a["reasons"]} for a in alternatives],
         "warnings": warnings,
         "assumptions": assumptions,
         "drape_score": drape["drape_score"],
@@ -181,7 +281,11 @@ def _score_fibers(project, drape, warmth_pref, fiber_pref, use_case):
         if durability_match > 0.6:
             reasons.append("durable enough for intended use")
 
-        washable_match = 1.0 if (fiber["washable"] and use_case["washable_need"] > 0.5) else (0.5 if not fiber["washable"] and use_case["washable_need"] < 0.3 else 0.0)
+        washable_match = (
+            1.0
+            if (fiber["washable"] and use_case["washable_need"] > 0.5)
+            else (0.5 if not fiber["washable"] and use_case["washable_need"] < 0.3 else 0.0)
+        )
         score += washable_match * 15
         if washable_match > 0.8:
             reasons.append("easy care for this use")
@@ -194,14 +298,16 @@ def _score_fibers(project, drape, warmth_pref, fiber_pref, use_case):
 
         confidence = "high" if len(reasons) >= 3 else "medium" if len(reasons) >= 2 else "low"
 
-        scores.append({
-            "fiber": key,
-            "label": fiber["label"],
-            "score": round(score, 1),
-            "reasons": reasons,
-            "tradeoffs": tradeoffs,
-            "confidence": confidence,
-        })
+        scores.append(
+            {
+                "fiber": key,
+                "label": fiber["label"],
+                "score": round(score, 1),
+                "reasons": reasons,
+                "tradeoffs": tradeoffs,
+                "confidence": confidence,
+            }
+        )
 
     scores.sort(key=lambda x: x["score"], reverse=True)
     return scores
@@ -211,13 +317,11 @@ def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
     warnings = []
     if project["needs_structure"] and drape["drape_score"] > 0.7:
         warnings.append(
-            f"{project['label']} usually benefits from more structure. "
-            "A very drapey fabric may lose shape."
+            f"{project['label']} usually benefits from more structure. " "A very drapey fabric may lose shape."
         )
     if project["needs_drape"] and drape["drape_score"] < 0.3:
         warnings.append(
-            f"{project['label']} usually looks best with some drape. "
-            "A very stiff fabric may not drape well."
+            f"{project['label']} usually looks best with some drape. " "A very stiff fabric may not drape well."
         )
     if gauge["sts_per_in"] > 24 and warmth_pref["warmth_score"] > 0.7:
         warnings.append(
@@ -226,8 +330,7 @@ def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
         )
     if gauge["sts_per_in"] < 14 and drape["drape_score"] > 0.7:
         warnings.append(
-            "Bulky yarn with very drapey fabric may be heavy and sag. "
-            "Consider a lighter yarn or more structure."
+            "Bulky yarn with very drapey fabric may be heavy and sag. " "Consider a lighter yarn or more structure."
         )
     return warnings
 
@@ -249,7 +352,9 @@ def to_html(result):
         for i, rec in enumerate(result["recommendations"]):
             rank = "Best" if i == 0 else f"Alternative {i}"
             badge = "best" if i == 0 else "alt"
-            reasons_html = "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
+            reasons_html = (
+                "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
+            )
             tradeoffs_html = "".join(f"<li>{_esc(t)}</li>" for t in rec["tradeoffs"]) if rec["tradeoffs"] else ""
             parts.append(
                 f"<div class='plan-section'>"
@@ -267,10 +372,7 @@ def to_html(result):
 
     if result.get("warnings"):
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        parts.append(
-            "<div class='warning-box'><strong>Worth a second look</strong>"
-            f"<ul>{items}</ul></div>"
-        )
+        parts.append("<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>")
 
     parts.append("<div class='output-box'>")
     parts.append("<h3>Assumptions</h3>")
@@ -288,12 +390,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 DEMO = {

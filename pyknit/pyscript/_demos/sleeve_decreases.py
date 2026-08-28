@@ -43,8 +43,7 @@ def to_html(result):
     if result["summary"]["remainder"] > 0:
         pills.append(("Remainder", f"{result['summary']['remainder']} extra k2tog"))
     pill_html = "".join(
-        f"<div class='raglan-pill'><span class='label'>{label}</span>"
-        f"<span class='value'>{value}</span></div>"
+        f"<div class='raglan-pill'><span class='label'>{label}</span>" f"<span class='value'>{value}</span></div>"
         for label, value in pills
     )
 
@@ -75,10 +74,7 @@ def to_html(result):
     warnings = ""
     if result.get("warnings"):
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        warnings = (
-            f"<div class='warning-box'><strong>Worth a second look</strong>"
-            f"<ul>{items}</ul></div>"
-        )
+        warnings = f"<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>"
 
     est = result.get("_estimator_data", {})
     send_to = ""
@@ -123,12 +119,7 @@ def to_html(result):
 
 
 def _esc(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def compute(inputs):
@@ -216,14 +207,12 @@ def _validate(rows, starting, ending, per_row, mode):
         raise ValueError("stitches to remove per decrease row must be positive")
     if starting <= ending:
         raise ValueError(
-            f"starting count ({starting}) must be greater than ending count ({ending}) "
-            "for decreases to be needed"
+            f"starting count ({starting}) must be greater than ending count ({ending}) " "for decreases to be needed"
         )
     total_decrease = starting - ending
     if per_row > total_decrease:
         raise ValueError(
-            f"stitches to remove per decrease row ({per_row}) exceeds "
-            f"total decrease needed ({total_decrease})"
+            f"stitches to remove per decrease row ({per_row}) exceeds " f"total decrease needed ({total_decrease})"
         )
     num_dec_rows = total_decrease // per_row
     if num_dec_rows > rows:
@@ -316,7 +305,10 @@ def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
             dec_index = sorted(dec_set).index(idx)  # 0-indexed among dec rows
             # stitches to have removed after this row: (dec_index+1)*per_row,
             # but on the very last decrease row add remainder if any
-            target_removed = min((dec_index + 1) * per_row, total_decrease - (remainder if dec_index < len(dec_set)-1 else 0))
+            target_removed = min(
+                (dec_index + 1) * per_row,
+                total_decrease - (remainder if dec_index < len(dec_set) - 1 else 0),
+            )
             # if this is the last decrease row, include remainder
             if dec_index == len(schedule) - 1 and remainder > 0:
                 target_removed = total_decrease
@@ -324,7 +316,15 @@ def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
             # ensure monotonic and ends at ending
             if after < ending:
                 after = ending
-            instruction = f"k2tog at each side of underarm marker ({per_row} sts removed)" if remainder == 0 or dec_index < len(schedule)-1 else f"k2tog at each side plus {remainder} extra k2tog ({per_row + remainder} sts removed)" if remainder else f"k2tog at each side of underarm marker ({per_row} sts removed)"
+            instruction = (
+                f"k2tog at each side of underarm marker ({per_row} sts removed)"
+                if remainder == 0 or dec_index < len(schedule) - 1
+                else (
+                    f"k2tog at each side plus {remainder} extra k2tog ({per_row + remainder} sts removed)"
+                    if remainder
+                    else f"k2tog at each side of underarm marker ({per_row} sts removed)"
+                )
+            )
             # special instruction for remainder case on last row
             if remainder and dec_index == len(schedule) - 1:
                 instruction = f"k2tog at each side ({per_row} sts) plus {remainder} extra k2tog to reach {ending} sts"
@@ -334,14 +334,16 @@ def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
             after = current
             instruction = "Knit plain (no shaping)"
             kind = "Plain"
-        plan.append({
-            "round": idx + 1,
-            "kind": kind,
-            "before": before,
-            "after": after,
-            "transition": f"{before} -> {after}",
-            "instruction": instruction,
-        })
+        plan.append(
+            {
+                "round": idx + 1,
+                "kind": kind,
+                "before": before,
+                "after": after,
+                "transition": f"{before} -> {after}",
+                "instruction": instruction,
+            }
+        )
         current = after
     # sanity: ensure final count matches ending
     if plan and plan[-1]["after"] != ending:
@@ -377,8 +379,7 @@ def _build_math(rows, starting, ending, per_row, num_dec_rows, spacing_rows, rem
 
 def _build_assumptions(per_row, mode):
     assumptions = [
-        f"Each decrease row removes exactly {per_row} stitch(es) (k2tog at each "
-        "decrease point along the row).",
+        f"Each decrease row removes exactly {per_row} stitch(es) (k2tog at each " "decrease point along the row).",
         "Decrease points are placed at the underarm seam for a symmetrical taper.",
         "The sleeve is knit flat or in the round from the upper arm toward the cuff.",
     ]
@@ -488,22 +489,14 @@ def _staircase_svg(schedule, rows, starting, ending):
     x_scale = (width - 2 * margin) / max(rows, 1)
 
     parts = [
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        '<svg xmlns="http://www.w3.org/2000/svg" ' f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
     ]
     # axes
     parts.append(
-        f'<line x1="{margin}" y1="{height - margin}" '
-        f'x2="{width - margin}" y2="{height - margin}" stroke="#999"/>'
+        f'<line x1="{margin}" y1="{height - margin}" ' f'x2="{width - margin}" y2="{height - margin}" stroke="#999"/>'
     )
-    parts.append(
-        f'<line x1="{margin}" y1="{margin * 0.4}" x2="{margin}" '
-        f'y2="{height - margin}" stroke="#999"/>'
-    )
-    parts.append(
-        f'<text x="{margin}" y="{height - 10}" font-size="11" fill="#5a2a75">'
-        "row -></text>"
-    )
+    parts.append(f'<line x1="{margin}" y1="{margin * 0.4}" x2="{margin}" ' f'y2="{height - margin}" stroke="#999"/>')
+    parts.append(f'<text x="{margin}" y="{height - 10}" font-size="11" fill="#5a2a75">' "row -></text>")
     parts.append(
         f'<text x="8" y="{height - 3 * margin}" font-size="11" fill="#5a2a75" '
         'transform="rotate(-90 8 40)">stitches</text>'
@@ -515,30 +508,18 @@ def _staircase_svg(schedule, rows, starting, ending):
         x = margin + row_number * x_scale
         decreased = min((i + 1) * (per_row or 1), total_decrease)
         y = height - margin - decreased * y_scale
-        parts.append(
-            f'<line x1="{prev_x}" y1="{prev_y}" x2="{x}" y2="{prev_y}" '
-            'stroke="#c9a7e0" stroke-width="2"/>'
-        )
-        parts.append(
-            f'<line x1="{x}" y1="{prev_y}" x2="{x}" y2="{y}" '
-            'stroke="#7b3fa0" stroke-width="2"/>'
-        )
+        parts.append(f'<line x1="{prev_x}" y1="{prev_y}" x2="{x}" y2="{prev_y}" ' 'stroke="#c9a7e0" stroke-width="2"/>')
+        parts.append(f'<line x1="{x}" y1="{prev_y}" x2="{x}" y2="{y}" ' 'stroke="#7b3fa0" stroke-width="2"/>')
         parts.append(f'<circle cx="{x}" cy="{y}" r="3.5" fill="#7b3fa0"/>')
         if i == 0 or i == len(schedule) - 1:
             label = starting - decreased
-            parts.append(
-                f'<text x="{x + 5}" y="{y - 5}" font-size="10" fill="#5a2a75">'
-                f'{label} sts</text>'
-            )
+            parts.append(f'<text x="{x + 5}" y="{y - 5}" font-size="10" fill="#5a2a75">' f"{label} sts</text>")
         prev_x, prev_y = x, y
 
     parts.append(
-        f'<line x1="{prev_x}" y1="{prev_y}" x2="{width - margin}" y2="{prev_y}" '
-        'stroke="#c9a7e0" stroke-width="2"/>'
+        f'<line x1="{prev_x}" y1="{prev_y}" x2="{width - margin}" y2="{prev_y}" ' 'stroke="#c9a7e0" stroke-width="2"/>'
     )
-    parts.append(
-        f'<circle cx="{width - margin}" cy="{prev_y}" r="3.5" fill="#4aa3a2"/>'
-    )
+    parts.append(f'<circle cx="{width - margin}" cy="{prev_y}" r="3.5" fill="#4aa3a2"/>')
     parts.append(
         f'<text x="{width - margin - 5}" y="{prev_y - 8}" font-size="10" '
         f'fill="#4aa3a2" text-anchor="end">{ending} sts</text>'

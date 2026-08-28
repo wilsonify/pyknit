@@ -73,8 +73,7 @@ def main() -> int:
         if "/site-packages/" in html_jp or "/lib/python" in html_jp:
             failures.append("japanese output leaked filesystem path in DOM")
 
-        info = page.evaluate(
-            """
+        info = page.evaluate("""
 () => {
   const out = document.querySelector('#demo-output');
   const svg = out?.querySelector('svg');
@@ -94,8 +93,7 @@ def main() -> int:
     uniqueVisibleText: [...new Set(visibleText)].slice(0, 12),
   };
 }
-            """
-        )
+            """)
 
         if info.get("missing"):
             failures.append("missing svg after japanese render")

@@ -10,9 +10,7 @@ from pyknit import VERSION, GaugeSwatch
 _CENTIMETERS_PER_INCH = 2.54
 
 
-def _convert_measurement_units(
-    measurement: float, from_unit: str, to_unit: str
-) -> float:
+def _convert_measurement_units(measurement: float, from_unit: str, to_unit: str) -> float:
     """Convert a measurement between inches and centimetres (1 in = 2.54 cm)."""
     if from_unit == to_unit:
         return measurement
@@ -70,7 +68,7 @@ def main():
     """
     logger.warning(desc)
     parser = _create_argument_parser(desc)
-    
+
     args = parser.parse_args()
 
     if not args.convert:
@@ -186,18 +184,18 @@ def _get_or_input(value: float, prompt: str) -> float:
 def _handle_row_conversion(args, logger):
     """Handle row gauge conversion."""
     logger.info("Converting row gauge...")
-    
+
     original_gauge_row = _get_or_input(
         args.original_gauge_row,
-        f"Please enter a valid original gauge (row/{args.original_gauge_unit}): "
+        f"Please enter a valid original gauge (row/{args.original_gauge_unit}): ",
     )
     new_gauge_row = _get_or_input(
         args.new_gauge_row,
-        f"Please enter a valid new gauge (row/{args.new_gauge_unit}): "
+        f"Please enter a valid new gauge (row/{args.new_gauge_unit}): ",
     )
     original_measurement = _get_or_input(
         args.original_measurement,
-        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
+        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): ",
     )
 
     # Show what numbers we're using
@@ -221,7 +219,7 @@ def _handle_row_conversion(args, logger):
         stitch_measure=1,
         units=args.new_gauge_unit,
     )
-    
+
     new_measurement = convert_row_gauge(
         original_gauge,
         new_gauge,
@@ -235,18 +233,18 @@ def _handle_row_conversion(args, logger):
 def _handle_stitch_conversion(args, logger):
     """Handle stitch gauge conversion."""
     logger.info("Converting stitch gauge...")
-    
+
     original_gauge_stitch = _get_or_input(
         args.original_gauge_stitch,
-        f"Please enter a valid original gauge (stitch/{args.original_gauge_unit}): "
+        f"Please enter a valid original gauge (stitch/{args.original_gauge_unit}): ",
     )
     new_gauge_stitch = _get_or_input(
         args.new_gauge_stitch,
-        f"Please enter a valid new gauge (stitch/{args.new_gauge_unit}): "
+        f"Please enter a valid new gauge (stitch/{args.new_gauge_unit}): ",
     )
     original_measurement = _get_or_input(
         args.original_measurement,
-        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): "
+        f"Please enter the measurement you want to convert ({args.original_gauge_unit}): ",
     )
 
     # Show what numbers we're using
@@ -270,7 +268,7 @@ def _handle_stitch_conversion(args, logger):
         stitch_measure=args.new_gauge_measurement,
         units=args.new_gauge_unit,
     )
-    
+
     new_measurement = convert_stitch_gauge(
         original_gauge,
         new_gauge,

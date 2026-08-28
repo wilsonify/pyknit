@@ -36,8 +36,14 @@ def demo_url():
     subprocess.run(["docker", "rm", "-f", CONTAINER], capture_output=True)
     run = subprocess.run(
         [
-            "docker", "run", "-d", "--name", CONTAINER,
-            "-p", f"127.0.0.1:{port}:8080", IMAGE,
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            CONTAINER,
+            "-p",
+            f"127.0.0.1:{port}:8080",
+            IMAGE,
         ],
         capture_output=True,
         text=True,

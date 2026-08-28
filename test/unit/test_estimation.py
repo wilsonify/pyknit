@@ -17,18 +17,14 @@ DEMOS_DIR = pathlib.Path(__file__).parent.parent.parent / "pyknit" / "pyscript" 
 
 
 def _load_yarn_estimator():
-    spec = importlib.util.spec_from_file_location(
-        "yarn_estimator", DEMOS_DIR / "yarn_estimator.py"
-    )
+    spec = importlib.util.spec_from_file_location("yarn_estimator", DEMOS_DIR / "yarn_estimator.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
 def _load_demo(name):
-    spec = importlib.util.spec_from_file_location(
-        "demo_" + name, DEMOS_DIR / (name + ".py")
-    )
+    spec = importlib.util.spec_from_file_location("demo_" + name, DEMOS_DIR / (name + ".py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -40,9 +36,7 @@ def _load_demo(name):
 
 
 def test_gauge_swatch_backward_compatible_defaults():
-    gs = GaugeSwatch(
-        row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in"
-    )
+    gs = GaugeSwatch(row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in")
     assert gs.row_count == 18
     assert gs.stitch_gauge() == 6
     assert gs.yardage_per_unit is None
@@ -93,17 +87,13 @@ def test_estimate_yardage_with_6_st_per_inch_swatch():
 
 
 def test_estimate_yardage_unset_raises():
-    gs = GaugeSwatch(
-        row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in"
-    )
+    gs = GaugeSwatch(row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in")
     with pytest.raises(ValueError, match="yardage_per_unit not set on this swatch"):
         gs.estimate_yardage(30)
 
 
 def test_estimate_weight_unset_raises():
-    gs = GaugeSwatch(
-        row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in"
-    )
+    gs = GaugeSwatch(row_count=18, row_measure=3.25, stitch_count=24, stitch_measure=4, units="in")
     with pytest.raises(ValueError, match="weight_per_unit not set on this swatch"):
         gs.estimate_weight(30)
 
@@ -122,9 +112,7 @@ def test_estimate_knitting_time_deterministic():
     "total_stitches, seconds_per_stitch",
     [(0, 5), (-10, 5), (10, 0), (0, 0)],
 )
-def test_estimate_knitting_time_rejects_non_positive(
-    total_stitches, seconds_per_stitch
-):
+def test_estimate_knitting_time_rejects_non_positive(total_stitches, seconds_per_stitch):
     with pytest.raises(ValueError):
         estimate_knitting_time(total_stitches, seconds_per_stitch)
 
@@ -491,8 +479,16 @@ class TestEdgeCases:
         assert result["balls_weight"] >= 1
 
     def test_all_project_types_produce_results(self, estimator):
-        for ptype in ("hat", "scarf", "shawl_triangle", "shawl_rectangle",
-                       "shawl_crescent", "sweater", "blanket", "custom"):
+        for ptype in (
+            "hat",
+            "scarf",
+            "shawl_triangle",
+            "shawl_rectangle",
+            "shawl_crescent",
+            "sweater",
+            "blanket",
+            "custom",
+        ):
             inputs = dict(estimator.DEFAULT_INPUTS)
             inputs["project_type"] = ptype
             result = estimator.compute(inputs)
@@ -542,8 +538,7 @@ class TestBallCountMath:
         inputs["yarn_per_ball_grams"] = 200  # unrealistic, forces difference
         result = estimator.compute(inputs)
         if result["balls_yard"] != result["balls_weight"]:
-            assert any("difference" in label.lower() or "why" in label.lower()
-                       for label, _ in result["balls_detail"])
+            assert any("difference" in label.lower() or "why" in label.lower() for label, _ in result["balls_detail"])
 
 
 # ---------------------------------------------------------------------------

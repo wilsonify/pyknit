@@ -6,7 +6,6 @@ import pathlib
 
 from pyknit.chaquopy import mobile_api as package_mobile_api
 
-
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BRIDGE = ROOT / "pyknit" / "chaquopy" / "mobile_api.py"
 
@@ -20,7 +19,9 @@ def _load_bridge():
 
 def test_android_project_is_native_and_chaquopy_based():
     build = (ROOT / "android" / "app" / "build.gradle.kts").read_text()
-    activity = (ROOT / "android" / "app" / "src" / "main" / "kotlin" / "org" / "pyknit" / "android" / "MainActivity.kt").read_text()
+    activity = (
+        ROOT / "android" / "app" / "src" / "main" / "kotlin" / "org" / "pyknit" / "android" / "MainActivity.kt"
+    ).read_text()
     assert "com.chaquo.python" in build
     assert "android.webkit.WebView" not in activity
     assert "Python.getInstance" in activity
