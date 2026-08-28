@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # ── Gate: only proceed if CI passed ──────────────────────────────────
+  check-ci:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: CI passed
+        run: echo "All CI quality gates passed"
+
+  # ── Calculate version (reuse same script) ────────────────────────────
+  version:
+    needs: [check-ci]
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calc.outputs.version }}
+      base_version: ${{ steps.calc.outputs.base_version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: calc
+        run: |
+          VERSION=$(python scripts/calculate_version.py)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          BASE_VERSION="${VERSION%%+*}"
+          echo "base_version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+
+  # ── A. Create GitHub Release with all artifacts ──────────────────────
+  create-release:
+    needs: [version]
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download CI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Build Python wheel
+        run: .github/workflows/scripts/build-python-wheel.sh
+
+      - name: Create version info
+        run: .github/workflows/scripts/create-version-info.sh "${{ needs.version.outputs.version }}" "${{ needs.version.outputs.base_version }}" "${{ github.sha }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.base_version }}
+          name: v${{ needs.version.outputs.base_version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            artifacts/pyscript-dist/*
+            artifacts/android-apk/*
+            version-info.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── B. Deploy demos to GitHub Pages ──────────────────────────────────
+  deploy-pages:
+    needs: [version]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download PyScript distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: pyscript-dist
+          path: site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
