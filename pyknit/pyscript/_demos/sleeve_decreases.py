@@ -300,17 +300,11 @@ def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decre
 def _decrease_instruction(per_row, remainder, dec_index, num_dec, ending):
     """Build the human-readable instruction for a decrease row."""
     if remainder and dec_index == num_dec - 1:
-        return (
-            f"k2tog at each side ({per_row} sts) plus {remainder} extra "
-            f"k2tog to reach {ending} sts"
-        )
+        return f"k2tog at each side ({per_row} sts) plus {remainder} extra " f"k2tog to reach {ending} sts"
     if remainder == 0 or dec_index < num_dec - 1:
         return f"k2tog at each side of underarm marker ({per_row} sts removed)"
     if remainder:
-        return (
-            f"k2tog at each side plus {remainder} extra k2tog "
-            f"({per_row + remainder} sts removed)"
-        )
+        return f"k2tog at each side plus {remainder} extra k2tog " f"({per_row + remainder} sts removed)"
     return f"k2tog at each side of underarm marker ({per_row} sts removed)"
 
 
@@ -329,9 +323,7 @@ def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
             current = before
             continue
         dec_index = sorted_dec.index(idx)
-        target_removed = _decrease_target_removed(
-            dec_index, num_dec, per_row, remainder, total_decrease
-        )
+        target_removed = _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decrease)
         after = starting - target_removed
         if after < ending:
             after = ending
