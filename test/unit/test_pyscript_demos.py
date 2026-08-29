@@ -578,7 +578,8 @@ class TestDemoSpecifics:
         assert "set_status" in html
         assert "All tools ready" in html
         # the friendly first-visit copy is still there, as the loading detail
-        assert "30" in html and "60" in html
+        assert "30" in html
+        assert "60" in html
         assert "loading-banner" not in html
 
     def test_demo_index_svg_illustrations_present(self):
@@ -1218,7 +1219,8 @@ class TestSockCalculatorToSimulator:
         plan = self._sock_plan()
         assert plan["source"] == "sock_calculator"
         rounds = plan["rounds"]
-        assert rounds and rounds[0]["kind"] == "cast_on"
+        assert rounds
+        assert rounds[0]["kind"] == "cast_on"
         assert rounds[0]["after"] == plan["cast_on_stitches"]
         # Counts are continuous within each construction section.  The one
         # deliberate jump is the leg -> heel flap transition, where the

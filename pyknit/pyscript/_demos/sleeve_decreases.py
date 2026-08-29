@@ -159,7 +159,7 @@ def compute(inputs):
     # Decrease-only rows (for backwards compatibility) are available as
     # ``plan`` callers that expect length == num_dec_rows can filter.
     math = _build_math(rows, starting, ending, per_row, num_dec_rows, spacing_rows, remainder, mode)
-    assumptions = _build_assumptions(per_row, mode)
+    assumptions = _build_assumptions(per_row)
     warnings = _build_warnings(spacing_rows, num_dec_rows, rows)
 
     decrease_row_numbers = [r + 1 for r in schedule]
@@ -361,7 +361,7 @@ def _build_math(rows, starting, ending, per_row, num_dec_rows, spacing_rows, rem
     return math
 
 
-def _build_assumptions(per_row, mode):
+def _build_assumptions(per_row):
     assumptions = [
         f"Each decrease row removes exactly {per_row} stitch(es) (k2tog at each decrease point along the row).",
         "Decrease points are placed at the underarm seam for a symmetrical taper.",

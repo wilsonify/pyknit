@@ -447,7 +447,7 @@ def compute(inputs):
         _math_section(locals()),
         _measurements_section(locals()),
         _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg),
-        _marker_section(marker, front_start, back_start, sleeve_start, calc_neck, inc, seg, freq),
+        _marker_section(marker, front_start, back_start, sleeve_start, calc_neck, inc, seg),
         _increase_schedule_section(
             inc_rounds,
             freq,
@@ -670,7 +670,7 @@ def _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg):
     )
 
 
-def _marker_section(marker, front_start, back_start, sleeve_start, calc_neck, inc, seg, freq):
+def _marker_section(marker, front_start, back_start, sleeve_start, calc_neck, inc, seg):
     return _section(
         "3. Raglan marker setup",
         intro="Four seams divide the sweater into front, back and two "
@@ -1591,8 +1591,6 @@ def to_html(result):
         m["sleeve_final"],
         m["inc_rounds"],
         m["freq"],
-        m["seg"],
-        m["inc"],
     )
     blocks.append(f"<div class='output-box'>{growth_svg}</div>")
 

@@ -211,7 +211,7 @@ def _compute_friendly(inputs):
     if shape == "triangle":
         project_stitches = project_stitches // 2
 
-    yards = _estimate_yarn_yards(project_stitches, stitch_gauge, row_gauge)
+    yards = _estimate_yarn_yards(project_stitches, stitch_gauge)
     grams = _estimate_yarn_grams(yards, ball_yards, ball_grams)
 
     time_delta = estimate_knitting_time(project_stitches, seconds_per_stitch)
@@ -457,7 +457,7 @@ def _pos_float(inputs, key, label):
     return val
 
 
-def _estimate_yarn_yards(project_stitches, stitch_gauge, row_gauge):
+def _estimate_yarn_yards(project_stitches, stitch_gauge):
     """Estimate yards from stitch count and gauge.
 
     Uses a empirical approximation: yarn per stitch depends on the yarn

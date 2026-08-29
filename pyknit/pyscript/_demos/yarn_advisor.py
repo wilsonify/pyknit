@@ -281,7 +281,12 @@ def _score_one_fiber(fiber, key, drape, warmth_pref, use_case, pref_key):
     if pref_key and key.startswith(pref_key):
         score += 15
         reasons.append("matches your fiber preference")
-    confidence = "high" if len(reasons) >= 3 else "medium" if len(reasons) >= 2 else "low"
+    if len(reasons) >= 3:
+        confidence = "high"
+    elif len(reasons) >= 2:
+        confidence = "medium"
+    else:
+        confidence = "low"
     return {
         "fiber": key,
         "label": fiber["label"],
@@ -321,11 +326,12 @@ def _score_durability(fiber, use_case, score, reasons):
 
 
 def _score_care(fiber, use_case, score, reasons, tradeoffs):
-    washable_match = (
-        1.0
-        if (fiber["washable"] and use_case["washable_need"] > 0.5)
-        else (0.5 if not fiber["washable"] and use_case["washable_need"] < 0.3 else 0.0)
-    )
+    if fiber["washable"] and use_case["washable_need"] > 0.5:
+        washable_match = 1.0
+    elif not fiber["washable"] and use_case["washable_need"] < 0.3:
+        washable_match = 0.5
+    else:
+        washable_match = 0.0
     score += washable_match * 15
     if washable_match > 0.8:
         reasons.append("easy care for this use")
