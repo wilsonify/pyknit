@@ -383,9 +383,7 @@ def _html_recommendations(result):
 
 def _html_recommendation(rec, i):
     rank = "Best" if i == 0 else f"Alternative {i}"
-    reasons_html = (
-        "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
-    )
+    reasons_html = "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
     tradeoffs_html = "".join(f"<li>{_esc(t)}</li>" for t in rec["tradeoffs"]) if rec["tradeoffs"] else ""
     section = (
         f"<div class='plan-section'>"
@@ -416,7 +414,6 @@ def _html_assumptions(result):
         parts.append(f"<li>{_esc(a)}</li>")
     parts.append("</ul></div>")
     return "\n".join(parts)
-
 
 
 def _esc(text):
