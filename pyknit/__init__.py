@@ -468,14 +468,11 @@ def _format_both_mode_segment(interval: int, groups: int) -> str:
     before = interval // 2
     after = interval - before
 
-    if before > 0 and after > 0:
-        return f"[do {before} rows in pattern, decrease row, " f"do {after} rows in pattern] * {groups} times"
-    elif after > 0:
-        return f"[decrease row, do {after} rows in pattern] * {groups} times"
-    elif before > 0:
-        return f"[do {before} rows in pattern, decrease row] * {groups} times"
-    else:
+    if before == 0 and after == 0:
         return f"[decrease row] * {groups} times"
+    if before == 0:
+        return f"[decrease row, do {after} rows in pattern] * {groups} times"
+    return f"[do {before} rows in pattern, decrease row, do {after} rows in pattern] * {groups} times"
 
 
 def raglan_increases(
