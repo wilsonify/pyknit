@@ -47,7 +47,7 @@ def render_pattern(pattern: Pattern, legend: Any = None, **kwargs: Any) -> Tuple
     """
     backends = available_backends()
     if not backends:
-        raise RuntimeError("No chart rendering backend is available " "(need Pillow or pyknit's SVG renderer)")
+        raise RuntimeError("No chart rendering backend is available (need Pillow or pyknit's SVG renderer)")
     output_format = {"svg": "svg", "pillow": "png"}
     for backend in backends:
         try:
