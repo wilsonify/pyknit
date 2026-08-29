@@ -102,7 +102,7 @@ RANGE_FACTOR = 0.15
 
 
 def to_html(result):
-    """Render the estimator output with stat pills, math breakdown, and warnings."""
+    "Render the estimator output with stat pills, math breakdown, and warnings." ""
     parts = []
 
     parts.append(f"<div class='output-box'>{result['svg']}</div>")
@@ -164,7 +164,7 @@ def to_html(result):
 
 
 def compute(inputs):
-    """Return a full estimate report for a project."""
+    "Return a full estimate report for a project." ""
     advanced = str(inputs.get("advanced_mode", "false")).lower() == "true"
 
     if advanced:
@@ -173,7 +173,7 @@ def compute(inputs):
 
 
 def _compute_friendly(inputs):
-    """Estimate from project type, dimensions, and gauge."""
+    "Estimate from project type, dimensions, and gauge." ""
     from pyknit.estimate import estimate_knitting_time, format_knitting_time
 
     project_type = inputs.get("project_type", "hat")
@@ -270,7 +270,7 @@ def _compute_friendly(inputs):
         balls_detail.append(
             (
                 "Why the difference?",
-                "Yarn balls vary: some are sold by weight, some by length. " "Buy the higher number to be safe.",
+                "Yarn balls vary: some are sold by weight, some by length. Buy the higher number to be safe.",
             )
         )
 
@@ -301,7 +301,7 @@ def _compute_friendly(inputs):
 
 
 def _compute_advanced(inputs):
-    """Estimate from direct stitch count and per-stitch values (legacy mode)."""
+    "Estimate from direct stitch count and per-stitch values (legacy mode)." ""
     from pyknit.estimate import estimate_knitting_time, format_knitting_time
     from pyknit.GaugeSwatch import GaugeSwatch
 
@@ -416,7 +416,7 @@ def _compute_advanced(inputs):
 
 
 def _get_ball_yards(inputs):
-    """Get yards per ball from either legacy or friendly field names."""
+    "Get yards per ball from either legacy or friendly field names." ""
     raw = inputs.get("ball_yardage") or inputs.get("yarn_per_ball_yards")
     if raw is None or str(raw).strip() == "":
         raise ValueError("yards per ball is required")
@@ -430,7 +430,7 @@ def _get_ball_yards(inputs):
 
 
 def _get_ball_grams(inputs):
-    """Get grams per ball from either legacy or friendly field names."""
+    "Get grams per ball from either legacy or friendly field names." ""
     raw = inputs.get("ball_weight") or inputs.get("yarn_per_ball_grams")
     if raw is None or str(raw).strip() == "":
         raise ValueError("grams per ball is required")
@@ -444,7 +444,7 @@ def _get_ball_grams(inputs):
 
 
 def _pos_float(inputs, key, label):
-    """Parse a positive float from inputs, raising ValueError on bad values."""
+    "Parse a positive float from inputs, raising ValueError on bad values." ""
     raw = inputs.get(key)
     if raw is None or str(raw).strip() == "":
         raise ValueError(f"{label} is required")
@@ -471,7 +471,7 @@ def _estimate_yarn_yards(project_stitches, stitch_gauge, row_gauge):
 
 
 def _estimate_yarn_grams(yards, ball_yards, ball_grams):
-    """Derive grams from yards using the ball's yard-to-weight ratio."""
+    "Derive grams from yards using the ball's yard-to-weight ratio." ""
     if ball_yards <= 0:
         return yards * 0.2
     grams_per_yard = ball_grams / ball_yards
@@ -479,7 +479,7 @@ def _estimate_yarn_grams(yards, ball_yards, ball_grams):
 
 
 def _range(central):
-    """Return (low, high) range around a central value."""
+    "Return (low, high) range around a central value." ""
     delta = central * RANGE_FACTOR
     return max(0, central - delta), central + delta
 
@@ -494,7 +494,7 @@ def _plausibility_checks(
     seconds_per_stitch,
     project_type,
 ):
-    """Run sanity checks and return a list of warning strings."""
+    "Run sanity checks and return a list of warning strings." ""
     warnings = []
     _check_gauge(warnings, stitch_gauge, row_gauge)
     _check_yarn_ratio(warnings, ball_yards, ball_grams)
@@ -524,7 +524,7 @@ def _check_yarn_ratio(warnings, ball_yards, ball_grams):
 
 def _check_pace(warnings, seconds_per_stitch):
     if seconds_per_stitch < 0.5 or seconds_per_stitch > 10:
-        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. " "Typical range is 0.5-10 sec/stitch.")
+        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. Typical range is 0.5-10 sec/stitch.")
 
 
 def _check_dimensions(warnings, width, height, project_type):
@@ -540,7 +540,7 @@ def _check_dimensions(warnings, width, height, project_type):
 
 
 def _estimator_svg(yards, grams, project_stitches):
-    """Horizontal bar chart of the estimate."""
+    "Horizontal bar chart of the estimate." ""
     width = 460
     height = 140
     margin = 40

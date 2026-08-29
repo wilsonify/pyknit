@@ -64,7 +64,7 @@ ALLOWED_FREQUENCIES = ("every_round", "every_other_round")
 
 
 def _num(x):
-    """Format a float compactly (80.0 -> '80', 7.0769 -> '7.08')."""
+    "Format a float compactly (80.0 -> '80', 7.0769 -> '7.08')." ""
     if isinstance(x, int):
         return str(x)
     x = round(x, 2)
@@ -83,7 +83,7 @@ def _pos(inputs, key, label):
 
 
 def _even(n):
-    """Round an integer up/down to the nearest even number."""
+    "Round an integer up/down to the nearest even number." ""
     n = int(round(n))
     return n if n % 2 == 0 else n + 1
 
@@ -121,11 +121,11 @@ def _sleeve_row(idx, current, dec_set, schedule, arm, wrist, per_row, remainder)
         return "Plain", current, f"Knit plain ({current} sts)"
     dec_idx = len([r for r in schedule if r <= idx])
     if dec_idx == len(schedule) and remainder:
-        return "Decrease", wrist, (f"Decrease row: k2tog at each side plus {remainder} extra " f"k2tog -> {wrist} sts")
+        return "Decrease", wrist, (f"Decrease row: k2tog at each side plus {remainder} extra k2tog -> {wrist} sts")
     after = arm - dec_idx * per_row
     if after < wrist:
         after = wrist
-    instruction = f"Decrease row: k2tog at each side of underarm marker " f"({per_row} sts removed) -> {after} sts"
+    instruction = f"Decrease row: k2tog at each side of underarm marker ({per_row} sts removed) -> {after} sts"
     return "Decrease", after, instruction
 
 
@@ -192,25 +192,25 @@ def _section(heading, intro=None, steps=None, rows=None, table=None, collapsible
     return section
 
 
-def _validate_inputs(
-    ease,
-    upper_arm_ease,
-    inc,
-    freq,
-    neck_circ,
-    bust_circ,
-    upper_arm_eased,
-    wrist_circ,
-    neck,
-    bust,
-    arm,
-    wrist,
-    needed,
-    inc_rounds,
-    front_start,
-    back_start,
-    sleeve_start,
-):
+def _validate_inputs(params: dict) -> None:
+    """Validate all raglan parameters in one place."""
+    ease = params["ease"]
+    upper_arm_ease = params["upper_arm_ease"]
+    inc = params["inc"]
+    freq = params["freq"]
+    neck_circ = params["neck_circ"]
+    bust_circ = params["bust_circ"]
+    upper_arm_eased = params["upper_arm_eased"]
+    wrist_circ = params["wrist_circ"]
+    neck = params["neck"]
+    bust = params["bust"]
+    arm = params["arm"]
+    wrist = params["wrist"]
+    needed = params["needed"]
+    inc_rounds = params["inc_rounds"]
+    front_start = params["front_start"]
+    back_start = params["back_start"]
+    sleeve_start = params["sleeve_start"]
     checks = [
         (ease < -4 or ease > 10, "ease must be between -4 and 10 inches"),
         (upper_arm_ease < -2 or upper_arm_ease > 6, "upper arm ease must be between -2 and 6 inches"),
@@ -236,7 +236,7 @@ def _validate_inputs(
         ),
         (
             needed <= 0,
-            "the finished bust/arm stitches must be larger than the neck cast-on; " "check your measurements",
+            "the finished bust/arm stitches must be larger than the neck cast-on; check your measurements",
         ),
         (
             inc_rounds < 1,
@@ -274,7 +274,7 @@ def _build_raglan_tables(rounds, freq, inc, seg, calc_neck, front_start, back_st
         else:
             action = "plain"
         table_rows.append([r, action, total, fr, ba, sl])
-        text_rows.append(f"Round {r}: {action} -> {total} sts total " f"(front {fr}, back {ba}, sleeve {sl} each)")
+        text_rows.append(f"Round {r}: {action} -> {total} sts total (front {fr}, back {ba}, sleeve {sl} each)")
     return table_rows, text_rows
 
 
@@ -305,7 +305,7 @@ def _build_warnings(depth_in, sleeve_shaping_rounds, arm, wrist):
 
 
 def compute(inputs):
-    """Build the complete sweater plan as a dict, reusing pyknit math."""
+    "Build the complete sweater plan as a dict, reusing pyknit math." ""
     st = _pos(inputs, "stitches_per_inch", "stitch gauge")
     rg = _pos(inputs, "rows_per_inch", "row gauge")
     neck_circ = _pos(inputs, "neck_circumference", "neck circumference")
@@ -353,25 +353,25 @@ def compute(inputs):
     back_start = math.floor(body_start)
     sleeve_start = arm - armpit - inc_rounds * seg
 
-    _validate_inputs(
-        ease,
-        upper_arm_ease,
-        inc,
-        freq,
-        neck_circ,
-        bust_circ,
-        upper_arm_eased,
-        wrist_circ,
-        neck,
-        bust,
-        arm,
-        wrist,
-        needed,
-        inc_rounds,
-        front_start,
-        back_start,
-        sleeve_start,
-    )
+    _validate_inputs({
+        "ease": ease,
+        "upper_arm_ease": upper_arm_ease,
+        "inc": inc,
+        "freq": freq,
+        "neck_circ": neck_circ,
+        "bust_circ": bust_circ,
+        "upper_arm_eased": upper_arm_eased,
+        "wrist_circ": wrist_circ,
+        "neck": neck,
+        "bust": bust,
+        "arm": arm,
+        "wrist": wrist,
+        "needed": needed,
+        "inc_rounds": inc_rounds,
+        "front_start": front_start,
+        "back_start": back_start,
+        "sleeve_start": sleeve_start,
+    })
 
     try:
         raglan = raglan_increases(
@@ -383,7 +383,7 @@ def compute(inputs):
             armpit_stitches=armpit,
         )
     except ValueError as exc:
-        raise ValueError("The measurements produce a raglan that cannot be distributed " "evenly. " + str(exc))
+        raise ValueError("The measurements produce a raglan that cannot be distributed evenly. " + str(exc))
 
     match_marker = re.search(r"Marker setup:\s*(.*)", raglan)
     marker = match_marker.group(1).strip() if match_marker else ""
@@ -404,12 +404,12 @@ def compute(inputs):
     body_total_rounds = round(body_len * rg)
     if body_total_rounds <= hem_rounds:
         raise ValueError(
-            f"body length ({_num(body_len)} in) is too short for a " f"{HEM_IN:g} in hem; add length or shorten the hem"
+            f"body length ({_num(body_len)} in) is too short for a {HEM_IN:g} in hem; add length or shorten the hem"
         )
     body_stock_rounds = body_total_rounds - hem_rounds
     sleeve_total_rounds = round(sleeve_len * rg)
     if sleeve_total_rounds <= cuff_rounds:
-        raise ValueError(f"sleeve length ({_num(sleeve_len)} in) is too short to include " f"a {CUFF_IN:g} in cuff")
+        raise ValueError(f"sleeve length ({_num(sleeve_len)} in) is too short to include a {CUFF_IN:g} in cuff")
     sleeve_shaping_rounds = sleeve_total_rounds - cuff_rounds
 
     try:
@@ -486,7 +486,7 @@ def compute(inputs):
         f"Positive ease of {_num(ease)} in at the bust; the sleeve is knit at "
         f"the measured upper arm circumference plus {_num(upper_arm_ease)} in "
         "of ease.",
-        f"The collar is about {COLLAR_IN:g} in of ribbing, and the hem and " f"cuffs about {HEM_IN:g} in each.",
+        f"The collar is about {COLLAR_IN:g} in of ribbing, and the hem and cuffs about {HEM_IN:g} in each.",
         "Underarm cast-on stitches are shared: they join the front and back "
         "for the body and are picked up again for each sleeve.",
         f"The raglan increases are worked {_freq_phrase(freq)}, giving about "
@@ -576,7 +576,7 @@ def compute(inputs):
 
 
 def _math_section(v):
-    """Section 0: the visible math behind every derived number."""
+    "Section 0: the visible math behind every derived number." ""
 
     def derived(raw, final, suffix):
         raw = int(round(raw))
@@ -628,13 +628,13 @@ def _measurements_section(v):
         ("Neck circumference", f"{_num(v['neck_circ'])} in"),
         (
             "Bust + ease",
-            f"{_num(v['bust_circ'] + v['ease'])} in " f"({_num(v['bust_circ'])} + {_num(v['ease'])} ease)",
+            f"{_num(v['bust_circ'] + v['ease'])} in ({_num(v['bust_circ'])} + {_num(v['ease'])} ease)",
         ),
         ("Bust stitches (body in the round)", f"{v['bust']} sts"),
         ("Underarm cast-on", f"{v['armpit']} sts each side"),
         (
             "Upper arm + ease",
-            f"{_num(v['upper_arm_eased'])} in " f"({_num(v['upper_arm'])} + {_num(v['upper_arm_ease'])} ease)",
+            f"{_num(v['upper_arm_eased'])} in ({_num(v['upper_arm'])} + {_num(v['upper_arm_ease'])} ease)",
         ),
         ("Upper arm (sleeve in the round)", f"{v['arm']} sts"),
         ("Wrist", f"{v['wrist']} sts"),
@@ -655,7 +655,7 @@ def _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg):
         f"Cast on {neck} stitches using a stretchy cast-on (long-tail or "
         "German twisted) and join in the round, taking care not to twist. "
         "Place a marker for the start of the round (centre back).",
-        f"Work {collar_rounds} rounds of k2, p2 ribbing for the collar " f"(about {_num(collar_rounds / rg)} in).",
+        f"Work {collar_rounds} rounds of k2, p2 ribbing for the collar (about {_num(collar_rounds / rg)} in).",
     ]
     if inc_row_str:
         steps.append(
@@ -715,7 +715,7 @@ def _increase_schedule_section(
         f"{sleeve_final} on each sleeve).",
     ]
     if pre:
-        steps.append(f"The {pre}-stitch neck increase round from section 2 is already " "included in these counts.")
+        steps.append(f"The {pre}-stitch neck increase round from section 2 is already included in these counts.")
     return _section(
         "4. Raglan increase schedule with stitch transitions",
         intro=intro,
@@ -732,7 +732,7 @@ def _increase_schedule_section(
 def _freq_step(freq):
     if freq == "every_round":
         return "Increase every round until the underarm."
-    return "Increase on every odd round, and knit a plain round in between " "(increases every other round)."
+    return "Increase on every odd round, and knit a plain round in between (increases every other round)."
 
 
 def _separation_section(front_final, back_final, sleeve_final, armpit, bust, arm):
@@ -775,10 +775,10 @@ def _hem_section(hem_rounds, rg, body_len):
         "7. Hem instructions",
         intro="A ribbed hem keeps the bottom edge from rolling.",
         steps=[
-            f"Work {hem_rounds} rounds of k2, p2 ribbing (about " f"{_num(hem_rounds / rg)} in).",
+            f"Work {hem_rounds} rounds of k2, p2 ribbing (about {_num(hem_rounds / rg)} in).",
             "Bind off loosely in pattern (a stretchy bind-off such as Jeny's "
             "surprisingly stretchy bind-off keeps the hem from pulling in).",
-            f"The body measures about {_num(body_len)} in from the underarm " "to the hem.",
+            f"The body measures about {_num(body_len)} in from the underarm to the hem.",
         ],
     )
 
@@ -857,7 +857,7 @@ def _cuff_section(cuff_rounds, rg, sleeve_len):
         "9. Cuff and finishing",
         intro="Finish with a ribbed cuff, then tidy up.",
         steps=[
-            f"Work {cuff_rounds} rounds of k2, p2 ribbing for the cuff " f"(about {_num(cuff_rounds / rg)} in).",
+            f"Work {cuff_rounds} rounds of k2, p2 ribbing for the cuff (about {_num(cuff_rounds / rg)} in).",
             "Bind off loosely in pattern.",
             f"Repeat for the second sleeve. Each sleeve measures about "
             f"{_num(sleeve_len)} in from the underarm to the cuff.",
@@ -1074,7 +1074,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
         ".sleeve { fill: #c8e6f5; stroke: #2980b9; stroke-width: 2; }",
         ".body { fill: #d5f5e3; stroke: #27ae60; stroke-width: 2; }",
         ".neck { fill: #f5f5f5; stroke: #7f8c8d; stroke-width: 2; }",
-        ".raglan { stroke: #e74c3c; stroke-width: 2.5; " "stroke-dasharray: 6,3; fill: none; }",
+        ".raglan { stroke: #e74c3c; stroke-width: 2.5; stroke-dasharray: 6,3; fill: none; }",
         ".rib { fill: none; stroke: #8e44ad; stroke-width: 1.5; }",
         ".label { font-size: 11px; fill: #2c3e50; }",
         ".sublabel { font-size: 10px; fill: #7f8c8d; }",
@@ -1092,7 +1092,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
     # --- Right sleeve ---
     sx = cx + body_w // 2
     sy = body_top + 15
-    sleeve_pts = f"{sx},{sy} {sx + sleeve_w},{sy + 10} " f"{sx + sleeve_w},{sy + sleeve_h - 10} {sx},{sy + sleeve_h}"
+    sleeve_pts = f"{sx},{sy} {sx + sleeve_w},{sy + 10} {sx + sleeve_w},{sy + sleeve_h - 10} {sx},{sy + sleeve_h}"
     parts.append(f'<polygon points="{sleeve_pts}" class="sleeve"/>')
 
     # Cuff (ribbing at sleeve end)
@@ -1104,7 +1104,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
     # --- Left sleeve (mirrored) ---
     lx = cx - body_w // 2
     ly = body_top + 15
-    left_pts = f"{lx},{ly} {lx - sleeve_w},{ly + 10} " f"{lx - sleeve_w},{ly + sleeve_h - 10} {lx},{ly + sleeve_h}"
+    left_pts = f"{lx},{ly} {lx - sleeve_w},{ly + 10} {lx - sleeve_w},{ly + sleeve_h - 10} {lx},{ly + sleeve_h}"
     parts.append(f'<polygon points="{left_pts}" class="sleeve"/>')
 
     # Left cuff
@@ -1279,7 +1279,7 @@ def _raglan_growth_svg(
     seg,
     inc,
 ):
-    """Line chart showing how each raglan section grows from neck to underarm."""
+    "Line chart showing how each raglan section grows from neck to underarm." ""
     vw = 420
     vh = 240
     pad_l, pad_r, pad_t, pad_b = 55, 20, 30, 50
@@ -1367,7 +1367,7 @@ def _raglan_growth_svg(
 
 
 def _sleeve_taper_svg(arm, wrist, sleeve_shaping_rounds, rg, sleeve_sched):
-    """Visual showing the sleeve taper from upper arm to wrist."""
+    "Visual showing the sleeve taper from upper arm to wrist." ""
     vw = 420
     vh = 220
     pad_l, pad_r, pad_t, pad_b = 50, 30, 30, 40
@@ -1512,7 +1512,7 @@ def _render_one_section(section):
             shown = table["rows"][:MAX_TABLE_ROWS]
             total = len(table["rows"])
             parts.append("<details class='plan-details'>")
-            parts.append(f"<summary>Show round-by-round stitch table " f"({len(shown)} of {total} rounds)</summary>")
+            parts.append(f"<summary>Show round-by-round stitch table ({len(shown)} of {total} rounds)</summary>")
             parts.append(_render_table({"columns": table["columns"], "rows": shown}))
             if total > MAX_TABLE_ROWS:
                 parts.append(
@@ -1534,7 +1534,7 @@ def _render_sections(sections):
 
 
 def to_html(result):
-    """Render the schematic plus the full guided sweater plan."""
+    "Render the schematic plus the full guided sweater plan." ""
     plan = result["plan"]
     m = result["meta"]
 
@@ -1548,7 +1548,7 @@ def to_html(result):
         ("Sleeve length", f"{_num(m['sleeve_len'])} in"),
     ]
     pill_html = "".join(
-        f"<div class='raglan-pill'><span class='label'>{label}</span>" f"<span class='value'>{value}</span></div>"
+        f"<div class='raglan-pill'><span class='label'>{label}</span><span class='value'>{value}</span></div>"
         for label, value in pills
     )
 
@@ -1573,7 +1573,7 @@ def to_html(result):
 
     if plan["warnings"]:
         items = "".join(f"<li>{_esc(w)}</li>" for w in plan["warnings"])
-        blocks.append(f"<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>")
+        blocks.append(f"<div class='warning-box'><strong>Worth a second look</strong><ul>{items}</ul></div>")
 
     assumptions = "".join(f"<li>{_esc(a)}</li>" for a in plan["assumptions"])
     blocks.append(

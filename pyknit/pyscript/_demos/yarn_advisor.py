@@ -251,7 +251,15 @@ def compute(inputs):
 
 
 def _score_fibers(project, drape, warmth_pref, fiber_pref, use_case):
-    pref_key = fiber_pref.get("label", "").split()[0].lower() if fiber_pref else ""
+    pref_key = (
+        fiber_pref.get(
+            "label",
+        )
+        .split()[0]
+        .lower()
+        if fiber_pref
+        else ""
+    )
     scores = []
     for key, fiber in FIBER_TYPES.items():
         if key == "any":
@@ -330,11 +338,11 @@ def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
     warnings = []
     if project["needs_structure"] and drape["drape_score"] > 0.7:
         warnings.append(
-            f"{project['label']} usually benefits from more structure. " "A very drapey fabric may lose shape."
+            f"{project['label']} usually benefits from more structure. A very drapey fabric may lose shape."
         )
     if project["needs_drape"] and drape["drape_score"] < 0.3:
         warnings.append(
-            f"{project['label']} usually looks best with some drape. " "A very stiff fabric may not drape well."
+            f"{project['label']} usually looks best with some drape. A very stiff fabric may not drape well."
         )
     if gauge["sts_per_in"] > 24 and warmth_pref["warmth_score"] > 0.7:
         warnings.append(
@@ -343,7 +351,7 @@ def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
         )
     if gauge["sts_per_in"] < 14 and drape["drape_score"] > 0.7:
         warnings.append(
-            "Bulky yarn with very drapey fabric may be heavy and sag. " "Consider a lighter yarn or more structure."
+            "Bulky yarn with very drapey fabric may be heavy and sag. Consider a lighter yarn or more structure."
         )
     return warnings
 

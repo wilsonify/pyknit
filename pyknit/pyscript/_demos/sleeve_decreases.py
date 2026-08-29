@@ -31,7 +31,7 @@ PAD_LABELS = {
 
 
 def to_html(result):
-    """Render the staircase chart, summary pills, math, and plan table."""
+    "Render the staircase chart, summary pills, math, and plan table." ""
     pills = [
         ("Starting", f"{result['starting']} sts"),
         ("Ending", f"{result['ending']} sts"),
@@ -43,7 +43,7 @@ def to_html(result):
     if result["summary"]["remainder"] > 0:
         pills.append(("Remainder", f"{result['summary']['remainder']} extra k2tog"))
     pill_html = "".join(
-        f"<div class='raglan-pill'><span class='label'>{label}</span>" f"<span class='value'>{value}</span></div>"
+        f"<div class='raglan-pill'><span class='label'>{label}</span><span class='value'>{value}</span></div>"
         for label, value in pills
     )
 
@@ -74,7 +74,7 @@ def to_html(result):
     warnings = ""
     if result.get("warnings"):
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        warnings = f"<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>"
+        warnings = f"<div class='warning-box'><strong>Worth a second look</strong><ul>{items}</ul></div>"
 
     est = result.get("_estimator_data", {})
     send_to = ""
@@ -123,7 +123,7 @@ def _esc(text):
 
 
 def compute(inputs):
-    """Return the decrease schedule with plan table, math, and SVG."""
+    "Return the decrease schedule with plan table, math, and SVG." ""
     from pyknit import sleeve_decreases
 
     rows = int(inputs["number_of_rows"])
@@ -207,12 +207,12 @@ def _validate(rows, starting, ending, per_row, mode):
         raise ValueError("stitches to remove per decrease row must be positive")
     if starting <= ending:
         raise ValueError(
-            f"starting count ({starting}) must be greater than ending count ({ending}) " "for decreases to be needed"
+            f"starting count ({starting}) must be greater than ending count ({ending}) for decreases to be needed"
         )
     total_decrease = starting - ending
     if per_row > total_decrease:
         raise ValueError(
-            f"stitches to remove per decrease row ({per_row}) exceeds " f"total decrease needed ({total_decrease})"
+            f"stitches to remove per decrease row ({per_row}) exceeds total decrease needed ({total_decrease})"
         )
     num_dec_rows = total_decrease // per_row
     if num_dec_rows > rows:
@@ -275,7 +275,7 @@ def _layout_schedule(plan, mode):
 
 
 def _make_plan_entry(idx, kind, before, after, instruction):
-    """Assemble a single plan row dictionary."""
+    "Assemble a single plan row dictionary." ""
     return {
         "round": idx + 1,
         "kind": kind,
@@ -287,7 +287,7 @@ def _make_plan_entry(idx, kind, before, after, instruction):
 
 
 def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decrease):
-    """Stitches removed after a given decrease row."""
+    "Stitches removed after a given decrease row." ""
     target = min(
         (dec_index + 1) * per_row,
         total_decrease - (remainder if dec_index < num_dec - 1 else 0),
@@ -298,18 +298,18 @@ def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decre
 
 
 def _decrease_instruction(per_row, remainder, dec_index, num_dec, ending):
-    """Build the human-readable instruction for a decrease row."""
+    "Build the human-readable instruction for a decrease row." ""
     if remainder and dec_index == num_dec - 1:
-        return f"k2tog at each side ({per_row} sts) plus {remainder} extra " f"k2tog to reach {ending} sts"
+        return f"k2tog at each side ({per_row} sts) plus {remainder} extra k2tog to reach {ending} sts"
     if remainder == 0 or dec_index < num_dec - 1:
         return f"k2tog at each side of underarm marker ({per_row} sts removed)"
     if remainder:
-        return f"k2tog at each side plus {remainder} extra k2tog " f"({per_row + remainder} sts removed)"
+        return f"k2tog at each side plus {remainder} extra k2tog ({per_row + remainder} sts removed)"
     return f"k2tog at each side of underarm marker ({per_row} sts removed)"
 
 
 def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
-    """Build the full row-by-row plan with exactly *rows* entries."""
+    "Build the full row-by-row plan with exactly *rows* entries." ""
     dec_set = set(schedule)
     sorted_dec = sorted(dec_set)
     num_dec = len(schedule)
@@ -363,7 +363,7 @@ def _build_math(rows, starting, ending, per_row, num_dec_rows, spacing_rows, rem
 
 def _build_assumptions(per_row, mode):
     assumptions = [
-        f"Each decrease row removes exactly {per_row} stitch(es) (k2tog at each " "decrease point along the row).",
+        f"Each decrease row removes exactly {per_row} stitch(es) (k2tog at each decrease point along the row).",
         "Decrease points are placed at the underarm seam for a symmetrical taper.",
         "The sleeve is knit flat or in the round from the upper arm toward the cuff.",
     ]
@@ -390,7 +390,7 @@ DECREASE_ROW = "decrease row"
 
 
 def _parse_schedule(text):
-    """Legacy parser for ``sleeve_decreases`` instruction strings (fallback)."""
+    "Legacy parser for ``sleeve_decreases`` instruction strings (fallback)." ""
     import re
 
     schedule = []
@@ -403,7 +403,7 @@ def _parse_schedule(text):
 
 
 def _parse_item(token, position):
-    """Handle a single comma-split instruction token."""
+    "Handle a single comma-split instruction token." ""
     import re
 
     token = token.strip()
@@ -419,7 +419,7 @@ def _parse_item(token, position):
 
 
 def _parse_repeated(match, position):
-    """Parse a ``[body] * N times`` bracket group (legacy fallback)."""
+    "Parse a ``[body] * N times`` bracket group (legacy fallback)." ""
     import re
 
     body, times = match.group(1), int(match.group(2))
@@ -456,13 +456,13 @@ def _parse_repeated(match, position):
 
 
 def _parse_decrease(token, position):
-    """Parse a bare ``decrease row`` item (possibly counted)."""
+    "Parse a bare ``decrease row`` item (possibly counted)." ""
     count = int(token.split(DECREASE_ROW)[0].strip() or "1") or 1
     return position + count, [position + i for i in range(count)]
 
 
 def _staircase_svg(schedule, rows, starting, ending):
-    """Staircase line chart: stitch count per row with decreases marked."""
+    "Staircase line chart: stitch count per row with decreases marked." ""
     width = 460
     height = 220
     margin = 36

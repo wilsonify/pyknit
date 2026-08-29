@@ -24,7 +24,7 @@ TITLE = "Sock Calculator"
 
 
 def _ease_factor(inputs):
-    """Turn a negative-ease percent (e.g. 20 = 20% smaller) into a factor."""
+    "Turn a negative-ease percent (e.g. 20 = 20% smaller) into a factor." ""
     pct = float(inputs["negative_ease"])
     if pct < 0 or pct > 50:
         raise ValueError("negative ease must be between 0% and 50%")
@@ -154,7 +154,7 @@ def _build_sock_result(cast, ankle, sock, rounds):
 
 
 def compute(inputs):
-    """Return the Sock plan as a plain dict plus the SVG diagram."""
+    "Return the Sock plan as a plain dict plus the SVG diagram." ""
     sock = Sock()
     sock.init(
         rows_per_inch=_pos(inputs, "rows_per_inch"),
@@ -442,19 +442,19 @@ def _render_sections(plan):
 
 
 def to_html(result):
-    """Render the SVG diagram plus the full guided plan."""
+    "Render the SVG diagram plus the full guided plan." ""
     plan = result["plan"]
 
     warnings = ""
     if result["warnings"]:
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        warnings = f"<div class='warning-box'><strong>Before you start</strong>" f"<ul>{items}</ul></div>"
+        warnings = f"<div class='warning-box'><strong>Before you start</strong><ul>{items}</ul></div>"
 
     assumptions = "".join(f"<li>{_esc(a)}</li>" for a in plan["assumptions"])
 
     rows = ""
     for key, (label, value, unit) in plan["measurements"].items():
-        rows += f"<tr><th>{_esc(label)}</th>" f"<td class='mono'>{value}</td><td class='mono unit'>{unit}</td></tr>"
+        rows += f"<tr><th>{_esc(label)}</th><td class='mono'>{value}</td><td class='mono unit'>{unit}</td></tr>"
 
     est = result.get("_estimator_data", {})
     send_to = ""

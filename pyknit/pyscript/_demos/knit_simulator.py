@@ -189,7 +189,7 @@ def _attach_plan(result, plan):
 
 
 def _validate_sections(sections, total):
-    """Validate a plan's section list against the executed step count."""
+    "Validate a plan's section list against the executed step count." ""
     if not isinstance(sections, list) or not sections:
         raise ValueError("The sweater plan has no garment sections.")
     cleaned = []
@@ -207,7 +207,7 @@ def _validate_sections(sections, total):
         cleaned.append({"id": sid, "label": label, "start": start, "end": end})
         prev_end = end
     if prev_end != total:
-        raise ValueError("The sweater plan's sections do not match the simulation " "(%d steps)." % total)
+        raise ValueError("The sweater plan's sections do not match the simulation (%d steps)." % total)
     return cleaned
 
 
@@ -284,7 +284,7 @@ def _build_sock_step(i, rnd):
         before = int(rnd.get("before", rnd["after"]))
         after = int(rnd["after"])
     except (KeyError, TypeError, ValueError):
-        raise ValueError("The Sock Calculator pattern contains an invalid round. " "Re-run the Sock Calculator.")
+        raise ValueError("The Sock Calculator pattern contains an invalid round. Re-run the Sock Calculator.")
     removed = after - before
     kind = str(rnd.get("kind") or "row")
     return {
@@ -339,7 +339,7 @@ def _build_sock_result(plan, steps, inputs):
 
 
 def _op_name(token):
-    """Strip trailing digits so 'k2' -> 'k' but 'k2tog' stays 'k2tog'."""
+    "Strip trailing digits so 'k2' -> 'k' but 'k2tog' stays 'k2tog'." ""
     return token.rstrip("0123456789")
 
 
@@ -372,7 +372,7 @@ def _parse(raw):
 
 
 def _extract_repeat_flag(tokens):
-    """Strip repeat markers from tokens and return (repeat, cleaned_tokens)."""
+    "Strip repeat markers from tokens and return (repeat, cleaned_tokens)." ""
     repeat = False
     if tokens[0] == "*":
         repeat = True
@@ -384,7 +384,7 @@ def _extract_repeat_flag(tokens):
 
 
 def _parse_tokens(tokens):
-    """Parse a list of tokens into operation (name, count) pairs."""
+    "Parse a list of tokens into operation (name, count) pairs." ""
     ops = []
     i = 0
     while i < len(tokens):
@@ -401,7 +401,7 @@ def _parse_tokens(tokens):
 
 
 def _resolve_count(tok, name, canonical, tokens, j):
-    """Resolve the count for a token, handling trailing digits and keywords."""
+    "Resolve the count for a token, handling trailing digits and keywords." ""
     count = _trailing_count(tok, name)
     if count is not None:
         return count, j
@@ -488,7 +488,7 @@ def _apply_row(expanded, stitches):
 
 
 def _append_increase(pos, row_ops, new_stitches, next_id):
-    """Apply a zero-consume increase (yo): insert a fresh stitch."""
+    "Apply a zero-consume increase (yo): insert a fresh stitch." ""
     new_stitches.append(next_id)
     if pos < len(row_ops):
         row_ops[pos] = 2
@@ -509,7 +509,7 @@ def _append_consumed(op, name, chunk, pos, row_ops, new_stitches):
 
 
 def _row_label(expanded, repeat, width):
-    """Human label for a worked row, e.g. 'k2 p2 k2 p2 k2 across'."""
+    "Human label for a worked row, e.g. 'k2 p2 k2 p2 k2 across'." ""
     if not expanded:
         return "no stitches worked"
     if _is_uniform_bind_off(expanded):
