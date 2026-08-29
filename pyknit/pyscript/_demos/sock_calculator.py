@@ -92,24 +92,24 @@ def _sim_pattern(sock):
     for _ in range(flap):
         add("heel_slip", "heel flap · slip 1, k1", flap, flap, 0, "heel")
 
-    # Heel turn: the set-up row plus the pull rows, one decrease each,
-    # landing exactly on the heel-turn remainder.
+    current = _add_heel_turn(add, flap, heel_rem)
+    current = _add_gusset(add, sock, current, heel_rem, after_pickup)
+    _add_foot(add, sock, ankle)
+    _add_toe(add, toe, ankle)
+
+    return _build_sock_result(cast, ankle, sock, rounds)
+
+
+def _add_heel_turn(add, flap, heel_rem):
     current = flap
     for _ in range(flap - heel_rem):
         add("heel_turn", "heel turn", current, current - 1, 1, "heel")
         current -= 1
+    return current
 
-    # Gusset: pick up the edge stitches (the count on the needle jumps
-    # from the heel-turn remainder to the full after-pickup count), then
-    # decrease back to the ankle count.
-    add(
-        "gusset",
-        "gusset · pick up stitches",
-        heel_rem,
-        after_pickup,
-        heel_rem - after_pickup,
-        "gusset",
-    )
+
+def _add_gusset(add, sock, heel_turn_current, heel_rem, after_pickup):
+    add("gusset", "gusset · pick up stitches", heel_rem, after_pickup, heel_rem - after_pickup, "gusset")
     current = after_pickup
     gusset_first, gusset_rest = sock.gusset_decrease_rounds()
     if gusset_first:
@@ -120,13 +120,15 @@ def _sim_pattern(sock):
             add("knit", "gusset · plain round", current, current, 0, "gusset")
         add("gusset", "gusset decrease", current, current - 2, 2, "gusset")
         current -= 2
+    return current
 
-    # Foot: plain stockinette rounds at the ankle count.
+
+def _add_foot(add, sock, ankle):
     for _ in range(sock.foot_rounds()):
         add("knit", "foot · stockinette", ankle, ankle, 0, "stockinette")
 
-    # Toe: phase 1 (decrease every other round), then phase 2 (decrease
-    # every round) down to the finish count.
+
+def _add_toe(add, toe, ankle):
     current = ankle
     p1 = toe["phase1_decrease_rounds"]
     for i in range(2 * p1 - 1):
@@ -139,6 +141,8 @@ def _sim_pattern(sock):
         add("toe_decrease", "toe decrease", current, current - 4, 4, "toe")
         current -= 4
 
+
+def _build_sock_result(cast, ankle, sock, rounds):
     return {
         "source": "sock_calculator",
         "cast_on_stitches": cast,
