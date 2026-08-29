@@ -1417,7 +1417,8 @@ class TestRaglanToSimulator:
         result = self._plan()
         meta = result["meta"]
         instr = result["sim_instructions"]
-        assert instr and instr.startswith("# Raglan sweater")
+        assert instr
+        assert instr.startswith("# Raglan sweater")
         lines = [ln for ln in instr.splitlines() if ln.strip() and not ln.strip().startswith("#")]
         # cast on the neck, then the collar rib, then the yoke
         assert lines[0] == "co %d" % meta["neck"]
@@ -1492,7 +1493,8 @@ class TestRaglanToSimulator:
         assert secs[-1]["end"] == len(lines)
         prev = 0
         for sec in secs:
-            assert sec["start"] == prev and sec["end"] > sec["start"]
+            assert sec["start"] == prev
+            assert sec["end"] > sec["start"]
             prev = sec["end"]
         assert [sec["id"] for sec in secs] == [
             "neckline",
@@ -1530,7 +1532,8 @@ class TestRaglanToSimulator:
                 "right_cuff",
             )
             assert st["section_label"]
-            assert st["sec_row"] >= 1 and st["sec_rows"] >= 1
+            assert st["sec_row"] >= 1
+            assert st["sec_rows"] >= 1
             assert st["op_short"]
             sec = next(s for s in sim["sections"] if s["id"] == st["section"])
             assert sec["start"] <= i < sec["end"]
