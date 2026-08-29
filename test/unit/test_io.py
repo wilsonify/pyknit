@@ -71,8 +71,12 @@ def test_json_missing_schema_version_rejected():
 def test_exports_are_deterministic():
     """Two exports of the same pattern are byte-identical."""
     pattern = parse_chart("k p k\nkfb yo k2tog", stitch_legend)
-    assert io.pattern_to_csv(pattern, stitch_legend) == io.pattern_to_csv(pattern, stitch_legend)
-    assert io.pattern_to_json(pattern, stitch_legend) == io.pattern_to_json(pattern, stitch_legend)
+    csv1 = io.pattern_to_csv(pattern, stitch_legend)
+    csv2 = io.pattern_to_csv(pattern, stitch_legend)
+    assert csv1 == csv2
+    json1 = io.pattern_to_json(pattern, stitch_legend)
+    json2 = io.pattern_to_json(pattern, stitch_legend)
+    assert json1 == json2
 
 
 def test_json_canonical_key_order():
