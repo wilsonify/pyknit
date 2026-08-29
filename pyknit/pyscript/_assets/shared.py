@@ -258,9 +258,7 @@ def _text_as_svg(pattern) -> str:
         "text fallback (SVG backend unavailable)</text>",
     ]
     for i, row in enumerate(rows):
-        parts.append(
-            f'<text x="20" y="{34 + i * 22}" font-family="monospace" ' f'font-size="14">{html.escape(row)}</text>'
-        )
+        parts.append(f'<text x="20" y="{34 + i * 22}" font-family="monospace" font-size="14">{html.escape(row)}</text>')
     parts.append("</svg>")
     return "\n".join(parts)
 
