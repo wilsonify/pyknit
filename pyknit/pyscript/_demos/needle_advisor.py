@@ -13,6 +13,8 @@ DEFAULT_INPUTS = {
 }
 
 TITLE = "Needle Advisor"
+CABLE_32_40 = "32-40 in (80-100 cm)"
+OUTPUT_BOX = "<div class='output-box'>"
 
 YARN_WEIGHTS = {
     "lace": {
@@ -283,7 +285,7 @@ def _nearest_needle(target_mm):
 def _recommend_cable_length(construction_key, project_key):
     if construction_key == "flat":
         return {
-            "label": "32-40 in (80-100 cm)",
+            "label": CABLE_32_40,
             "note": "Long enough for flat pieces; can also use straight needles.",
         }
     if construction_key == "round_dpns":
@@ -303,12 +305,12 @@ def _recommend_cable_length(construction_key, project_key):
         }
     if project_key == "sweater":
         return {
-            "label": "32-40 in (80-100 cm)",
+            "label": CABLE_32_40,
             "note": "Long enough for body circumference; use 24 in for sleeves.",
         }
     if project_key == "shawl":
         return {
-            "label": "32-40 in (80-100 cm)",
+            "label": CABLE_32_40,
             "note": "Long circular for body; switch to straights if preferred.",
         }
     return {
@@ -386,7 +388,7 @@ def to_html(result):
         f"</div>"
     )
 
-    parts.append("<div class='output-box'>")
+    parts.append(OUTPUT_BOX)
     parts.append("<h3>Starting needle size</h3>")
     parts.append("<p style='font-size:1.1rem;font-weight:600;color:#5a2a75'>")
     parts.append(f"{result['recommended_mm']} mm &mdash; US {result['recommended_us']}")
@@ -405,7 +407,7 @@ def to_html(result):
     parts.append("</div>")
 
     if result.get("needle_types"):
-        parts.append("<div class='output-box'>")
+        parts.append(OUTPUT_BOX)
         parts.append("<h3>Needle types to consider</h3>")
         parts.append("<table class='instructions'><tbody>")
         for nt in result["needle_types"]:
@@ -414,7 +416,7 @@ def to_html(result):
 
     if result.get("cable_length"):
         cl = result["cable_length"]
-        parts.append("<div class='output-box'>")
+        parts.append(OUTPUT_BOX)
         parts.append("<h3>Cable length</h3>")
         parts.append(f"<p style='font-weight:600'>{_esc(cl['label'])}</p>")
         parts.append(f"<p style='font-size:0.9rem;color:#666'>{_esc(cl['note'])}</p>")
@@ -424,7 +426,7 @@ def to_html(result):
         items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
         parts.append("<div class='warning-box'><strong>Heads up</strong>" f"<ul>{items}</ul></div>")
 
-    parts.append("<div class='output-box'>")
+    parts.append(OUTPUT_BOX)
     parts.append("<h3>Assumptions</h3>")
     parts.append("<ul style='padding-left:1.3rem'>")
     for a in result.get("assumptions", []):
