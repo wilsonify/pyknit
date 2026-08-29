@@ -433,9 +433,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
         produces=2,
     ),
     "C1-1R": Stitch(
-        instruction=(
-            "with RN, go in front of first st and k second st without removing; k first st, slip both off LN"
-        ),
+        instruction=("with RN, go in front of first st and k second st without removing; k first st, slip both off LN"),
         symbol=os.path.join(japanese_symbol_dir, "C1-1R.png"),
         width=2,
         category="cable",
@@ -453,9 +451,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
         produces=2,
     ),
     "C1-1PR": Stitch(
-        instruction=(
-            "With RN, go in front of first st and k second st without removing, p first st, slip both off LN"
-        ),
+        instruction=("With RN, go in front of first st and k second st without removing, p first st, slip both off LN"),
         symbol=os.path.join(japanese_symbol_dir, "C1-1PR.png"),
         width=2,
         category="cable",
