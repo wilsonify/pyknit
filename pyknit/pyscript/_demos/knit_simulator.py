@@ -275,8 +275,7 @@ def _raise_unless_cast_on_consistent(plan, rounds):
         ok = False
     if not ok:
         raise ValueError(
-            "The Sock Calculator cast-on count is inconsistent with its "
-            "pattern. Re-run the Sock Calculator."
+            "The Sock Calculator cast-on count is inconsistent with its " "pattern. Re-run the Sock Calculator."
         )
 
 
@@ -285,10 +284,7 @@ def _build_sock_step(i, rnd):
         before = int(rnd.get("before", rnd["after"]))
         after = int(rnd["after"])
     except (KeyError, TypeError, ValueError):
-        raise ValueError(
-            "The Sock Calculator pattern contains an invalid round. "
-            "Re-run the Sock Calculator."
-        )
+        raise ValueError("The Sock Calculator pattern contains an invalid round. " "Re-run the Sock Calculator.")
     removed = after - before
     kind = str(rnd.get("kind") or "row")
     return {
