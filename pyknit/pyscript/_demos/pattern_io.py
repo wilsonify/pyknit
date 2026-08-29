@@ -5,7 +5,7 @@ the re-imported pattern so the demo works with a pure pyknit import.
 """
 
 DEFAULT_INPUTS = {
-    "pattern": ("k2 yo k2tog yo k1\n" "p1 k2 yo k2tog p2"),
+    "pattern": "k2 yo k2tog yo k1\np1 k2 yo k2tog p2",
     "format": "json",
 }
 
