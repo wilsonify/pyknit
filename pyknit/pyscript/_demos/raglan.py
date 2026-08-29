@@ -221,12 +221,12 @@ def _validate_inputs(
         (freq not in ALLOWED_FREQUENCIES, "increase frequency must be 'every round' or 'every other round'"),
         (
             neck_circ >= bust_circ,
-            "neck circumference must be smaller than the bust circumference " "(the raglan widens from the neck down)",
+            "neck circumference must be smaller than the bust circumference (the raglan widens from the neck down)",
         ),
         (upper_arm_eased >= bust_circ, "upper arm circumference + ease must be smaller than the bust circumference"),
         (
             wrist_circ >= upper_arm_eased,
-            "wrist circumference must be smaller than the upper arm " "(with ease) for a tapering sleeve",
+            "wrist circumference must be smaller than the upper arm (with ease) for a tapering sleeve",
         ),
         (min(neck, bust, arm) < 4, "the neck/bust/arm measurements are too small for a sweater"),
         (
