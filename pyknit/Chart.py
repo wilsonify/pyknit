@@ -564,7 +564,6 @@ def print_row(stitch_array: PatternRow) -> Image:
     fnt = ImageFont.truetype("Times.ttf", 40)
     position = 0
     for i, stitch in enumerate(stitch_array):
-        # for i in range(1, len(stitch_array)):
         position = sum(st.width for st in stitch_array[: i + 1]) * (cell_width + 1)
         draw.line((position, 0) + (position, cell_height), fill=128)
 
