@@ -51,7 +51,7 @@ def render_pattern(pattern: Pattern, legend: Any = None, **kwargs: Any) -> Tuple
     output_format = {"svg": "svg", "pillow": "png"}
     for backend in backends:
         try:
-            content = _render_with_backend(backend, pattern, legend, kwargs)
+            content = _render_with_backend(backend, pattern)
         except Exception:
             # This backend failed; try the next one.
             continue
@@ -76,7 +76,7 @@ def pattern_to_text(pattern: Pattern) -> str:
     return "\n".join(lines)
 
 
-def _render_with_backend(fmt: str, pattern: Pattern, legend: Any, kwargs: Any) -> Any:
+def _render_with_backend(fmt: str, pattern: Pattern) -> Any:
     """Render with a single backend, returning its raw content."""
     if fmt == "svg":
         from pyknit.Chart import render_chart_svg
