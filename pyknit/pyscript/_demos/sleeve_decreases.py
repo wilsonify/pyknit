@@ -247,46 +247,31 @@ def _generate_schedule(rows, num_dec_rows, mode):
         return []
     if mode == "none":
         return list(range(num_dec_rows))
-
     padding = rows - num_dec_rows
     if padding < 0:
-        # should not happen after validation, but fall back to consecutive
         return list(range(num_dec_rows))
+    plan = _calculate_spacing(padding, num_dec_rows, "after" if mode != "before" else "before")
+    return _layout_schedule(plan, mode)
 
-    if mode == "after":
-        plan = _calculate_spacing(padding, num_dec_rows, "after")
-        schedule = []
-        pos = 0
-        for interval, groups in plan:
-            for _ in range(groups):
-                schedule.append(pos)
-                pos += 1 + interval
-        return schedule
-    if mode == "before":
-        plan = _calculate_spacing(padding, num_dec_rows, "before")
-        schedule = []
-        pos = 0
-        for interval, groups in plan:
-            for _ in range(groups):
+
+def _layout_schedule(plan, mode):
+    schedule = []
+    pos = 0
+    for interval, groups in plan:
+        for _ in range(groups):
+            if mode == "before":
                 pos += interval
                 schedule.append(pos)
                 pos += 1
-        return schedule
-    if mode == "both":
-        plan = _calculate_spacing(padding, num_dec_rows, "after")
-        schedule = []
-        pos = 0
-        for interval, groups in plan:
-            before = interval // 2
-            after = interval - before
-            for _ in range(groups):
-                pos += before
+            elif mode == "both":
+                pos += interval // 2
                 schedule.append(pos)
                 pos += 1
-                pos += after
-        return schedule
-    # fallback
-    return list(range(num_dec_rows))
+                pos += interval - interval // 2
+            else:  # after
+                schedule.append(pos)
+                pos += 1 + interval
+    return schedule
 
 
 def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
