@@ -28,7 +28,9 @@ def test_stitch_metadata_defaults():
 
 def test_stitch_equality():
     """Two Stitches built the same way compare equal."""
-    assert Chart.Stitch("knit", symbol=" ", width=1) == Chart.Stitch("knit", symbol=" ", width=1)
+    stitch1 = Chart.Stitch("knit", symbol=" ", width=1)
+    stitch2 = Chart.Stitch("knit", symbol=" ", width=1)
+    assert stitch1 == stitch2
     increase = Chart.Stitch(
         "knit front and back",
         symbol="V",
