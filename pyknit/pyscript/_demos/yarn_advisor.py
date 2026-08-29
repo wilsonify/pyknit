@@ -256,59 +256,74 @@ def _score_fibers(project, drape, warmth_pref, fiber_pref, use_case):
     for key, fiber in FIBER_TYPES.items():
         if key == "any":
             continue
-        score = 0.0
-        reasons = []
-        tradeoffs = []
-
-        drape_match = 1.0 - abs(fiber["drape"] - drape["drape_score"])
-        score += drape_match * 30
-        if drape_match > 0.8:
-            reasons.append("good drape match")
-        elif drape_match < 0.4:
-            tradeoffs.append("drape may differ from desired")
-
-        warmth_match = 1.0 - abs(fiber["warmth"] - warmth_pref["warmth_score"])
-        score += warmth_match * 25
-        if warmth_match > 0.8:
-            reasons.append("warmth matches preference")
-        elif warmth_match < 0.4:
-            tradeoffs.append("warmth level differs from preference")
-
-        durability_match = fiber["durability"] * use_case["durability_need"]
-        score += durability_match * 20
-        if durability_match > 0.6:
-            reasons.append("durable enough for intended use")
-
-        washable_match = (
-            1.0
-            if (fiber["washable"] and use_case["washable_need"] > 0.5)
-            else (0.5 if not fiber["washable"] and use_case["washable_need"] < 0.3 else 0.0)
-        )
-        score += washable_match * 15
-        if washable_match > 0.8:
-            reasons.append("easy care for this use")
-        elif washable_match < 0.1:
-            tradeoffs.append("hand-wash only")
-
-        if pref_key and key.startswith(pref_key):
-            score += 15
-            reasons.append("matches your fiber preference")
-
-        confidence = "high" if len(reasons) >= 3 else "medium" if len(reasons) >= 2 else "low"
-
-        scores.append(
-            {
-                "fiber": key,
-                "label": fiber["label"],
-                "score": round(score, 1),
-                "reasons": reasons,
-                "tradeoffs": tradeoffs,
-                "confidence": confidence,
-            }
-        )
-
+        entry = _score_one_fiber(fiber, key, drape, warmth_pref, use_case, pref_key)
+        scores.append(entry)
     scores.sort(key=lambda x: x["score"], reverse=True)
     return scores
+
+
+def _score_one_fiber(fiber, key, drape, warmth_pref, use_case, pref_key):
+    score = 0.0
+    reasons = []
+    tradeoffs = []
+    score, reasons, tradeoffs = _score_drape(fiber, drape, score, reasons, tradeoffs)
+    score, reasons, tradeoffs = _score_warmth(fiber, warmth_pref, score, reasons, tradeoffs)
+    score, reasons = _score_durability(fiber, use_case, score, reasons)
+    score, reasons, tradeoffs = _score_care(fiber, use_case, score, reasons, tradeoffs)
+    if pref_key and key.startswith(pref_key):
+        score += 15
+        reasons.append("matches your fiber preference")
+    confidence = "high" if len(reasons) >= 3 else "medium" if len(reasons) >= 2 else "low"
+    return {
+        "fiber": key,
+        "label": fiber["label"],
+        "score": round(score, 1),
+        "reasons": reasons,
+        "tradeoffs": tradeoffs,
+        "confidence": confidence,
+    }
+
+
+def _score_drape(fiber, drape, score, reasons, tradeoffs):
+    drape_match = 1.0 - abs(fiber["drape"] - drape["drape_score"])
+    score += drape_match * 30
+    if drape_match > 0.8:
+        reasons.append("good drape match")
+    elif drape_match < 0.4:
+        tradeoffs.append("drape may differ from desired")
+    return score, reasons, tradeoffs
+
+
+def _score_warmth(fiber, warmth_pref, score, reasons, tradeoffs):
+    warmth_match = 1.0 - abs(fiber["warmth"] - warmth_pref["warmth_score"])
+    score += warmth_match * 25
+    if warmth_match > 0.8:
+        reasons.append("warmth matches preference")
+    elif warmth_match < 0.4:
+        tradeoffs.append("warmth level differs from preference")
+    return score, reasons, tradeoffs
+
+
+def _score_durability(fiber, use_case, score, reasons):
+    durability_match = fiber["durability"] * use_case["durability_need"]
+    score += durability_match * 20
+    if durability_match > 0.6:
+        reasons.append("durable enough for intended use")
+    return score, reasons
+
+
+def _score_care(fiber, use_case, score, reasons, tradeoffs):
+    washable_match = (
+        1.0
+        if (fiber["washable"] and use_case["washable_need"] > 0.5)
+        else (0.5 if not fiber["washable"] and use_case["washable_need"] < 0.3 else 0.0)
+    )
+    score += washable_match * 15
+    if washable_match > 0.8:
+        reasons.append("easy care for this use")
+    elif washable_match < 0.1:
+        tradeoffs.append("hand-wash only")
+    return score, reasons, tradeoffs
 
 
 def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
