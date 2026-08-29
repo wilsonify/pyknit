@@ -96,11 +96,10 @@ jobs:
           name: unit-results-${{ matrix.python-version }}
           path: unit-results.xml
 
-  # ── Stage 3: SonarCloud quality gate (push only) ─────────────────────
+  # ── Stage 3: SonarCloud quality gate ────────────────────────────────
   sonarcloud:
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
         with:
@@ -155,7 +154,7 @@ jobs:
 
   # ── Stage 5: integration tests against built package ─────────────────
   integration-tests:
-    needs: [python-build]
+    needs: [python-build, sonarcloud]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
