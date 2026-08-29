@@ -83,7 +83,7 @@ def _rings_svg(total_rounds, increase_rows):
     size = 360
     cx = cy = size / 2
     max_radius = size / 2 - 70
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" ' f'height="{size}" viewBox="0 0 {size} {size}">']
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">']
 
     for r in increase_rows:
         ratio = r / total_rounds
