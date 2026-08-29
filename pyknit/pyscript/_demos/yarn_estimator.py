@@ -517,13 +517,14 @@ def _check_yarn_ratio(warnings, ball_yards, ball_grams):
         ratio = ball_yards / ball_grams
         if ratio < 2 or ratio > 12:
             warnings.append(
-                f"Yarn ball ratio is {ratio:.1f} yd/g, which is outside the typical range (2-12 yd/g). Check your ball label."
+                f"Yarn ball ratio is {ratio:.1f} yd/g, which is outside the "
+                "typical range (2-12 yd/g). Check your ball label."
             )
 
 
 def _check_pace(warnings, seconds_per_stitch):
     if seconds_per_stitch < 0.5 or seconds_per_stitch > 10:
-        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. Typical range is 0.5-10 sec/stitch.")
+        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. " "Typical range is 0.5-10 sec/stitch.")
 
 
 def _check_dimensions(warnings, width, height, project_type):
@@ -531,7 +532,8 @@ def _check_dimensions(warnings, width, height, project_type):
         return
     if project_type == "hat" and (width > 30 or height > 15):
         warnings.append(
-            f"Dimensions {width} x {height} in are large for a hat. Typical hat is 18-24 in circumference, 7-10 in tall."
+            f"Dimensions {width} x {height} in are large for a hat. "
+            "Typical hat is 18-24 in circumference, 7-10 in tall."
         )
     if width > 72 or height > 72:
         warnings.append(f"Dimensions {width} x {height} in are very large. Consider whether this is correct.")
