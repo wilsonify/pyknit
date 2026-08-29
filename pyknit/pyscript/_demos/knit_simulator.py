@@ -275,7 +275,7 @@ def _raise_unless_cast_on_consistent(plan, rounds):
         ok = False
     if not ok:
         raise ValueError(
-            "The Sock Calculator cast-on count is inconsistent with its " "pattern. Re-run the Sock Calculator."
+            "The Sock Calculator cast-on count is inconsistent with its pattern. Re-run the Sock Calculator."
         )
 
 
