@@ -1,0 +1,4 @@
+rules:
+  - path_regex: .dec.env.yaml
+    input_type: yaml
+    output_type: yaml
