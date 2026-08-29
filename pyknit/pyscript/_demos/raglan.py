@@ -387,7 +387,7 @@ def compute(inputs):
 
     match_marker = re.search(r"Marker setup:\s*(.*)", raglan)
     marker = match_marker.group(1).strip() if match_marker else ""
-    match_incrow = re.search(r"Increase row:\s*(.*?)Marker setup:", raglan)
+    match_incrow = re.search(r"Increase row:\s*([^M]*)Marker setup:", raglan)
     inc_row_str = match_incrow.group(1).strip() if match_incrow else ""
 
     raglan_total_rounds = inc_rounds if freq == "every_round" else 2 * inc_rounds
