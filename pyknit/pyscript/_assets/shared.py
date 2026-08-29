@@ -337,6 +337,54 @@ def humanize_hours(total_hours: float) -> str:
     return " ".join(parts) if parts else "under a minute"
 
 
+def _render_heading_item(item: dict) -> List[str]:
+    """Render a heading-type plan item into text lines."""
+    lines = []
+    heading = str(item.get("heading", "")).strip()
+    if heading:
+        lines.append(heading.upper())
+    intro = str(item.get("intro", "")).strip()
+    if intro:
+        lines.append(intro)
+    steps = item.get("steps")
+    if isinstance(steps, list):
+        for step in steps:
+            lines.append(f"- {step}".strip())
+    rows = item.get("rows")
+    if isinstance(rows, list):
+        for row in rows:
+            lines.append(f"  {row}".strip())
+    return lines
+
+
+def _render_instruction_item(item: dict) -> List[str]:
+    """Render an instruction-type plan item into text lines."""
+    instruction = str(item.get("instruction", "")).strip()
+    transition = str(item.get("transition", "")).strip()
+    round_no = item.get("round")
+    if round_no is not None:
+        return _render_numbered_instruction(instruction, transition, round_no)
+    return _render_unnumbered_instruction(instruction, transition)
+
+
+def _render_numbered_instruction(instruction: str, transition: str, round_no: Any) -> List[str]:
+    """Render a numbered round instruction."""
+    prefix = f"Round {round_no}"
+    line = f"{prefix}: {instruction}" if instruction else prefix
+    if transition and transition not in ("->", "-"):
+        line = f"{line} ({transition})"
+    return [line]
+
+
+def _render_unnumbered_instruction(instruction: str, transition: str) -> List[str]:
+    """Render an unnumbered instruction."""
+    if transition:
+        line = f"{instruction} ({transition})" if instruction else transition
+    else:
+        line = instruction
+    return [line] if line else []
+
+
 def _export_plan_text(plan) -> str:
     """Render a list of step dicts like hat-crown plan rows into text."""
     if not isinstance(plan, list):
@@ -346,42 +394,97 @@ def _export_plan_text(plan) -> str:
         if not isinstance(item, dict):
             continue
         if "heading" in item:
-            heading = str(item.get("heading", "")).strip()
-            if heading:
-                lines.append(heading.upper())
-            intro = str(item.get("intro", "")).strip()
-            if intro:
-                lines.append(intro)
-            steps = item.get("steps")
-            if isinstance(steps, list):
-                for step in steps:
-                    lines.append(f"- {step}".strip())
-            rows = item.get("rows")
-            if isinstance(rows, list):
-                for row in rows:
-                    lines.append(f"  {row}".strip())
-            continue
-        if "instruction" in item:
-            instruction = str(item.get("instruction", "")).strip()
-            transition = str(item.get("transition", "")).strip()
-            round_no = item.get("round")
-            if round_no is not None:
-                prefix = f"Round {round_no}"
-                if instruction:
-                    line = f"{prefix}: {instruction}"
-                else:
-                    line = prefix
-                if transition and transition != "->" and transition != "-":
-                    line = f"{line} ({transition})"
-                lines.append(line)
-            else:
-                if transition:
-                    line = f"{instruction} ({transition})" if instruction else transition
-                else:
-                    line = instruction
-                if line:
-                    lines.append(line)
+            lines.extend(_render_heading_item(item))
+        elif "instruction" in item:
+            lines.extend(_render_instruction_item(item))
     return "\n".join(line for line in lines if line)
+
+
+def _export_dict_result(result: dict) -> str:
+    """Extract text from a dict-type demo result."""
+    if "plan" in result:
+        text = _extract_plan_text(result["plan"])
+        if text:
+            return text
+    text = _extract_key_value(result)
+    if text:
+        return text
+    return _export_remaining_keys(result)
+
+
+def _extract_plan_text(plan: Any) -> str:
+    """Extract text from a plan field (list or dict-with-sections)."""
+    if isinstance(plan, list):
+        text = _export_plan_text(plan)
+        if text:
+            return text
+    if isinstance(plan, dict) and isinstance(plan.get("sections"), list):
+        text = _export_plan_text(plan["sections"])
+        if text:
+            return text
+    return ""
+
+
+def _extract_key_value(result: dict) -> str:
+    """Try the standard text-bearing keys in priority order."""
+    for key in ("instructions", "result", "pattern", "text"):
+        if key not in result:
+            continue
+        value = result[key]
+        text = _extract_string_value(key, value, result)
+        if text:
+            return text
+        text = _extract_list_value(key, value)
+        if text:
+            return text
+    return ""
+
+
+def _extract_string_value(key: str, value: Any, result: dict) -> str:
+    """Extract text from a string value, respecting key priority."""
+    if not isinstance(value, str):
+        return ""
+    if key != "text" and value.strip():
+        return value.strip()
+    if key == "text" and value.strip():
+        higher_priority = any(k in result for k in ("instructions", "result", "pattern"))
+        if not higher_priority:
+            return value.strip()
+    return ""
+
+
+def _extract_list_value(key: str, value: Any) -> str:
+    """Extract text from a list value."""
+    if not isinstance(value, list):
+        return ""
+    if key == "pattern":
+        pattern_text = _try_pattern_to_instructions(value)
+        if pattern_text:
+            return pattern_text
+    text = "\n".join(str(item) for item in value)
+    return text.strip() if text.strip() else ""
+
+
+def _try_pattern_to_instructions(value: list) -> str:
+    """Try converting a pattern list to instructions text."""
+    try:
+        from pyknit.io import pattern_to_instructions
+
+        return pattern_to_instructions(value)
+    except Exception:
+        return ""
+
+
+def _export_remaining_keys(result: dict) -> str:
+    """Export remaining non-visual keys from the result dict."""
+    lines = []
+    for key, value in result.items():
+        if key in {"svg", "html", "pattern", "text"}:
+            continue
+        text = export_pattern_text(value)
+        if text.strip():
+            lines.append(f"{key}: {text}")
+    return "\n".join(lines) if lines else str(result)
 
 
 def export_pattern_text(result: Any) -> str:
@@ -391,56 +494,19 @@ def export_pattern_text(result: Any) -> str:
     if isinstance(result, str):
         return result.strip()
     if isinstance(result, dict):
-        if "plan" in result:
-            plan = result["plan"]
-            if isinstance(plan, list):
-                text = _export_plan_text(plan)
-                if text:
-                    return text
-            if isinstance(plan, dict) and isinstance(plan.get("sections"), list):
-                text = _export_plan_text(plan["sections"])
-                if text:
-                    return text
-        for key in ("instructions", "result", "pattern", "text"):
-            if key in result:
-                value = result[key]
-                if isinstance(value, str):
-                    if key != "text" and value.strip():
-                        return value.strip()
-                    if (
-                        key == "text"
-                        and value.strip()
-                        and not any(k in result for k in ("instructions", "result", "pattern"))
-                    ):
-                        return value.strip()
-                if isinstance(value, list):
-                    if key == "pattern":
-                        try:
-                            from pyknit.io import pattern_to_instructions
-
-                            return pattern_to_instructions(value)
-                        except Exception:
-                            pass
-                    text = "\n".join(str(item) for item in value)
-                    if text.strip():
-                        return text.strip()
-        lines = []
-        for key, value in result.items():
-            if key in {"svg", "html", "pattern", "text"}:
-                continue
-            text = export_pattern_text(value)
-            if text.strip():
-                lines.append(f"{key}: {text}")
-        if lines:
-            return "\n".join(lines)
-        return str(result)
+        return _export_dict_result(result)
     if isinstance(result, (list, tuple)):
-        if result and isinstance(result[0], dict):
-            text = _export_plan_text(result)
-            if text:
-                return text
-        return "\n".join(str(item) for item in result)
+        return _export_sequence_result(result)
     return str(result)
+
+
+def _export_sequence_result(result) -> str:
+    """Extract text from a list/tuple result."""
+    if result and isinstance(result[0], dict):
+        text = _export_plan_text(result)
+        if text:
+            return text
+    return "\n".join(str(item) for item in result)
 
 
 def _download_text_file(filename: str, text: str) -> bool:
