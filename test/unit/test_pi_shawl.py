@@ -34,8 +34,12 @@ def test_half_pi_increase_rows_start_at_2_are_strictly_increasing_and_in_bounds(
 
 
 def test_half_pi_increase_rows_is_deterministic():
-    assert pi_shawl.half_pi_increase_rows(5, 5) == pi_shawl.half_pi_increase_rows(5, 5)
-    assert pi_shawl.half_pi_increase_rows(50, 3) == pi_shawl.half_pi_increase_rows(50, 3)
+    result1 = pi_shawl.half_pi_increase_rows(5, 5)
+    result2 = pi_shawl.half_pi_increase_rows(5, 5)
+    assert result1 == result2
+    result3 = pi_shawl.half_pi_increase_rows(50, 3)
+    result4 = pi_shawl.half_pi_increase_rows(50, 3)
+    assert result3 == result4
 
 
 def test_half_pi_increase_rows_matches_documented_values():
