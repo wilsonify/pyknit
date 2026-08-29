@@ -102,7 +102,7 @@ class GaugeSwatch(BaseModel):
         >>> swatch.rows_to_measurement(10)
         1.8055555555555556
         """
-        return rows / self.row_gauge()
+        return float(rows) / self.row_gauge()
 
     @validate_arguments
     def stitches_to_measurement(self, stitches: PositiveInt) -> float:
@@ -115,7 +115,7 @@ class GaugeSwatch(BaseModel):
         >>> swatch.stitches_to_measurement(18)
         3.0
         """
-        return stitches / self.stitch_gauge()
+        return float(stitches) / self.stitch_gauge()
 
     @validate_arguments
     def estimate_yardage(self, stitch_count: PositiveInt) -> float:
