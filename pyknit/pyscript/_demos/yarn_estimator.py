@@ -496,32 +496,45 @@ def _plausibility_checks(
 ):
     """Run sanity checks and return a list of warning strings."""
     warnings = []
+    _check_gauge(warnings, stitch_gauge, row_gauge)
+    _check_yarn_ratio(warnings, ball_yards, ball_grams)
+    _check_pace(warnings, seconds_per_stitch)
+    _check_dimensions(warnings, width, height, project_type)
+    return warnings
 
+
+def _check_gauge(warnings, stitch_gauge, row_gauge):
     if stitch_gauge < 2 or stitch_gauge > 15:
         warnings.append(
-            f"Stitch gauge of {stitch_gauge} sts/in is unusual. "
-            "Typical range is 2-15 sts/in. Double-check your swatch."
+            f"Stitch gauge of {stitch_gauge} sts/in is unusual. Typical range is 2-15 sts/in. Double-check your swatch."
         )
     if row_gauge < 3 or row_gauge > 20:
-        warnings.append(f"Row gauge of {row_gauge} rows/in is unusual. " "Typical range is 3-20 rows/in.")
+        warnings.append(f"Row gauge of {row_gauge} rows/in is unusual. Typical range is 3-20 rows/in.")
+
+
+def _check_yarn_ratio(warnings, ball_yards, ball_grams):
     if ball_yards > 0 and ball_grams > 0:
         ratio = ball_yards / ball_grams
         if ratio < 2 or ratio > 12:
             warnings.append(
-                f"Yarn ball ratio is {ratio:.1f} yd/g, which is outside the "
-                "typical range (2-12 yd/g). Check your ball label."
+                f"Yarn ball ratio is {ratio:.1f} yd/g, which is outside the typical range (2-12 yd/g). Check your ball label."
             )
+
+
+def _check_pace(warnings, seconds_per_stitch):
     if seconds_per_stitch < 0.5 or seconds_per_stitch > 10:
-        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. " "Typical range is 0.5-10 sec/stitch.")
-    if width is not None and height is not None:
-        if project_type == "hat" and (width > 30 or height > 15):
-            warnings.append(
-                f"Dimensions {width} x {height} in are large for a hat. "
-                "Typical hat is 18-24 in circumference, 7-10 in tall."
-            )
-        if width > 72 or height > 72:
-            warnings.append(f"Dimensions {width} x {height} in are very large. " "Consider whether this is correct.")
-    return warnings
+        warnings.append(f"Pace of {seconds_per_stitch} sec/stitch is unusual. Typical range is 0.5-10 sec/stitch.")
+
+
+def _check_dimensions(warnings, width, height, project_type):
+    if width is None or height is None:
+        return
+    if project_type == "hat" and (width > 30 or height > 15):
+        warnings.append(
+            f"Dimensions {width} x {height} in are large for a hat. Typical hat is 18-24 in circumference, 7-10 in tall."
+        )
+    if width > 72 or height > 72:
+        warnings.append(f"Dimensions {width} x {height} in are very large. Consider whether this is correct.")
 
 
 def _estimator_svg(yards, grams, project_stitches):
