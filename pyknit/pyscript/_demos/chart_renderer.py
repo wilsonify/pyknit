@@ -16,7 +16,7 @@ import importlib.resources as ir
 from pathlib import Path
 
 DEFAULT_INPUTS = {
-    "pattern": ("k2 yo k2tog yo k1\n" "p1 k2 yo k2tog p2\n" "k2tog yo k3 yo\n" "p3 k2tog yo p1"),
+    "pattern": "k2 yo k2tog yo k1\np1 k2 yo k2tog p2\nk2tog yo k3 yo\np3 k2tog yo p1",
     "legend": "default",
     "lr": "lr",
     "tb": "tb",
