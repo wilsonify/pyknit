@@ -159,28 +159,6 @@ def _make_row_step(row_no, width, stitches, expanded, row, row_ops, increases, d
         "progress": 0.0,
     }
 
-    speed = inputs.get("speed", "normal")
-    speed_ms = SPEED_PRESETS.get(speed, 400)
-
-    result = {
-        "steps": steps,
-        "total_steps": total,
-        "total_rows": row_no,
-        "cast_on": cast_on,
-        "final_stitches": list(stitches),
-        "speed_ms": speed_ms,
-        "warnings": warnings,
-        "garment": "sweater",
-        "sock_summary": None,
-        "pattern": [r["line"] for r in rows],
-    }
-
-    plan = inputs.get("plan")
-    if plan is not None:
-        # A present-but-invalid plan must raise, never silently fall back.
-        _attach_plan(result, plan)
-    return result
-
 
 def _attach_plan(result, plan):
     """Attach canonical garment sections from a Planner plan to the steps.
