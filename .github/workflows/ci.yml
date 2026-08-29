@@ -48,7 +48,7 @@ jobs:
 
       - name: Python style (flake8)
         run: |
-          pip install flake8
+          python -m pip install --only-binary :all: flake8==7.1.1
           flake8 pyknit/ scripts/ test/
 
       - name: JavaScript (eslint)
@@ -130,7 +130,7 @@ jobs:
 
   # ── Stage 4: clean Python package build ──────────────────────────────
   python-build:
-    needs: [version, lint, unit-tests]
+    needs: [version, lint, unit-tests, sonarcloud]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
@@ -198,7 +198,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install --only-binary :all: -r requirements.txt
 
       - name: Clean build
         run: .github/workflows/scripts/build-pyscript-clean.sh
@@ -292,3 +292,14 @@ jobs:
 
       - name: Verify APK
         run: .github/workflows/scripts/android-verify-apk.sh apk/app-debug.apk
+
+  # ── CVE vulnerability scan (after successful build) ──────────────────
+  cve-scan:
+    needs: [python-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: intel/cve-bin-tool-action@dfb08514cfded46b0175db53bb061cc5f1296825  # main
+        # with:
+        #   nvd_api_key: '${{ secrets.NVD_API_KEY }}'
+        #   exclude_dir: test
