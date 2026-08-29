@@ -373,9 +373,7 @@ class Sock:
         if self.rows_per_inch <= 0 or self.stitches_per_inch <= 0:
             raise ValueError("Gauge must be greater than zero.")
         if self.cast_on_stitches <= 0 or self.ankle_stitches <= 0:
-            raise ValueError(
-                "Stitch counts came out at zero - please check your gauge " "and circumference measurements."
-            )
+            raise ValueError("Stitch counts came out at zero - please check your gauge and circumference measurements.")
         if not (0 < self.negative_ease <= 1.2):
             raise ValueError("negative_ease must be greater than 0 and no more than 1.2.")
 
@@ -404,7 +402,7 @@ class Sock:
         # pick-up numbers surface as clear errors, never silent nonsense.
         self.leg_decrease_plan()
         if self.gusset_stitches_after_pickup() < self.ankle_stitches:
-            raise ValueError("The gusset pick-up arithmetic is inconsistent; please " "re-check your measurements.")
+            raise ValueError("The gusset pick-up arithmetic is inconsistent; please re-check your measurements.")
         _, remaining = self.heel_turn_rows()
         if remaining < 1:
             raise ValueError("The heel turn left too few stitches to work.")
@@ -546,7 +544,7 @@ class Sock:
             "Measure around the widest part of the calf/leg for the leg "
             "circumference, and around the narrowest part of the ankle, just "
             "above the ankle bone.",
-            "Use a gauge swatch in stockinette, blocked as you will block " "the finished sock.",
+            "Use a gauge swatch in stockinette, blocked as you will block the finished sock.",
         ]
 
         sections = [
@@ -596,7 +594,7 @@ class Sock:
 
         steps = []
         if self.length_from_sock_top_to_heel_flap <= 0:
-            steps.append("Your leg length came out at zero, so the heel flap will " "start right after the cast-on.")
+            steps.append("Your leg length came out at zero, so the heel flap will start right after the cast-on.")
             return {
                 "heading": "2. The leg (cuff to heel)",
                 "intro": None,
@@ -642,7 +640,7 @@ class Sock:
                 "rows": trows,
             }
         else:
-            steps.append("Your leg and ankle are the same width, so the leg is " "knit straight with no decreases.")
+            steps.append("Your leg and ankle are the same width, so the leg is knit straight with no decreases.")
         return {
             "heading": "2. The leg (cuff to heel)",
             "intro": None,
@@ -722,7 +720,7 @@ class Sock:
             "sole stitches.",
         ]
         if after_pickup - ankle <= 0:
-            steps.append("The picked-up stitches equal the ankle count, so you can " "start the foot section directly.")
+            steps.append("The picked-up stitches equal the ankle count, so you can start the foot section directly.")
         else:
             steps.append(
                 "Gusset decrease round: from the start-of-round marker, knit "
@@ -771,7 +769,7 @@ class Sock:
     def _plan_foot(self, foot_rounds, ankle):
         steps = []
         if foot_rounds <= 0:
-            steps.append("There is no plain foot section to knit - start the toe " "immediately after the gusset.")
+            steps.append("There is no plain foot section to knit - start the toe immediately after the gusset.")
         else:
             steps.append(
                 f"Knit straight in the round (every round knit) for "
@@ -828,7 +826,7 @@ class Sock:
             "intro": None,
             "steps": [
                 "Weave in all loose ends on the inside of the sock.",
-                "Wash and block the sock - this evens out the stitches and " "makes it look much neater.",
+                "Wash and block the sock - this evens out the stitches and makes it look much neater.",
                 "Knit a second sock exactly the same way (yes, store-bought "
                 "socks do not come in pairs - but yours should).",
             ],
