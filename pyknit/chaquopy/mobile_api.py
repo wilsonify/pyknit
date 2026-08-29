@@ -80,14 +80,12 @@ def _summary(name, result):
             "cast_on": result["cast_on_stitches"],
             "rows": rounds,
             "message": (
-                f"Cast on {result['cast_on_stitches']} sts · " f"{result['ankle_stitches']} ankle sts · {rounds} rounds"
+                f"Cast on {result['cast_on_stitches']} sts · {result['ankle_stitches']} ankle sts · {rounds} rounds"
             ),
         }
     return {
         "title": "Yarn & Time Estimator",
-        "message": (
-            f"{result['project_stitches']:,} stitches · " f"{result['yards']:.0f} yd · {result['grams']:.0f} g"
-        ),
+        "message": (f"{result['project_stitches']:,} stitches · {result['yards']:.0f} yd · {result['grams']:.0f} g"),
         "yards": result["yards"],
         "grams": result["grams"],
     }
