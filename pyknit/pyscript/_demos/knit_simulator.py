@@ -59,7 +59,6 @@ _OP_NAMES = {
 def compute(inputs):
     sock_plan = inputs.get("sock_plan")
     if sock_plan is not None:
-        # A present-but-invalid plan must raise, never silently fall back.
         return _compute_from_sock(sock_plan, inputs)
 
     raw = inputs.get("instructions", "")
@@ -68,8 +67,7 @@ def compute(inputs):
         raise ValueError("No valid instructions. Use: co, k, p, yo, k2tog, ssk, bo")
 
     warnings = _validate(raw)
-
-    stitches = []  # stitch ids currently on the needle
+    stitches = []
     steps = []
     row_no = 0
     cast_on = 0
@@ -78,59 +76,88 @@ def compute(inputs):
         first_name, first_count = row["ops"][0]
         if first_name == "co":
             n = int(first_count)
-            if not cast_on:  # the FIRST cast-on is the garment's cast-on
+            if not cast_on:
                 cast_on = n
             stitches = list(range(1, n + 1))
-            steps.append(
-                {
-                    "op": f"cast on {n}",
-                    "kind": "cast_on",
-                    "row": 0,
-                    "before": 0,
-                    "n": n,
-                    "worked": 0,
-                    "stitches": list(stitches),
-                    "row_ops": [],
-                    "increases": 0,
-                    "decreases": 0,
-                    "progress": 0.0,
-                }
-            )
+            steps.append(_make_cast_on_step(n, stitches))
             continue
 
         row_no += 1
         width = len(stitches)
-        if not row["repeat"]:
-            wanted = sum(width if count == "all" else max(int(count), 0) for _, count in row["ops"])
-            if wanted > width:
-                warnings.append(
-                    "Row %d (%s) tries to work %d stitches but only %d are on "
-                    "the needle; the extra stitches were left unworked." % (row_no, row["line"].strip(), wanted, width)
-                )
+        _check_row_width(row_no, row, width, warnings)
         expanded = _expand(row["ops"], width, row["repeat"])
         new_stitches, row_ops, increases, decreases = _apply_row(expanded, stitches)
         stitches = new_stitches
-
-        steps.append(
-            {
-                "op": _row_label(expanded, row["repeat"], width),
-                "kind": "bind_off" if 4 in row_ops else "row",
-                "row": row_no,
-                "before": width,
-                "n": len(stitches),
-                "worked": len(expanded),
-                "stitches": list(stitches),
-                "row_ops": row_ops,
-                "increases": increases,
-                "decreases": decreases,
-                "progress": 0.0,
-            }
-        )
+        steps.append(_make_row_step(row_no, width, stitches, expanded, row, row_ops, increases, decreases))
 
     total = len(steps)
     row_steps = max(total - 1, 1)
     for i, step in enumerate(steps):
         step["progress"] = round(i / row_steps, 4) if total > 1 else 0.0
+
+    speed = inputs.get("speed", "normal")
+    speed_ms = SPEED_PRESETS.get(speed, 400)
+
+    result = {
+        "steps": steps,
+        "total_steps": total,
+        "total_rows": row_no,
+        "cast_on": cast_on,
+        "final_stitches": list(stitches),
+        "speed_ms": speed_ms,
+        "warnings": warnings,
+        "garment": "sweater",
+        "sock_summary": None,
+        "pattern": [r["line"] for r in rows],
+    }
+
+    plan = inputs.get("plan")
+    if plan is not None:
+        _attach_plan(result, plan)
+    return result
+
+
+def _make_cast_on_step(n: int, stitches: list) -> dict:
+    return {
+        "op": f"cast on {n}",
+        "kind": "cast_on",
+        "row": 0,
+        "before": 0,
+        "n": n,
+        "worked": 0,
+        "stitches": list(stitches),
+        "row_ops": [],
+        "increases": 0,
+        "decreases": 0,
+        "progress": 0.0,
+    }
+
+
+def _check_row_width(row_no: int, row: dict, width: int, warnings: list) -> None:
+    if not row["repeat"]:
+        wanted = sum(width if count == "all" else max(int(count), 0) for _, count in row["ops"])
+        if wanted > width:
+            warnings.append(
+                f"Row {row_no} ({row['line'].strip()}) tries to work {wanted} "
+                f"stitches but only {width} are on the needle; the extra "
+                "stitches were left unworked."
+            )
+
+
+def _make_row_step(row_no, width, stitches, expanded, row, row_ops, increases, decreases):
+    return {
+        "op": _row_label(expanded, row["repeat"], width),
+        "kind": "bind_off" if 4 in row_ops else "row",
+        "row": row_no,
+        "before": width,
+        "n": len(stitches),
+        "worked": len(expanded),
+        "stitches": list(stitches),
+        "row_ops": row_ops,
+        "increases": increases,
+        "decreases": decreases,
+        "progress": 0.0,
+    }
 
     speed = inputs.get("speed", "normal")
     speed_ms = SPEED_PRESETS.get(speed, 400)
@@ -348,46 +375,54 @@ def _parse(raw):
         if not tokens:
             continue
 
-        repeat = False
-        if tokens[0] == "*":
-            repeat = True
-            tokens = tokens[1:]
-        if tokens and tokens[-1] in ("across", "rep", "repeat"):
-            repeat = True
-            tokens = tokens[:-1]
-        if not tokens:
-            continue
-
-        ops = []
-        i = 0
-        while i < len(tokens):
-            tok = tokens[i]
-            name = _op_name(tok)
-            canonical = _OP_NAMES.get(name)
-            if canonical is None:
-                i += 1
-                continue
-
-            count = _trailing_count(tok, name)
-            j = i + 1
-            if count is None:
-                # support "cast on 10", "bind off 5", "k all", "k 10"
-                if canonical in ("co", "bo") and j < len(tokens) and tokens[j] in ("on", "off"):
-                    j += 1
-                if j < len(tokens) and tokens[j] == "all":
-                    count = "all"
-                    j += 1
-                elif j < len(tokens) and tokens[j].isdigit():
-                    count = int(tokens[j])
-                    j += 1
-                else:
-                    count = 1
-            i = j
-            ops.append((canonical, count))
-
+        repeat, tokens = _extract_repeat_flag(tokens)
+        ops = _parse_tokens(tokens)
         if ops:
             rows.append({"ops": ops, "repeat": repeat, "line": line})
     return rows
+
+
+def _extract_repeat_flag(tokens):
+    """Strip repeat markers from tokens and return (repeat, cleaned_tokens)."""
+    repeat = False
+    if tokens[0] == "*":
+        repeat = True
+        tokens = tokens[1:]
+    if tokens and tokens[-1] in ("across", "rep", "repeat"):
+        repeat = True
+        tokens = tokens[:-1]
+    return repeat, tokens
+
+
+def _parse_tokens(tokens):
+    """Parse a list of tokens into operation (name, count) pairs."""
+    ops = []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        name = _op_name(tok)
+        canonical = _OP_NAMES.get(name)
+        if canonical is None:
+            i += 1
+            continue
+        count, j = _resolve_count(tok, name, canonical, tokens, i + 1)
+        i = j
+        ops.append((canonical, count))
+    return ops
+
+
+def _resolve_count(tok, name, canonical, tokens, j):
+    """Resolve the count for a token, handling trailing digits and keywords."""
+    count = _trailing_count(tok, name)
+    if count is not None:
+        return count, j
+    if canonical in ("co", "bo") and j < len(tokens) and tokens[j] in ("on", "off"):
+        j += 1
+    if j < len(tokens) and tokens[j] == "all":
+        return "all", j + 1
+    if j < len(tokens) and tokens[j].isdigit():
+        return int(tokens[j]), j + 1
+    return 1, j
 
 
 def _expand(ops, width, repeat):
