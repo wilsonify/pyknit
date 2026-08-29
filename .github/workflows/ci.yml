@@ -130,7 +130,7 @@ jobs:
 
   # ── Stage 4: clean Python package build ──────────────────────────────
   python-build:
-    needs: [version, lint]
+    needs: [version, lint, unit-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
