@@ -1276,8 +1276,6 @@ def _raglan_growth_svg(
     sleeve_final,
     inc_rounds,
     freq,
-    seg,
-    inc,
 ):
     "Line chart showing how each raglan section grows from neck to underarm." ""
     vw = 420
