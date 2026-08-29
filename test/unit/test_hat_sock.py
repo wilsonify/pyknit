@@ -35,7 +35,8 @@ def test_hat_crown_remainder_distributes_extra_decreases():
 
 
 def test_hat_crown_remainder_deterministic():
-    assert Hat().crown_decreases(8, 26) == Hat().crown_decreases(8, 26)
+    result = Hat().crown_decreases(8, 26)
+    assert result == Hat().crown_decreases(8, 26)
 
 
 def test_hat_crown_invalid_params_still_returns_string():
