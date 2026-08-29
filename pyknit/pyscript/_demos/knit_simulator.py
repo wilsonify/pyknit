@@ -250,50 +250,64 @@ def _compute_from_sock(plan, inputs):
     calculator's.  Missing or invalid data raises a clear error instead of
     silently falling back to something incorrect.
     """
+    _raise_unless_sock_source(plan)
+    rounds = plan.get("rounds")
+    if not isinstance(rounds, list) or not rounds:
+        raise ValueError("The Sock Calculator pattern is empty. Re-run the Sock Calculator.")
+    _raise_unless_cast_on_consistent(plan, rounds)
+    steps = [_build_sock_step(i, rnd) for i, rnd in enumerate(rounds)]
+    return _build_sock_result(plan, steps, inputs)
+
+
+def _raise_unless_sock_source(plan):
     if not isinstance(plan, dict) or plan.get("source") != "sock_calculator":
         raise ValueError(
             "The Sock Calculator data is missing or invalid. Open the Sock "
             "Calculator, run it, and click 'Simulate sock' again."
         )
-    rounds = plan.get("rounds")
-    if not isinstance(rounds, list) or not rounds:
-        raise ValueError("The Sock Calculator pattern is empty. Re-run the Sock Calculator.")
+
+
+def _raise_unless_cast_on_consistent(plan, rounds):
     cast = plan.get("cast_on_stitches")
     try:
-        cast_ok = cast is not None and int(rounds[0]["after"]) == int(cast)
+        ok = cast is not None and int(rounds[0]["after"]) == int(cast)
     except (KeyError, TypeError, ValueError):
-        cast_ok = False
-    if not cast_ok:
+        ok = False
+    if not ok:
         raise ValueError(
-            "The Sock Calculator cast-on count is inconsistent with its " "pattern. Re-run the Sock Calculator."
+            "The Sock Calculator cast-on count is inconsistent with its "
+            "pattern. Re-run the Sock Calculator."
         )
 
-    steps = []
-    for i, rnd in enumerate(rounds):
-        try:
-            before = int(rnd.get("before", rnd["after"]))
-            after = int(rnd["after"])
-        except (KeyError, TypeError, ValueError):
-            raise ValueError("The Sock Calculator pattern contains an invalid round. " "Re-run the Sock Calculator.")
-        removed = after - before
-        kind = str(rnd.get("kind") or "row")
-        steps.append(
-            {
-                "op": str(rnd.get("label") or "row"),
-                "kind": "cast_on" if kind == "cast_on" else "row",
-                "row": i,
-                "before": before,
-                "n": after,
-                "worked": max(0, removed),
-                "stitches": list(range(1, after + 1)),
-                "row_ops": [],
-                "texture": str(rnd.get("texture") or "stockinette"),
-                "increases": max(0, removed),
-                "decreases": max(0, -removed),
-                "progress": 0.0,
-            }
-        )
 
+def _build_sock_step(i, rnd):
+    try:
+        before = int(rnd.get("before", rnd["after"]))
+        after = int(rnd["after"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError(
+            "The Sock Calculator pattern contains an invalid round. "
+            "Re-run the Sock Calculator."
+        )
+    removed = after - before
+    kind = str(rnd.get("kind") or "row")
+    return {
+        "op": str(rnd.get("label") or "row"),
+        "kind": "cast_on" if kind == "cast_on" else "row",
+        "row": i,
+        "before": before,
+        "n": after,
+        "worked": max(0, removed),
+        "stitches": list(range(1, after + 1)),
+        "row_ops": [],
+        "texture": str(rnd.get("texture") or "stockinette"),
+        "increases": max(0, removed),
+        "decreases": max(0, -removed),
+        "progress": 0.0,
+    }
+
+
+def _build_sock_result(plan, steps, inputs):
     total = len(steps)
     row_steps = max(total - 1, 1)
     for i, step in enumerate(steps):
@@ -301,6 +315,7 @@ def _compute_from_sock(plan, inputs):
 
     speed = inputs.get("speed", "normal")
     speed_ms = SPEED_PRESETS.get(speed, 400)
+    cast = plan.get("cast_on_stitches")
 
     return {
         "steps": steps,
@@ -407,15 +422,23 @@ def _expand(ops, width, repeat):
     """Expand row ops into a flat list of unit operations, clamped to the
     current stitch count.  ``across``/``*`` rows tile their sequence until
     the row is full; plain rows work exactly the stitches they name."""
+    flat = _flatten_ops(ops, width)
+    if not flat or width <= 0:
+        return []
+    return _consume_into(flat, width, repeat)
+
+
+def _flatten_ops(ops, width):
     flat = []
     for name, count in ops:
         if count == "all":
             count = width
         for _ in range(max(int(count), 0)):
             flat.append(name)
-    if not flat or width <= 0:
-        return []
+    return flat
 
+
+def _consume_into(flat, width, repeat):
     out = []
     pos = 0
     if repeat:
@@ -455,59 +478,91 @@ def _apply_row(expanded, stitches):
     for name in expanded:
         op = _OPS[name]
         if op["consume"] == 0:
-            # increase (yo): adds a new stitch before the current position
-            new_stitches.append(next_id)
-            next_id += 1
-            if pos < len(row_ops):
-                row_ops[pos] = 2
+            next_id = _append_increase(pos, row_ops, new_stitches, next_id)
             increases += 1
             continue
         if pos + op["consume"] > len(stitches):
             break
         chunk = stitches[pos : pos + op["consume"]]
         pos += op["consume"]
-        if op["produce"] == 1:
-            # a decrease merges the consumed stitches into one
-            new_stitches.append(chunk[-1] if name in ("k2tog", "ssk") else chunk[0])
-        for j in range(op["consume"]):
-            row_ops[pos - op["consume"] + j] = op["code"]
-        if name in ("k2tog", "ssk"):
+        if _append_consumed(op, name, chunk, pos, row_ops, new_stitches):
             decreases += 1
-    # stitches that were never worked stay on the needle
     new_stitches.extend(stitches[pos:])
     return new_stitches, row_ops, increases, decreases
+
+
+def _append_increase(pos, row_ops, new_stitches, next_id):
+    """Apply a zero-consume increase (yo): insert a fresh stitch."""
+    new_stitches.append(next_id)
+    if pos < len(row_ops):
+        row_ops[pos] = 2
+    return next_id + 1
+
+
+def _append_consumed(op, name, chunk, pos, row_ops, new_stitches):
+    """Apply an op that consumes stitches (knit/purl/k2tog/ssk/bo).
+
+    Returns True when the op is a decrease (k2tog/ssk)."""
+    if op["produce"] == 1:
+        merged = chunk[-1] if name in ("k2tog", "ssk") else chunk[0]
+        new_stitches.append(merged)
+    offset = pos - op["consume"]
+    for j in range(op["consume"]):
+        row_ops[offset + j] = op["code"]
+    return name in ("k2tog", "ssk")
 
 
 def _row_label(expanded, repeat, width):
     """Human label for a worked row, e.g. 'k2 p2 k2 p2 k2 across'."""
     if not expanded:
         return "no stitches worked"
-    n = len(expanded)
+    if _is_uniform_bind_off(expanded):
+        return f"bind off {len(expanded)}"
+    if _is_uniform_full_row(expanded, repeat, width):
+        return _uniform_friendly_label(expanded)
+    label = _group_label(expanded)
+    if repeat:
+        label += " across"
+    return label
+
+
+def _is_uniform_bind_off(expanded):
+    return all(name == expanded[0] for name in expanded) and expanded[0] == "bo"
+
+
+def _is_uniform_full_row(expanded, repeat, width):
     uniform = all(name == expanded[0] for name in expanded)
-    if uniform and expanded[0] == "bo":
-        return f"bind off {n}"
-    if uniform and not repeat and n == width:
-        friendly = {"knit": "knit all", "purl": "purl all"}
-        if expanded[0] in friendly:
-            return friendly[expanded[0]]
+    if not (uniform and not repeat and len(expanded) == width):
+        return False
+    return expanded[0] in ("knit", "purl")
+
+
+def _uniform_friendly_label(expanded):
+    friendly = {"knit": "knit all", "purl": "purl all"}
+    return friendly[expanded[0]]
+
+
+def _group_label(expanded):
     parts = []
     cur = expanded[0]
     cnt = 0
     for name in expanded + [None]:
         if name == cur:
             cnt += 1
-        else:
-            short = _OPS[cur]["short"]
-            if len(short) == 1:
-                parts.append(short if cnt == 1 else f"{short}{cnt}")
-            else:
-                parts.extend([short] * cnt)
-            cur = name
-            cnt = 1
-    label = " ".join(parts)
-    if repeat:
-        label += " across"
-    return label
+            continue
+        parts = _emit_group(parts, cur, cnt)
+        cur = name
+        cnt = 1
+    return " ".join(parts)
+
+
+def _emit_group(parts, cur, cnt):
+    short = _OPS[cur]["short"]
+    if len(short) == 1:
+        parts.append(short if cnt == 1 else f"{short}{cnt}")
+    else:
+        parts.extend([short] * cnt)
+    return parts
 
 
 def _validate(raw):

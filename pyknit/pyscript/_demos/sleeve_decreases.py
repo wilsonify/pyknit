@@ -274,65 +274,72 @@ def _layout_schedule(plan, mode):
     return schedule
 
 
+def _make_plan_entry(idx, kind, before, after, instruction):
+    """Assemble a single plan row dictionary."""
+    return {
+        "round": idx + 1,
+        "kind": kind,
+        "before": before,
+        "after": after,
+        "transition": f"{before} -> {after}",
+        "instruction": instruction,
+    }
+
+
+def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decrease):
+    """Stitches removed after a given decrease row."""
+    target = min(
+        (dec_index + 1) * per_row,
+        total_decrease - (remainder if dec_index < num_dec - 1 else 0),
+    )
+    if dec_index == num_dec - 1 and remainder > 0:
+        target = total_decrease
+    return target
+
+
+def _decrease_instruction(per_row, remainder, dec_index, num_dec, ending):
+    """Build the human-readable instruction for a decrease row."""
+    if remainder and dec_index == num_dec - 1:
+        return (
+            f"k2tog at each side ({per_row} sts) plus {remainder} extra "
+            f"k2tog to reach {ending} sts"
+        )
+    if remainder == 0 or dec_index < num_dec - 1:
+        return f"k2tog at each side of underarm marker ({per_row} sts removed)"
+    if remainder:
+        return (
+            f"k2tog at each side plus {remainder} extra k2tog "
+            f"({per_row + remainder} sts removed)"
+        )
+    return f"k2tog at each side of underarm marker ({per_row} sts removed)"
+
+
 def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
     """Build the full row-by-row plan with exactly *rows* entries."""
     dec_set = set(schedule)
+    sorted_dec = sorted(dec_set)
+    num_dec = len(schedule)
     plan = []
     current = starting
     total_decrease = starting - ending
-    # how many decreases have been worked so far
-    decreases_worked = 0
     for idx in range(rows):
         before = current
-        if idx in dec_set:
-            # this row is a decrease row
-            # number of decrease rows already completed including this one
-            dec_index = sorted(dec_set).index(idx)  # 0-indexed among dec rows
-            # stitches to have removed after this row: (dec_index+1)*per_row,
-            # but on the very last decrease row add remainder if any
-            target_removed = min(
-                (dec_index + 1) * per_row,
-                total_decrease - (remainder if dec_index < len(dec_set) - 1 else 0),
-            )
-            # if this is the last decrease row, include remainder
-            if dec_index == len(schedule) - 1 and remainder > 0:
-                target_removed = total_decrease
-            after = starting - target_removed
-            # ensure monotonic and ends at ending
-            if after < ending:
-                after = ending
-            instruction = (
-                f"k2tog at each side of underarm marker ({per_row} sts removed)"
-                if remainder == 0 or dec_index < len(schedule) - 1
-                else (
-                    f"k2tog at each side plus {remainder} extra k2tog ({per_row + remainder} sts removed)"
-                    if remainder
-                    else f"k2tog at each side of underarm marker ({per_row} sts removed)"
-                )
-            )
-            # special instruction for remainder case on last row
-            if remainder and dec_index == len(schedule) - 1:
-                instruction = f"k2tog at each side ({per_row} sts) plus {remainder} extra k2tog to reach {ending} sts"
-            decreases_worked += 1
-            kind = "Decrease"
-        else:
-            after = current
-            instruction = "Knit plain (no shaping)"
-            kind = "Plain"
-        plan.append(
-            {
-                "round": idx + 1,
-                "kind": kind,
-                "before": before,
-                "after": after,
-                "transition": f"{before} -> {after}",
-                "instruction": instruction,
-            }
+        if idx not in dec_set:
+            plan.append(_make_plan_entry(idx, "Plain", before, current, "Knit plain (no shaping)"))
+            current = before
+            continue
+        dec_index = sorted_dec.index(idx)
+        target_removed = _decrease_target_removed(
+            dec_index, num_dec, per_row, remainder, total_decrease
         )
+        after = starting - target_removed
+        if after < ending:
+            after = ending
+        instruction = _decrease_instruction(per_row, remainder, dec_index, num_dec, ending)
+        plan.append(_make_plan_entry(idx, "Decrease", before, after, instruction))
         current = after
     # sanity: ensure final count matches ending
     if plan and plan[-1]["after"] != ending:
-        # adjust last entry (should not happen with correct math)
         plan[-1]["after"] = ending
         plan[-1]["transition"] = f"{plan[-1]['before']} -> {ending}"
     return plan

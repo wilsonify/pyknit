@@ -349,56 +349,74 @@ def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
 
 
 def to_html(result):
-    parts = []
+    parts = [
+        _html_best_fiber(result),
+        _html_recommendations(result),
+        _html_warnings(result),
+        _html_assumptions(result),
+        "<p class='field-hint'>This tool gives recommendations, not rules. "
+        "Every yarn and knitter is different — swatch to confirm.</p>",
+    ]
+    return "\n".join(p for p in parts if p)
 
-    if result["best_fiber"]:
-        parts.append(
-            f"<div class='stat-row'>"
-            f"<span class='stat-pill'>Best match: <em>{_esc(result['best_fiber_label'])}</em></span>"
-            f"<span class='stat-pill'>Yarn weight: <em>{_esc(result['yarn_weight_label'])}</em></span>"
-            f"<span class='stat-pill'>Confidence: <em>{result['best_confidence']}</em></span>"
-            f"</div>"
+
+def _html_best_fiber(result):
+    if not result["best_fiber"]:
+        return ""
+    return (
+        f"<div class='stat-row'>"
+        f"<span class='stat-pill'>Best match: <em>{_esc(result['best_fiber_label'])}</em></span>"
+        f"<span class='stat-pill'>Yarn weight: <em>{_esc(result['yarn_weight_label'])}</em></span>"
+        f"<span class='stat-pill'>Confidence: <em>{result['best_confidence']}</em></span>"
+        f"</div>"
+    )
+
+
+def _html_recommendations(result):
+    if not result.get("recommendations"):
+        return ""
+    parts = ["<h3>Recommendations</h3>"]
+    for i, rec in enumerate(result["recommendations"]):
+        parts.append(_html_recommendation(rec, i))
+    return "\n".join(parts)
+
+
+def _html_recommendation(rec, i):
+    rank = "Best" if i == 0 else f"Alternative {i}"
+    reasons_html = (
+        "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
+    )
+    tradeoffs_html = "".join(f"<li>{_esc(t)}</li>" for t in rec["tradeoffs"]) if rec["tradeoffs"] else ""
+    section = (
+        f"<div class='plan-section'>"
+        f"<h4>{rank}: {_esc(rec['label'])} "
+        f"<span class='stat-pill' style='font-size:0.75rem'>{rec['score']:.0f}/100</span></h4>"
+        f"<p style='font-size:0.88rem;color:#555'>Why this fiber:</p>"
+        f"<ul style='padding-left:1.3rem;font-size:0.9rem'>{reasons_html}</ul>"
+    )
+    if tradeoffs_html:
+        section += (
+            f"<p style='font-size:0.88rem;color:#555;margin-top:0.5rem'>Tradeoffs:</p>"
+            f"<ul style='padding-left:1.3rem;font-size:0.9rem;color:#666'>{tradeoffs_html}</ul>"
         )
+    section += "</div>"
+    return section
 
-    if result.get("recommendations"):
-        parts.append("<h3>Recommendations</h3>")
-        for i, rec in enumerate(result["recommendations"]):
-            rank = "Best" if i == 0 else f"Alternative {i}"
-            reasons_html = (
-                "".join(f"<li>{_esc(r)}</li>" for r in rec["reasons"]) if rec["reasons"] else "<li>general fit</li>"
-            )
-            tradeoffs_html = "".join(f"<li>{_esc(t)}</li>" for t in rec["tradeoffs"]) if rec["tradeoffs"] else ""
-            parts.append(
-                f"<div class='plan-section'>"
-                f"<h4>{rank}: {_esc(rec['label'])} "
-                f"<span class='stat-pill' style='font-size:0.75rem'>{rec['score']:.0f}/100</span></h4>"
-                f"<p style='font-size:0.88rem;color:#555'>Why this fiber:</p>"
-                f"<ul style='padding-left:1.3rem;font-size:0.9rem'>{reasons_html}</ul>"
-            )
-            if tradeoffs_html:
-                parts.append(
-                    f"<p style='font-size:0.88rem;color:#555;margin-top:0.5rem'>Tradeoffs:</p>"
-                    f"<ul style='padding-left:1.3rem;font-size:0.9rem;color:#666'>{tradeoffs_html}</ul>"
-                )
-            parts.append("</div>")
 
-    if result.get("warnings"):
-        items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
-        parts.append("<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>")
+def _html_warnings(result):
+    if not result.get("warnings"):
+        return ""
+    items = "".join(f"<li>{_esc(w)}</li>" for w in result["warnings"])
+    return "<div class='warning-box'><strong>Worth a second look</strong>" f"<ul>{items}</ul></div>"
 
-    parts.append("<div class='output-box'>")
-    parts.append("<h3>Assumptions</h3>")
-    parts.append("<ul style='padding-left:1.3rem'>")
+
+def _html_assumptions(result):
+    parts = ["<div class='output-box'>", "<h3>Assumptions</h3>", "<ul style='padding-left:1.3rem'>"]
     for a in result.get("assumptions", []):
         parts.append(f"<li>{_esc(a)}</li>")
     parts.append("</ul></div>")
-
-    parts.append(
-        "<p class='field-hint'>This tool gives recommendations, not rules. "
-        "Every yarn and knitter is different — swatch to confirm.</p>"
-    )
-
     return "\n".join(parts)
+
 
 
 def _esc(text):
