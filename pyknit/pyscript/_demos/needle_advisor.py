@@ -226,7 +226,7 @@ def compute(inputs):
             )
 
     if construction_key == "small_circumference":
-        warnings.append("For socks and small items, use DPNs or magic loop. " "Fixed circulars may be too long.")
+        warnings.append("For socks and small items, use DPNs or magic loop. Fixed circulars may be too long.")
 
     cable_length = _recommend_cable_length(construction_key, project_key)
 
