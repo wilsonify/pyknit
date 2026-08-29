@@ -63,6 +63,7 @@ symbol_dir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "symbols",
 )
+japanese_symbol_dir = os.path.join(symbol_dir, "japanese")
 
 stitch_legend = {  # Default legend. Incomplete for now.
     "k": Stitch(
@@ -296,25 +297,25 @@ stitch_legend = {  # Default legend. Incomplete for now.
 stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of available symbols provided.
     "NA": Stitch(
         instruction="no stitch",
-        symbol=os.path.join(symbol_dir, "japanese", "no-stitch.png"),
+        symbol=os.path.join(japanese_symbol_dir, "no-stitch.png"),
         width=1,
         category="other",
     ),
     "k": Stitch(
         instruction="knit",
-        symbol=os.path.join(symbol_dir, "japanese", "box.png"),
+        symbol=os.path.join(japanese_symbol_dir, "box.png"),
         width=1,
         category="knit",
     ),
     "ktbl": Stitch(
         instruction="knit through the back loop",
-        symbol=os.path.join(symbol_dir, "japanese", "ktbl.png"),
+        symbol=os.path.join(japanese_symbol_dir, "ktbl.png"),
         width=1,
         category="knit",
     ),
     "k2tog": Stitch(
         instruction="knit two together",
-        symbol=os.path.join(symbol_dir, "japanese", "k2tog.png"),
+        symbol=os.path.join(japanese_symbol_dir, "k2tog.png"),
         width=1,
         category="decrease",
         direction="right",
@@ -323,7 +324,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "k3tog": Stitch(
         instruction="knit three together",
-        symbol=os.path.join(symbol_dir, "japanese", "k3tog.png"),
+        symbol=os.path.join(japanese_symbol_dir, "k3tog.png"),
         width=1,
         category="decrease",
         direction="right",
@@ -332,7 +333,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "k4tog": Stitch(
         instruction="knit four together",
-        symbol=os.path.join(symbol_dir, "japanese", "k4tog.png"),
+        symbol=os.path.join(japanese_symbol_dir, "k4tog.png"),
         width=1,
         category="decrease",
         direction="right",
@@ -341,7 +342,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "yo": Stitch(
         instruction="yarn over",
-        symbol=os.path.join(symbol_dir, "japanese", "yarn_over.png"),
+        symbol=os.path.join(japanese_symbol_dir, "yarn_over.png"),
         width=1,
         category="yarn-over",
         consumes=0,
@@ -349,19 +350,19 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "p": Stitch(
         instruction="purl",
-        symbol=os.path.join(symbol_dir, "japanese", "purl.png"),
+        symbol=os.path.join(japanese_symbol_dir, "purl.png"),
         width=1,
         category="purl",
     ),
     "ptbl": Stitch(
         instruction="purl through the back loop",
-        symbol=os.path.join(symbol_dir, "japanese", "ptbl.png"),
+        symbol=os.path.join(japanese_symbol_dir, "ptbl.png"),
         width=1,
         category="purl",
     ),
     "p2tog": Stitch(
         instruction="purl two together",
-        symbol=os.path.join(symbol_dir, "japanese", "p2tog.png"),
+        symbol=os.path.join(japanese_symbol_dir, "p2tog.png"),
         width=1,
         category="decrease",
         direction="right",
@@ -370,7 +371,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "ssk": Stitch(
         instruction="[slip 1 kwise] twice, return both back to LN, k2togtbl",
-        symbol=os.path.join(symbol_dir, "japanese", "ssk.png"),
+        symbol=os.path.join(japanese_symbol_dir, "ssk.png"),
         width=1,  # left leaning decrease
         category="decrease",
         direction="left",
@@ -379,7 +380,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "skp": Stitch(
         instruction="slip knit pass over (same as ssk)",
-        symbol=os.path.join(symbol_dir, "japanese", "ssk.png"),
+        symbol=os.path.join(japanese_symbol_dir, "ssk.png"),
         width=1,  # left leaning decrease
         category="decrease",
         direction="left",
@@ -388,7 +389,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "ssp": Stitch(
         instruction="[slip 1 kwise] twice, slip 2 stitches back to LN, then p2togtbl",
-        symbol=os.path.join(symbol_dir, "japanese", "ssp.png"),
+        symbol=os.path.join(japanese_symbol_dir, "ssp.png"),
         width=1,
         category="decrease",
         direction="left",
@@ -397,7 +398,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "sk2togp": Stitch(
         instruction="slip 1 kwise, k2tog, psso",
-        symbol=os.path.join(symbol_dir, "japanese", "sk2togp.png"),
+        symbol=os.path.join(japanese_symbol_dir, "sk2togp.png"),
         width=1,
         category="decrease",
         direction="left",
@@ -406,7 +407,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "sl2kp2": Stitch(
         instruction="sl 2 sts together kwise, k1, psso",
-        symbol=os.path.join(symbol_dir, "japanese", "sl2kp2.png"),
+        symbol=os.path.join(japanese_symbol_dir, "sl2kp2.png"),
         width=1,
         category="decrease",
         direction="left",
@@ -415,7 +416,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "s3kp3": Stitch(
         instruction="[slip 1 kwise] 3 times, k1, psso",
-        symbol=os.path.join(symbol_dir, "japanese", "sl3kp3.png"),
+        symbol=os.path.join(japanese_symbol_dir, "sl3kp3.png"),
         width=1,
         category="decrease",
         direction="left",
@@ -424,7 +425,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "C1-1L": Stitch(
         instruction=("With RN, go behind first st and k second st without removing; " "k first st, slip both off LN"),
-        symbol=os.path.join(symbol_dir, "japanese", "C1-1L.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C1-1L.png"),
         width=2,
         category="cable",
         direction="left",
@@ -435,7 +436,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
         instruction=(
             "with RN, go in front of first st and k second st without " "removing; k first st, slip both off LN"
         ),
-        symbol=os.path.join(symbol_dir, "japanese", "C1-1R.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C1-1R.png"),
         width=2,
         category="cable",
         direction="right",
@@ -444,7 +445,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "C1-1PL": Stitch(
         instruction=("With RN, go behind first st and p second st without removing; " "k first st, slip both off LN"),
-        symbol=os.path.join(symbol_dir, "japanese", "C1-1PL.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C1-1PL.png"),
         width=2,
         category="cable",
         direction="left",
@@ -455,7 +456,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
         instruction=(
             "With RN, go in front of first st and k second st without " "removing, p first st, slip both off LN"
         ),
-        symbol=os.path.join(symbol_dir, "japanese", "C1-1PR.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C1-1PR.png"),
         width=2,
         category="cable",
         direction="right",
@@ -464,7 +465,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "C4L": Stitch(
         instruction="Place 1 st on CN, hold to front, k3; k1 from CN",
-        symbol=os.path.join(symbol_dir, "japanese", "C4L.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C4L.png"),
         width=4,
         category="cable",
         direction="left",
@@ -473,7 +474,7 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
     ),
     "C4R": Stitch(
         instruction="Place 3 sts on CN, hold to back, k1; k3 from CN",
-        symbol=os.path.join(symbol_dir, "japanese", "C4R.png"),
+        symbol=os.path.join(japanese_symbol_dir, "C4R.png"),
         width=4,
         category="cable",
         direction="right",
