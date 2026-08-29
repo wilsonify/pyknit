@@ -385,10 +385,18 @@ def compute(inputs):
     except ValueError as exc:
         raise ValueError("The measurements produce a raglan that cannot be distributed evenly. " + str(exc))
 
-    match_marker = re.search(r"Marker setup:\s*(.*)", raglan)
-    marker = match_marker.group(1).strip() if match_marker else ""
-    match_incrow = re.search(r"Increase row:\s*([^M]*)Marker setup:", raglan)
-    inc_row_str = match_incrow.group(1).strip() if match_incrow else ""
+    # Use str methods instead of regex to avoid super-linear backtracking.
+    marker = ""
+    ms_pos = raglan.find("Marker setup:")
+    if ms_pos != -1:
+        after = raglan[ms_pos + len("Marker setup:"):]
+        marker = after.split("\n", 1)[0].strip()
+
+    inc_row_str = ""
+    ir_start = raglan.find("Increase row:")
+    if ir_start != -1 and ms_pos != -1:
+        between = raglan[ir_start + len("Increase row:"):ms_pos]
+        inc_row_str = between.strip()
 
     raglan_total_rounds = inc_rounds if freq == "every_round" else 2 * inc_rounds
     depth_in = raglan_total_rounds / rg
