@@ -93,7 +93,7 @@ def _sim_pattern(sock):
         add("heel_slip", "heel flap · slip 1, k1", flap, flap, 0, "heel")
 
     current = _add_heel_turn(add, flap, heel_rem)
-    current = _add_gusset(add, sock, current, heel_rem, after_pickup)
+    current = _add_gusset(add, sock, heel_rem, after_pickup)
     _add_foot(add, sock, ankle)
     _add_toe(add, toe, ankle)
 
@@ -108,7 +108,7 @@ def _add_heel_turn(add, flap, heel_rem):
     return current
 
 
-def _add_gusset(add, sock, heel_turn_current, heel_rem, after_pickup):
+def _add_gusset(add, sock, heel_rem, after_pickup):
     add("gusset", "gusset · pick up stitches", heel_rem, after_pickup, heel_rem - after_pickup, "gusset")
     current = after_pickup
     gusset_first, gusset_rest = sock.gusset_decrease_rounds()

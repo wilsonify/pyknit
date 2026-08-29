@@ -203,9 +203,9 @@ def compute(inputs):
     fiber_pref = FIBER_TYPES[fiber_key]
     use_case = USE_CASES[use_key]
 
-    recommendations = _score_fibers(project, drape, warmth_pref, fiber_pref, use_case)
+    recommendations = _score_fibers(drape, warmth_pref, fiber_pref, use_case)
 
-    warnings = _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref)
+    warnings = _check_conflicts(project, gauge, drape, warmth_pref)
 
     best = recommendations[0] if recommendations else None
     alternatives = recommendations[1:4] if len(recommendations) > 1 else []
@@ -250,7 +250,7 @@ def compute(inputs):
     }
 
 
-def _score_fibers(project, drape, warmth_pref, fiber_pref, use_case):
+def _score_fibers(drape, warmth_pref, fiber_pref, use_case):
     pref_key = (
         fiber_pref.get(
             "label",
@@ -334,7 +334,7 @@ def _score_care(fiber, use_case, score, reasons, tradeoffs):
     return score, reasons, tradeoffs
 
 
-def _check_conflicts(project, gauge, drape, warmth_pref, fiber_pref):
+def _check_conflicts(project, gauge, drape, warmth_pref):
     warnings = []
     if project["needs_structure"] and drape["drape_score"] > 0.7:
         warnings.append(
