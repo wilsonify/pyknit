@@ -116,25 +116,19 @@ def _sleeve_generate_schedule(rows, num_dec):
     return schedule
 
 
-
-
 def _sleeve_row(idx, current, dec_set, schedule, arm, wrist, per_row, remainder):
     if idx not in dec_set:
         return "Plain", current, f"Knit plain ({current} sts)"
     dec_idx = len([r for r in schedule if r <= idx])
     if dec_idx == len(schedule) and remainder:
-        return "Decrease", wrist, (
-            f"Decrease row: k2tog at each side plus {remainder} extra "
-            f"k2tog -> {wrist} sts"
-        )
+        return "Decrease", wrist, (f"Decrease row: k2tog at each side plus {remainder} extra " f"k2tog -> {wrist} sts")
     after = arm - dec_idx * per_row
     if after < wrist:
         after = wrist
-    instruction = (
-        f"Decrease row: k2tog at each side of underarm marker "
-        f"({per_row} sts removed) -> {after} sts"
-    )
+    instruction = f"Decrease row: k2tog at each side of underarm marker " f"({per_row} sts removed) -> {after} sts"
     return "Decrease", after, instruction
+
+
 def _sleeve_detail(arm, wrist, shaping_rounds):
     """Build a knittable sleeve decrease schedule from measured inputs.
 
@@ -154,9 +148,7 @@ def _sleeve_detail(arm, wrist, shaping_rounds):
     current = arm
     for idx in range(shaping_rounds):
         before = current
-        kind, after, instruction = _sleeve_row(
-            idx, current, dec_set, schedule, arm, wrist, per_row, remainder
-        )
+        kind, after, instruction = _sleeve_row(idx, current, dec_set, schedule, arm, wrist, per_row, remainder)
         current = after
         rows.append(
             {
@@ -201,51 +193,61 @@ def _section(heading, intro=None, steps=None, rows=None, table=None, collapsible
 
 
 def _validate_inputs(
-    ease, upper_arm_ease, inc, freq, neck_circ, bust_circ,
-    upper_arm_eased, wrist_circ, neck, bust, arm, wrist,
-    needed, inc_rounds, front_start, back_start, sleeve_start,
+    ease,
+    upper_arm_ease,
+    inc,
+    freq,
+    neck_circ,
+    bust_circ,
+    upper_arm_eased,
+    wrist_circ,
+    neck,
+    bust,
+    arm,
+    wrist,
+    needed,
+    inc_rounds,
+    front_start,
+    back_start,
+    sleeve_start,
 ):
-    if ease < -4 or ease > 10:
-        raise ValueError("ease must be between -4 and 10 inches")
-    if upper_arm_ease < -2 or upper_arm_ease > 6:
-        raise ValueError("upper arm ease must be between -2 and 6 inches")
-    if inc not in ALLOWED_INCREASES:
-        raise ValueError(
-            "increases per round must be one of "
-            + ", ".join(str(n) for n in sorted(ALLOWED_INCREASES))
-        )
-    if freq not in ALLOWED_FREQUENCIES:
-        raise ValueError("increase frequency must be 'every round' or 'every other round'")
-    if neck_circ >= bust_circ:
-        raise ValueError(
-            "neck circumference must be smaller than the bust circumference "
-            "(the raglan widens from the neck down)"
-        )
-    if upper_arm_eased >= bust_circ:
-        raise ValueError("upper arm circumference + ease must be smaller than the bust circumference")
-    if wrist_circ >= upper_arm_eased:
-        raise ValueError(
-            "wrist circumference must be smaller than the upper arm "
-            "(with ease) for a tapering sleeve"
-        )
-    if min(neck, bust, arm) < 4:
-        raise ValueError("the neck/bust/arm measurements are too small for a sweater")
-    if wrist >= arm:
-        raise ValueError(
+    checks = [
+        (ease < -4 or ease > 10, "ease must be between -4 and 10 inches"),
+        (upper_arm_ease < -2 or upper_arm_ease > 6, "upper arm ease must be between -2 and 6 inches"),
+        (
+            inc not in ALLOWED_INCREASES,
+            "increases per round must be one of " + ", ".join(str(n) for n in sorted(ALLOWED_INCREASES)),
+        ),
+        (freq not in ALLOWED_FREQUENCIES, "increase frequency must be 'every round' or 'every other round'"),
+        (
+            neck_circ >= bust_circ,
+            "neck circumference must be smaller than the bust circumference " "(the raglan widens from the neck down)",
+        ),
+        (upper_arm_eased >= bust_circ, "upper arm circumference + ease must be smaller than the bust circumference"),
+        (
+            wrist_circ >= upper_arm_eased,
+            "wrist circumference must be smaller than the upper arm " "(with ease) for a tapering sleeve",
+        ),
+        (min(neck, bust, arm) < 4, "the neck/bust/arm measurements are too small for a sweater"),
+        (
+            wrist >= arm,
             "the wrist rounds up to the upper-arm count, leaving no room for "
-            "sleeve shaping; use a smaller wrist measurement or add negative ease"
-        )
-    if needed <= 0:
-        raise ValueError(
-            "the finished bust/arm stitches must be larger than the neck cast-on; "
-            "check your measurements"
-        )
-    if inc_rounds < 1:
-        raise ValueError(
+            "sleeve shaping; use a smaller wrist measurement or add negative ease",
+        ),
+        (
+            needed <= 0,
+            "the finished bust/arm stitches must be larger than the neck cast-on; " "check your measurements",
+        ),
+        (
+            inc_rounds < 1,
             "not enough stitches between the neck and underarm to schedule "
             "raglan increases; increase the increases per round or the "
-            "difference between neck and bust"
-        )
+            "difference between neck and bust",
+        ),
+    ]
+    for bad, msg in checks:
+        if bad:
+            raise ValueError(msg)
     if min(front_start, back_start, sleeve_start) < 1:
         worst = min(front_start, back_start, sleeve_start)
         raise ValueError(
@@ -272,10 +274,7 @@ def _build_raglan_tables(rounds, freq, inc, seg, calc_neck, front_start, back_st
         else:
             action = "plain"
         table_rows.append([r, action, total, fr, ba, sl])
-        text_rows.append(
-            f"Round {r}: {action} -> {total} sts total "
-            f"(front {fr}, back {ba}, sleeve {sl} each)"
-        )
+        text_rows.append(f"Round {r}: {action} -> {total} sts total " f"(front {fr}, back {ba}, sleeve {sl} each)")
     return table_rows, text_rows
 
 
@@ -322,7 +321,6 @@ def compute(inputs):
     inc = int(inputs.get("increases_per_round", 8))
     freq = str(inputs.get("increase_frequency", "every_other_round"))
 
-
     # Gauge <-> measurement math goes through GaugeSwatch.
     swatch = GaugeSwatch(
         stitch_count=st,
@@ -336,7 +334,6 @@ def compute(inputs):
     arm = _even(swatch.measurement_to_stitches(upper_arm_eased))
     armpit = max(2, _even(swatch.measurement_to_stitches(underarm_w)))
     wrist = _even(swatch.measurement_to_stitches(wrist_circ))
-
 
     # Raglan arithmetic mirrors pyknit.raglan_increases:
     # working = live stitches at the underarm (body + sleeves)
@@ -356,11 +353,24 @@ def compute(inputs):
     back_start = math.floor(body_start)
     sleeve_start = arm - armpit - inc_rounds * seg
 
-
     _validate_inputs(
-        ease, upper_arm_ease, inc, freq, neck_circ, bust_circ,
-        upper_arm_eased, wrist_circ, neck, bust, arm, wrist,
-        needed, inc_rounds, front_start, back_start, sleeve_start,
+        ease,
+        upper_arm_ease,
+        inc,
+        freq,
+        neck_circ,
+        bust_circ,
+        upper_arm_eased,
+        wrist_circ,
+        neck,
+        bust,
+        arm,
+        wrist,
+        needed,
+        inc_rounds,
+        front_start,
+        back_start,
+        sleeve_start,
     )
 
     try:
@@ -420,8 +430,14 @@ def compute(inputs):
     # Build the per-round transition schedule.
     display_rounds = raglan_total_rounds
     table_rows, text_rows = _build_raglan_tables(
-        raglan_total_rounds, freq, inc, seg, calc_neck,
-        front_start, back_start, sleeve_start,
+        raglan_total_rounds,
+        freq,
+        inc,
+        seg,
+        calc_neck,
+        front_start,
+        back_start,
+        sleeve_start,
     )
 
     # Warnings for geometry that is usable but worth a second look.
@@ -1496,9 +1512,7 @@ def _render_one_section(section):
             shown = table["rows"][:MAX_TABLE_ROWS]
             total = len(table["rows"])
             parts.append("<details class='plan-details'>")
-            parts.append(
-                f"<summary>Show round-by-round stitch table " f"({len(shown)} of {total} rounds)</summary>"
-            )
+            parts.append(f"<summary>Show round-by-round stitch table " f"({len(shown)} of {total} rounds)</summary>")
             parts.append(_render_table({"columns": table["columns"], "rows": shown}))
             if total > MAX_TABLE_ROWS:
                 parts.append(
