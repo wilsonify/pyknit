@@ -4,3 +4,4 @@ Pillow
 pre-commit
 pydantic
 pytest
+docutils>=0.18
