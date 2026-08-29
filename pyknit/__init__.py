@@ -408,7 +408,7 @@ def sleeve_decreases(
     ``ending_count`` stitches instead of a "closest alternative".
     """
     if padding_mode not in ("before", "after", "both", "none"):
-        msg = f"padding_mode must be one of 'before', 'after', 'both' or 'none';" f" got '{padding_mode}'"
+        msg = f"padding_mode must be one of 'before', 'after', 'both' or 'none'; got '{padding_mode}'"
         logging.error(msg)
         raise ValueError(msg)
 
