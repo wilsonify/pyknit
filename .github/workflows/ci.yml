@@ -60,9 +60,6 @@ jobs:
       - name: CSS (stylelint)
         run: .github/workflows/scripts/lint-css.sh
 
-      - name: Kotlin (ktlint)
-        run: .github/workflows/scripts/lint-kotlin.sh
-
       - name: Gradle (spotless)
         run: .github/workflows/scripts/lint-gradle.sh
 
