@@ -26,6 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
 WORKERS = int(os.environ.get("PYQ_WORKERS", "4"))
+DEMO_FILTER = os.environ.get("PYQ_DEMO", "")
 
 import qa_demos  # noqa: E402  (same directory; local import)
 
@@ -133,26 +134,37 @@ def _run_one_sync(spec):
 
 def main():
     specs = qa_demos.DEMOS
+    if DEMO_FILTER:
+        specs = [s for s in specs if s["dir"] == DEMO_FILTER]
+        if not specs:
+            print(
+                f"Demo {DEMO_FILTER!r} not found. Available: {', '.join(s['dir'] for s in qa_demos.DEMOS)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     # Sort heaviest-first so LPT scheduling balances the load:
     # the slowest demos start first and fast ones fill the gaps.
     specs_sorted = sorted(specs, key=lambda s: _estimate_cost(s), reverse=True)
     print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE}, dynamic scheduling)")
 
-    if WORKERS <= 1:
+    if WORKERS <= 1 or len(specs) == 1:
         reports = [_run_one_sync(spec) for spec in specs_sorted]
     else:
         ctx = get_context("spawn")
         with ctx.Pool(WORKERS) as pool:
             reports = list(pool.imap_unordered(_worker_run_one, specs_sorted))
 
-    from playwright.sync_api import sync_playwright
+    if DEMO_FILTER:
+        idx_problems = []
+    else:
+        from playwright.sync_api import sync_playwright
 
-    with sync_playwright() as p2:
-        b2 = p2.chromium.launch(headless=True)
-        try:
-            idx_problems = qa_demos.check_index(b2)
-        finally:
-            b2.close()
+        with sync_playwright() as p2:
+            b2 = p2.chromium.launch(headless=True)
+            try:
+                idx_problems = qa_demos.check_index(b2)
+            finally:
+                b2.close()
 
     print("\n" + "=" * 70)
     print("QA SUMMARY")

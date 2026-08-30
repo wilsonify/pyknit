@@ -26,9 +26,10 @@ jobs:
       - id: calc
         run: python scripts/calculate_version.py
 
-  # ── Stage 1: linters (all parallel) ─────────────────────────────────
+  # ── Stage 1: linters (all parallel, no dependencies) ────────────────
   lint-black:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e  # 26.5.1
@@ -37,6 +38,7 @@ jobs:
 
   lint-flake8:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
@@ -48,24 +50,28 @@ jobs:
 
   lint-js:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - run: .github/workflows/scripts/lint-js.sh
 
   lint-html:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - run: .github/workflows/scripts/lint-html.sh
 
   lint-css:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - run: .github/workflows/scripts/lint-css.sh
 
   lint-gradle:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961  # v5
@@ -76,14 +82,16 @@ jobs:
 
   lint-yaml:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - run: .github/workflows/scripts/lint-yaml.sh
 
-  # ── Stage 2: unit tests against source ───────────────────────────────
+  # ── Stage 2: unit tests against source (parallel with linters) ──────
   unit-tests:
     needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
@@ -93,6 +101,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
 
       - name: Install dependencies
         run: .github/workflows/scripts/install-test-deps.sh
@@ -110,10 +119,11 @@ jobs:
           name: unit-results-${{ matrix.python-version }}
           path: unit-results.xml
 
-  # ── Stage 3: SonarCloud quality gate ────────────────────────────────
+  # ── Stage 3: SonarCloud quality gate (parallel with unit-tests) ────
   sonarcloud:
-    needs: [unit-tests]
+    needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
         with:
@@ -122,6 +132,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
         run: .github/workflows/scripts/install-test-deps.sh
@@ -143,16 +154,18 @@ jobs:
             -Dsonar.tests=test/
             -Dsonar.exclusions=**/*.png,**/*.jpg,**/*.jpeg,**/*.gif,**/*.ico,**/*.svg,**/*.woff,**/*.woff2,**/*.ttf,**/*.eot
 
-  # ── Stage 4: clean Python package build ──────────────────────────────
+  # ── Stage 4: clean Python package build (parallel with tests) ───────
   python-build:
-    needs: [version, sonarcloud]
+    needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Clean build
         run: .github/workflows/scripts/build-python-wheel.sh
@@ -167,16 +180,36 @@ jobs:
           path: dist/*.whl
           retention-days: 5
 
-  # ── Stage 5: integration tests against built package ─────────────────
+  # ── Stage 5: integration tests (per-demo matrix, parallel) ──────────
   integration-tests:
-    needs: [python-build, sonarcloud]
+    needs: [python-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        demo:
+          - gauge-conversion
+          - chart-renderer
+          - even-shaping
+          - hat-crown
+          - pi-shawl
+          - pattern-io
+          - raglan-sweater
+          - shawl-shapes
+          - sleeve-decreases
+          - sock-calculator
+          - yarn-estimator
+          - knit-simulator
+          - needle-advisor
+          - yarn-advisor
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Download built wheel
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -190,31 +223,78 @@ jobs:
       - name: Start demo server
         run: |
           python -m http.server 8000 --directory demos &
-          sleep 2
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/ > /dev/null 2>&1 && break
+            sleep 0.5
+          done
           curl -sf http://127.0.0.1:8000/ > /dev/null || { echo "Server failed to start"; exit 1; }
 
-      - name: Run integration tests
-        run: .github/workflows/scripts/run-integration-tests.sh
+      - name: Test ${{ matrix.demo }}
+        run: PYQ_WORKERS=1 PYQ_DEMO=${{ matrix.demo }} python test/integration/qa_all_demos.py
         env:
           PYQ_BASE: http://127.0.0.1:8000
 
-      - name: Upload integration test results
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: integration-results
-          path: integration-results.xml
-
-  # ── Stage 6: clean PyScript build ────────────────────────────────────
-  pyscript-build:
-    needs: [integration-tests]
+  # ── Stage 5b: index.html link check ─────────────────────────────────
+  integration-index:
+    needs: [python-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
+          cache: pip
+
+      - name: Download built wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: python-wheel
+          path: dist/
+
+      - name: Install from wheel (not source)
+        run: .github/workflows/scripts/install-wheel-for-testing.sh
+
+      - name: Start demo server
+        run: |
+          python -m http.server 8000 --directory demos &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/ > /dev/null 2>&1 && break
+            sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8000/ > /dev/null || { echo "Server failed to start"; exit 1; }
+
+      - name: Check index.html links
+        env:
+          PYQ_BASE: http://127.0.0.1:8000
+        run: |
+          python -c "
+          import sys; sys.path.insert(0, 'test/integration')
+          import qa_demos
+          from playwright.sync_api import sync_playwright
+          p = sync_playwright().start()
+          b = p.chromium.launch(headless=True)
+          problems = qa_demos.check_index(b)
+          b.close(); p.stop()
+          if problems:
+              for p_ in problems: print('FAIL:', p_)
+              sys.exit(1)
+          print('All demo links resolve')
+          "
+
+  # ── Stage 6: clean PyScript build ────────────────────────────────────
+  pyscript-build:
+    needs: [python-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
+        with:
+          python-version: "3.12"
+          cache: pip
 
       - name: Install build dependencies
         run: |
@@ -241,12 +321,14 @@ jobs:
   pyscript-e2e:
     needs: [pyscript-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Download PyScript distribution
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -269,8 +351,9 @@ jobs:
 
   # ── Stage 8: clean Android build ─────────────────────────────────────
   android-build:
-    needs: [pyscript-e2e, version]
+    needs: [python-build, version]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
@@ -304,6 +387,7 @@ jobs:
   android-e2e:
     needs: [android-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Download APK
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -316,8 +400,9 @@ jobs:
 
   # ── CVE vulnerability scan (after all builds pass) ───────────────────
   cve-scan:
-    needs: [android-e2e]
+    needs: [android-e2e, pyscript-e2e]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
