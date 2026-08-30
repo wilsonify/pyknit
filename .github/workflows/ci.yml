@@ -187,6 +187,12 @@ jobs:
       - name: Install from wheel (not source)
         run: .github/workflows/scripts/install-wheel-for-testing.sh
 
+      - name: Start demo server
+        run: |
+          python -m http.server 8000 --directory demos &
+          sleep 2
+          curl -sf http://127.0.0.1:8000/ > /dev/null || { echo "Server failed to start"; exit 1; }
+
       - name: Run integration tests
         run: .github/workflows/scripts/run-integration-tests.sh
         env:
