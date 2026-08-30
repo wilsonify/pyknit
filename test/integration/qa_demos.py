@@ -17,7 +17,10 @@ import time
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from playwright.sync_api import sync_playwright
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    sync_playwright = None
 
 BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
 
