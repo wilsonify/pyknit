@@ -314,9 +314,9 @@ jobs:
       - name: Verify APK
         run: .github/workflows/scripts/android-verify-apk.sh apk/app-debug.apk
 
-  # ── CVE vulnerability scan (after successful build) ──────────────────
+  # ── CVE vulnerability scan (after all builds pass) ───────────────────
   cve-scan:
-    needs: [python-build]
+    needs: [android-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -355,15 +355,70 @@ jobs:
       - name: Verify Grype
         run: grype version
 
-      - name: Generate SBOM
-        run: .github/workflows/scripts/generate-sbom.sh
+      - name: Download Python wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: python-wheel
+          path: artifacts/python/
 
-      - name: Scan for vulnerabilities
-        run: .github/workflows/scripts/scan-vulnerabilities.sh
+      - name: Download Android APK
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: android-apk
+          path: artifacts/android/
 
-      - name: Upload SARIF
+      - name: Download PyScript dist
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: pyscript-dist
+          path: artifacts/pyscript/
+
+      - name: Generate SBOMs (parallel)
+        run: |
+          mkdir -p sboms
+          syft dir:. -o spdx-json=sboms/source.spdx.json &
+          syft " artifacts/python/*.whl" -o spdx-json=sboms/wheel.spdx.json &
+          syft artifacts/android/app-debug.apk -o spdx-json=sboms/android.spdx.json &
+          syft dir:artifacts/pyscript/ -o spdx-json=sboms/pyscript.spdx.json &
+          wait
+          echo "All SBOMs generated"
+          ls -lh sboms/
+
+      - name: Scan for vulnerabilities (parallel)
+        id: scan
+        run: |
+          mkdir -p sarif
+          grype sbom:sboms/source.spdx.json --fail-on high --output sarif --file sarif/source.sarif &
+          grype sbom:sboms/wheel.spdx.json --fail-on high --output sarif --file sarif/wheel.sarif &
+          grype sbom:sboms/android.spdx.json --fail-on high --output sarif --file sarif/android.sarif &
+          grype sbom:sboms/pyscript.spdx.json --fail-on high --output sarif --file sarif/pyscript.sarif &
+          wait
+          echo "All scans complete"
+
+      - name: Upload SARIF (source)
         if: always()
         uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
         with:
-          sarif_file: grype-results.sarif
-          category: grype-scan-ci
+          sarif_file: sarif/source.sarif
+          category: grype-source
+
+      - name: Upload SARIF (Python wheel)
+        if: always()
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        with:
+          sarif_file: sarif/wheel.sarif
+          category: grype-wheel
+
+      - name: Upload SARIF (Android APK)
+        if: always()
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        with:
+          sarif_file: sarif/android.sarif
+          category: grype-android
+
+      - name: Upload SARIF (PyScript dist)
+        if: always()
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        with:
+          sarif_file: sarif/pyscript.sarif
+          category: grype-pyscript
