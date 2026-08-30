@@ -19,7 +19,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 class Stitch:
-    "A class to represent a stitch. Optionally, a preferred legend can be passed in."
+    """
+    A class to represent a stitch. Optionally, a preferred legend can be passed in.
+    """
 
     def __init__(
         self,
