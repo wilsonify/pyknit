@@ -17,7 +17,6 @@ The module only assembles those results into a plan and renders it.
 
 import html
 import math
-import re
 
 from pyknit import _calculate_spacing, raglan_increases, sleeve_decreases
 from pyknit.GaugeSwatch import GaugeSwatch
