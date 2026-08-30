@@ -10,7 +10,7 @@ pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 
 from typing import TYPE_CHECKING, Literal, Optional
 
-from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_arguments
+from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_call
 
 if TYPE_CHECKING:
     from .Chart import PatternRow
@@ -61,7 +61,7 @@ class GaugeSwatch(BaseModel):
         """
         return self.stitch_count / self.stitch_measure
 
-    @validate_arguments
+    @validate_call
     def measurement_to_stitches(self, measurement: PositiveFloat) -> int:
         """
         Given a measurement, how many stiches would we need?
@@ -76,7 +76,7 @@ class GaugeSwatch(BaseModel):
         """
         return round(measurement * self.stitch_gauge())
 
-    @validate_arguments
+    @validate_call
     def measurement_to_rows(self, measurement: PositiveFloat) -> int:
         """
         Given a measurement, how many rows would we need?
@@ -91,7 +91,7 @@ class GaugeSwatch(BaseModel):
         """
         return round(measurement * self.row_gauge())
 
-    @validate_arguments
+    @validate_call
     def rows_to_measurement(self, rows: PositiveInt) -> float:
         """figure out how long a number of rows will be
 
@@ -104,7 +104,7 @@ class GaugeSwatch(BaseModel):
         """
         return float(rows) / self.row_gauge()
 
-    @validate_arguments
+    @validate_call
     def stitches_to_measurement(self, stitches: PositiveInt) -> float:
         """figure out how wide a number of stitches will be
 
@@ -117,7 +117,7 @@ class GaugeSwatch(BaseModel):
         """
         return float(stitches) / self.stitch_gauge()
 
-    @validate_arguments
+    @validate_call
     def estimate_yardage(self, stitch_count: PositiveInt) -> float:
         """Estimate yarn length needed for stitch_count stitches.
 
@@ -130,7 +130,7 @@ class GaugeSwatch(BaseModel):
         yardage = self.yardage_per_unit
         return yardage * stitch_count
 
-    @validate_arguments
+    @validate_call
     def estimate_weight(self, stitch_count: PositiveInt) -> float:
         """Estimate yarn weight needed for stitch_count stitches.
 
@@ -277,7 +277,7 @@ def stitch_count(row: "PatternRow") -> int:
     return stitch_operations(row)
 
 
-@validate_arguments
+@validate_call
 def convert_stitch_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch) -> float:
     """
     Given a measurement in the original gauge, find out what it would
@@ -300,7 +300,7 @@ def convert_stitch_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, n
     return new_gauge.stitches_to_measurement(old_gauge.measurement_to_stitches(measurement))
 
 
-@validate_arguments
+@validate_call
 def convert_row_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, new_gauge: GaugeSwatch) -> float:
     """
     Given a measurement in the original gauge, find out what it would

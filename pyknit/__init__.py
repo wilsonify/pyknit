@@ -10,7 +10,7 @@ import math
 from logging.config import dictConfig
 from typing import List, Set, Tuple
 
-from pydantic import PositiveInt, validate_arguments
+from pydantic import PositiveInt, validate_call
 
 from .Chart import (
     Stitch,
@@ -51,7 +51,7 @@ VERSION = "pyKnit 0.1.4"
 # Increase and decrease functions
 
 
-@validate_arguments
+@validate_call
 def increase_evenly(
     starting_count: PositiveInt,
     increase_number: PositiveInt,
