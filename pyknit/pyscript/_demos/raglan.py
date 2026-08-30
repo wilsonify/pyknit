@@ -63,7 +63,7 @@ ALLOWED_FREQUENCIES = ("every_round", "every_other_round")
 
 
 def _num(x):
-    "Format a float compactly (80.0 -> '80', 7.0769 -> '7.08')." ""
+    "Format a float compactly (80.0 -> '80', 7.0769 -> '7.08')."
     if isinstance(x, int):
         return str(x)
     x = round(x, 2)
@@ -82,7 +82,7 @@ def _pos(inputs, key, label):
 
 
 def _even(n):
-    "Round an integer up/down to the nearest even number." ""
+    "Round an integer up/down to the nearest even number."
     n = int(round(n))
     return n if n % 2 == 0 else n + 1
 
@@ -304,7 +304,7 @@ def _build_warnings(depth_in, sleeve_shaping_rounds, arm, wrist):
 
 
 def compute(inputs):
-    "Build the complete sweater plan as a dict, reusing pyknit math." ""
+    "Build the complete sweater plan as a dict, reusing pyknit math."
     st = _pos(inputs, "stitches_per_inch", "stitch gauge")
     rg = _pos(inputs, "rows_per_inch", "row gauge")
     neck_circ = _pos(inputs, "neck_circumference", "neck circumference")
@@ -585,7 +585,7 @@ def compute(inputs):
 
 
 def _math_section(v):
-    "Section 0: the visible math behind every derived number." ""
+    "Section 0: the visible math behind every derived number."
 
     def derived(raw, final, suffix):
         raw = int(round(raw))
@@ -1108,7 +1108,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
     cuff_x = sx + sleeve_w - 12
     for i in range(4):
         cy = sy + 20 + i * ((sleeve_h - 40) / 3)
-        parts.append(f'<line x1="{cuff_x}" y1="{cy:.1f}" ' f'x2="{sx + sleeve_w}" y2="{cy:.1f}" class="rib"/>')
+        parts.append(f'<line x1="{cuff_x}" y1="{cy:.1f}" x2="{sx + sleeve_w}" y2="{cy:.1f}" class="rib"/>')
 
     # --- Left sleeve (mirrored) ---
     lx = cx - body_w // 2
@@ -1120,16 +1120,16 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
     lcuff_x = lx - sleeve_w + 12
     for i in range(4):
         cy = ly + 20 + i * ((sleeve_h - 40) / 3)
-        parts.append(f'<line x1="{lcuff_x}" y1="{cy:.1f}" ' f'x2="{lx - sleeve_w}" y2="{cy:.1f}" class="rib"/>')
+        parts.append(f'<line x1="{lcuff_x}" y1="{cy:.1f}" x2="{lx - sleeve_w}" y2="{cy:.1f}" class="rib"/>')
 
     # --- Body ---
-    parts.append(f'<rect x="{cx - body_w // 2}" y="{body_top}" ' f'width="{body_w}" height="{body_h}" class="body"/>')
+    parts.append(f'<rect x="{cx - body_w // 2}" y="{body_top}" width="{body_w}" height="{body_h}" class="body"/>')
 
     # Hem (ribbing at bottom)
     hem_y = body_top + body_h - 14
     for i in range(4):
         hx = cx - body_w // 2 + 10 + i * ((body_w - 20) / 3)
-        parts.append(f'<line x1="{hx:.1f}" y1="{hem_y}" ' f'x2="{hx:.1f}" y2="{body_top + body_h}" class="rib"/>')
+        parts.append(f'<line x1="{hx:.1f}" y1="{hem_y}" x2="{hx:.1f}" y2="{body_top + body_h}" class="rib"/>')
 
     # --- Raglan lines (4 diagonal seams from neck to underarms) ---
     neck_left = cx - neck_w // 2
@@ -1140,19 +1140,19 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
     ul_x = cx - body_w // 2
     ul_y = body_top + 15
 
-    parts.append(f'<line x1="{neck_right}" y1="{body_top}" ' f'x2="{ur_x}" y2="{ur_y}" class="raglan"/>')
-    parts.append(f'<line x1="{neck_left}" y1="{body_top}" ' f'x2="{ul_x}" y2="{ul_y}" class="raglan"/>')
-    parts.append(f'<line x1="{neck_right}" y1="{neck_bottom}" ' f'x2="{ur_x}" y2="{ur_y + sleeve_h}" class="raglan"/>')
-    parts.append(f'<line x1="{neck_left}" y1="{neck_bottom}" ' f'x2="{ul_x}" y2="{ul_y + sleeve_h}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_right}" y1="{body_top}" x2="{ur_x}" y2="{ur_y}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_left}" y1="{body_top}" x2="{ul_x}" y2="{ul_y}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_right}" y1="{neck_bottom}" x2="{ur_x}" y2="{ur_y + sleeve_h}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_left}" y1="{neck_bottom}" x2="{ul_x}" y2="{ul_y + sleeve_h}" class="raglan"/>')
 
     # --- Neck opening (ellipse) ---
     parts.append(
-        f'<ellipse cx="{cx}" cy="{body_top + neck_h // 2}" ' f'rx="{neck_w // 2}" ry="{neck_h // 2}" class="neck"/>'
+        f'<ellipse cx="{cx}" cy="{body_top + neck_h // 2}" rx="{neck_w // 2}" ry="{neck_h // 2}" class="neck"/>'
     )
 
     # --- Labels ---
     # Neck label (above)
-    parts.append(f'<text x="{cx}" y="{body_top - 30}" text-anchor="middle" ' f'class="title">Neck: {neck} sts</text>')
+    parts.append(f'<text x="{cx}" y="{body_top - 30}" text-anchor="middle" class="title">Neck: {neck} sts</text>')
     parts.append(
         f'<text x="{cx}" y="{body_top - 17}" text-anchor="middle" '
         f'class="sublabel">cast on and join in the round</text>'
@@ -1160,9 +1160,9 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
 
     # Raglan line labels (at midpoints of the four seams)
     mid_r = ((neck_right + ur_x) / 2, (body_top + ur_y) / 2)
-    parts.append(f'<text x="{mid_r[0] + 8}" y="{mid_r[1] - 4}" ' f'class="sublabel" text-anchor="start">raglan</text>')
+    parts.append(f'<text x="{mid_r[0] + 8}" y="{mid_r[1] - 4}" class="sublabel" text-anchor="start">raglan</text>')
     mid_l = ((neck_left + ul_x) / 2, (body_top + ul_y) / 2)
-    parts.append(f'<text x="{mid_l[0] - 8}" y="{mid_l[1] - 4}" ' f'class="sublabel" text-anchor="end">raglan</text>')
+    parts.append(f'<text x="{mid_l[0] - 8}" y="{mid_l[1] - 4}" class="sublabel" text-anchor="end">raglan</text>')
 
     # Front label (center of body)
     parts.append(
@@ -1242,9 +1242,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
         x = bar_margin
         for count, color, label in segments:
             seg_w = max(2, bar_w * count / total)
-            parts.append(
-                f'<rect x="{x:.1f}" y="{bar_y}" width="{seg_w:.1f}" ' f'height="{bar_h}" fill="{color}" rx="3"/>'
-            )
+            parts.append(f'<rect x="{x:.1f}" y="{bar_y}" width="{seg_w:.1f}" height="{bar_h}" fill="{color}" rx="3"/>')
             # Label inside bar if wide enough, else above
             text_x = x + seg_w / 2
             if seg_w > 30:
@@ -1254,7 +1252,7 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
                 )
             else:
                 parts.append(
-                    f'<text x="{text_x:.1f}" y="{bar_y - 4}" ' f'text-anchor="middle" class="bar-legend">{label}</text>'
+                    f'<text x="{text_x:.1f}" y="{bar_y - 4}" text-anchor="middle" class="bar-legend">{label}</text>'
                 )
             x += seg_w
 
@@ -1286,7 +1284,7 @@ def _raglan_growth_svg(
     inc_rounds,
     freq,
 ):
-    "Line chart showing how each raglan section grows from neck to underarm." ""
+    "Line chart showing how each raglan section grows from neck to underarm."
     vw = 420
     vh = 240
     pad_l, pad_r, pad_t, pad_b = 55, 20, 30, 50
@@ -1319,17 +1317,15 @@ def _raglan_growth_svg(
     step = 20 if max_sts - min_sts > 60 else 10
     v = int(min_sts // step * step)
     while v <= max_sts + step:
-        parts.append(f'<line x1="{pad_l}" y1="{y(v):.1f}" x2="{pad_l + cw}" ' f'y2="{y(v):.1f}" class="grid-line"/>')
-        parts.append(f'<text x="{pad_l - 6}" y="{y(v) + 3}" text-anchor="end" ' f'class="chart-label">{v}</text>')
+        parts.append(f'<line x1="{pad_l}" y1="{y(v):.1f}" x2="{pad_l + cw}" y2="{y(v):.1f}" class="grid-line"/>')
+        parts.append(f'<text x="{pad_l - 6}" y="{y(v) + 3}" text-anchor="end" class="chart-label">{v}</text>')
         v += step
 
     # X axis labels
     for r in range(0, total_rounds + 1, max(1, total_rounds // 5)):
-        parts.append(
-            f'<text x="{x(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" ' f'class="chart-label">{r}</text>'
-        )
+        parts.append(f'<text x="{x(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" class="chart-label">{r}</text>')
     parts.append(
-        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" ' f'class="chart-label">raglan rounds</text>'
+        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" class="chart-label">raglan rounds</text>'
     )
 
     # Data lines (front/back and sleeve)
@@ -1342,7 +1338,7 @@ def _raglan_growth_svg(
         x1, y1 = x(0), y(pts[0])
         x2, y2 = x(total_rounds), y(pts[1])
         parts.append(
-            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" ' f'stroke="{color}" stroke-width="2.5"/>'
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="2.5"/>'
         )
         # Start dot
         parts.append(f'<circle cx="{x1:.1f}" cy="{y1:.1f}" r="3" fill="{color}"/>')
@@ -1358,9 +1354,9 @@ def _raglan_growth_svg(
     lx = pad_l + cw - 8
     for i, (_, color, label) in enumerate(reversed(series)):
         ly = pad_t + 6 + i * 14
-        parts.append(f'<line x1="{lx - 30}" y1="{ly}" x2="{lx - 16}" y2="{ly}" ' f'stroke="{color}" stroke-width="2"/>')
+        parts.append(f'<line x1="{lx - 30}" y1="{ly}" x2="{lx - 16}" y2="{ly}" stroke="{color}" stroke-width="2"/>')
         parts.append(
-            f'<text x="{lx - 13}" y="{ly + 3}" font-size="9" ' f'fill="{color}" text-anchor="start">{label}</text>'
+            f'<text x="{lx - 13}" y="{ly + 3}" font-size="9" fill="{color}" text-anchor="start">{label}</text>'
         )
 
     # Title
@@ -1373,8 +1369,8 @@ def _raglan_growth_svg(
     return "\n".join(parts)
 
 
-def _sleeve_taper_svg(arm, wrist, sleeve_shaping_rounds, rg, sleeve_sched):
-    "Visual showing the sleeve taper from upper arm to wrist." ""
+def _sleeve_taper_svg(arm, wrist, sleeve_shaping_rounds, _rg, sleeve_sched):
+    "Visual showing the sleeve taper from upper arm to wrist."
     vw = 420
     vh = 220
     pad_l, pad_r, pad_t, pad_b = 50, 30, 30, 40
@@ -1408,16 +1404,14 @@ def _sleeve_taper_svg(arm, wrist, sleeve_shaping_rounds, rg, sleeve_sched):
     step = 10 if arm - wrist > 30 else 5
     v = int(min_sts // step * step)
     while v <= max_sts + step:
-        parts.append(f'<line x1="{pad_l}" y1="{py(v):.1f}" x2="{pad_l + cw}" ' f'y2="{py(v):.1f}" class="taper-grid"/>')
-        parts.append(f'<text x="{pad_l - 6}" y="{py(v) + 3}" text-anchor="end" ' f'class="taper-label">{v}</text>')
+        parts.append(f'<line x1="{pad_l}" y1="{py(v):.1f}" x2="{pad_l + cw}" y2="{py(v):.1f}" class="taper-grid"/>')
+        parts.append(f'<text x="{pad_l - 6}" y="{py(v) + 3}" text-anchor="end" class="taper-label">{v}</text>')
         v += step
 
     for r in range(0, total_r + 1, max(1, total_r // 5)):
-        parts.append(
-            f'<text x="{px(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" ' f'class="taper-label">{r}</text>'
-        )
+        parts.append(f'<text x="{px(r):.0f}" y="{vh - pad_b + 16}" text-anchor="middle" class="taper-label">{r}</text>')
     parts.append(
-        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" ' f'class="taper-label">shaping rounds</text>'
+        f'<text x="{pad_l + cw / 2}" y="{vh - 4}" text-anchor="middle" class="taper-label">shaping rounds</text>'
     )
 
     # Shaded area under the line
@@ -1541,7 +1535,7 @@ def _render_sections(sections):
 
 
 def to_html(result):
-    "Render the schematic plus the full guided sweater plan." ""
+    "Render the schematic plus the full guided sweater plan."
     plan = result["plan"]
     m = result["meta"]
 
