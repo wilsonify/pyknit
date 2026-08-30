@@ -18,6 +18,12 @@ Each stage has:
 from dataclasses import dataclass, field
 from enum import Enum
 
+# Reusable string constants to avoid duplication across garment stages
+RIB_PATTERN = "k2 p2"
+RIB_DESCRIPTION_FMT = "%d rounds of k2 p2 ribbing"
+BIND_OFF_DESCRIPTION = "Bind off all stitches"
+RIB_AND_BIND_OFF = "Ribbing and bind off"
+
 
 class StageType(Enum):
     """Canonical stage types for a top-down raglan sweater."""
@@ -181,8 +187,8 @@ def build_raglan_model(meta):
             KnitOp(
                 OpType.RIB,
                 rounds=meta["collar_rounds"],
-                pattern="k2 p2",
-                description="%d rounds of k2 p2 ribbing" % meta["collar_rounds"],
+                pattern=RIB_PATTERN,
+                description=RIB_DESCRIPTION_FMT % meta["collar_rounds"],
             )
         )
     if meta.get("pre", 0) > 0:
@@ -279,16 +285,16 @@ def build_raglan_model(meta):
         KnitOp(
             OpType.RIB,
             rounds=meta["hem_rounds"],
-            pattern="k2 p2",
-            description="%d rounds of k2 p2 ribbing" % meta["hem_rounds"],
+            pattern=RIB_PATTERN,
+            description=RIB_DESCRIPTION_FMT % meta["hem_rounds"],
         ),
-        KnitOp(OpType.BIND_OFF, description="Bind off all stitches"),
+        KnitOp(OpType.BIND_OFF, description=BIND_OFF_DESCRIPTION),
     ]
     stages.append(
         GarmentStage(
             stage_type=StageType.HEM,
             label="Hem",
-            description="Ribbing and bind off",
+            description=RIB_AND_BIND_OFF,
             start_stitch_count=meta["bust"],
             end_stitch_count=0,
             operations=hem_ops,
@@ -332,16 +338,16 @@ def build_raglan_model(meta):
         KnitOp(
             OpType.RIB,
             rounds=meta["cuff_rounds"],
-            pattern="k2 p2",
-            description="%d rounds of k2 p2 ribbing" % meta["cuff_rounds"],
+            pattern=RIB_PATTERN,
+            description=RIB_DESCRIPTION_FMT % meta["cuff_rounds"],
         ),
-        KnitOp(OpType.BIND_OFF, description="Bind off all stitches"),
+        KnitOp(OpType.BIND_OFF, description=BIND_OFF_DESCRIPTION),
     ]
     stages.append(
         GarmentStage(
             stage_type=StageType.LEFT_CUFF,
             label="Left Cuff",
-            description="Ribbing and bind off",
+            description=RIB_AND_BIND_OFF,
             start_stitch_count=meta["wrist"],
             end_stitch_count=0,
             operations=cuff_ops,
@@ -387,17 +393,17 @@ def build_raglan_model(meta):
         GarmentStage(
             stage_type=StageType.RIGHT_CUFF,
             label="Right Cuff",
-            description="Ribbing and bind off",
+            description=RIB_AND_BIND_OFF,
             start_stitch_count=meta["wrist"],
             end_stitch_count=0,
             operations=[
                 KnitOp(
                     OpType.RIB,
                     rounds=meta["cuff_rounds"],
-                    pattern="k2 p2",
-                    description="%d rounds of k2 p2 ribbing" % meta["cuff_rounds"],
+                    pattern=RIB_PATTERN,
+                    description=RIB_DESCRIPTION_FMT % meta["cuff_rounds"],
                 ),
-                KnitOp(OpType.BIND_OFF, description="Bind off all stitches"),
+                KnitOp(OpType.BIND_OFF, description=BIND_OFF_DESCRIPTION),
             ],
         )
     )
