@@ -13,8 +13,8 @@ fi
 
 INSTALL_DIR="/usr/local/bin"
 BINARY="$INSTALL_DIR/syft"
-ARCHIVE="/tmp/syft.tar.gz"
-CHECKSUM="/tmp/syft.tar.gz.sha256"
+ARCHIVE="/tmp/syft_${VERSION}_linux_amd64.tar.gz"
+CHECKSUM="/tmp/syft_${VERSION}_checksums.txt"
 BASE_URL="https://github.com/anchore/syft/releases/download/v${VERSION}"
 
 # Skip if already installed at the correct version

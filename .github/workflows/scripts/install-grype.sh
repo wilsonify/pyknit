@@ -13,8 +13,8 @@ fi
 
 INSTALL_DIR="/usr/local/bin"
 BINARY="$INSTALL_DIR/grype"
-ARCHIVE="/tmp/grype.tar.gz"
-CHECKSUM="/tmp/grype.tar.gz.sha256"
+ARCHIVE="/tmp/grype_${VERSION}_linux_amd64.tar.gz"
+CHECKSUM="/tmp/grype_${VERSION}_checksums.txt"
 BASE_URL="https://github.com/anchore/grype/releases/download/v${VERSION}"
 
 # Skip if already installed at the correct version
@@ -25,10 +25,10 @@ fi
 
 echo "Downloading Grype ${VERSION}..."
 curl -sSfL -o "$ARCHIVE" "${BASE_URL}/grype_${VERSION}_linux_amd64.tar.gz"
-curl -sSfL -o "$CHECKSUM" "${BASE_URL}/grype_${VERSION}_linux_amd64.tar.gz.sha256"
+curl -sSfL -o "$CHECKSUM" "${BASE_URL}/grype_${VERSION}_checksums.txt"
 
 echo "Verifying checksum..."
-cd /tmp && sha256sum -c "$CHECKSUM"
+cd /tmp && grep "grype_${VERSION}_linux_amd64.tar.gz$" "$CHECKSUM" | sha256sum -c -
 
 echo "Installing Grype..."
 tar -xzf "$ARCHIVE" -C /tmp grype
