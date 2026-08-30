@@ -17,7 +17,6 @@ Each stage has:
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class StageType(Enum):
@@ -303,8 +302,7 @@ def build_raglan_model(meta):
             count=meta["sleeve_final"],
             from_holder=True,
             underarm_cast_on=meta["armpit"],
-            description="Pick up %d held stitches + %d underarm"
-            % (meta["sleeve_final"], meta["armpit"]),
+            description="Pick up %d held stitches + %d underarm" % (meta["sleeve_final"], meta["armpit"]),
         ),
     ]
     if meta.get("sleeve_shaping_rounds", 0) > 0:
@@ -313,8 +311,7 @@ def build_raglan_model(meta):
                 OpType.DECREASE,
                 rounds=meta["sleeve_shaping_rounds"],
                 per_round=2,
-                description="%d rounds with decreases at underarm markers"
-                % meta["sleeve_shaping_rounds"],
+                description="%d rounds with decreases at underarm markers" % meta["sleeve_shaping_rounds"],
             )
         )
     stages.append(
@@ -365,8 +362,7 @@ def build_raglan_model(meta):
                     count=meta["sleeve_final"],
                     from_holder=True,
                     underarm_cast_on=meta["armpit"],
-                    description="Pick up %d held stitches + %d underarm"
-                    % (meta["sleeve_final"], meta["armpit"]),
+                    description="Pick up %d held stitches + %d underarm" % (meta["sleeve_final"], meta["armpit"]),
                 ),
             ]
             + (
@@ -375,8 +371,7 @@ def build_raglan_model(meta):
                         OpType.DECREASE,
                         rounds=meta["sleeve_shaping_rounds"],
                         per_round=2,
-                        description="%d rounds with decreases at underarm markers"
-                        % meta["sleeve_shaping_rounds"],
+                        description="%d rounds with decreases at underarm markers" % meta["sleeve_shaping_rounds"],
                     )
                 ]
                 if meta.get("sleeve_shaping_rounds", 0) > 0
