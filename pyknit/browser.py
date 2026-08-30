@@ -33,7 +33,7 @@ def available_backends() -> List[str]:
     return backends
 
 
-def render_pattern(pattern: Pattern, legend: Any = None, **kwargs: Any) -> Tuple[str, Any]:
+def render_pattern(pattern: Pattern, _legend: Any = None, **kwargs: Any) -> Tuple[str, Any]:
     """Best-effort chart rendering.
 
     Returns a (format, content) tuple:
