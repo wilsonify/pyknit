@@ -353,25 +353,27 @@ def compute(inputs):
     back_start = math.floor(body_start)
     sleeve_start = arm - armpit - inc_rounds * seg
 
-    _validate_inputs({
-        "ease": ease,
-        "upper_arm_ease": upper_arm_ease,
-        "inc": inc,
-        "freq": freq,
-        "neck_circ": neck_circ,
-        "bust_circ": bust_circ,
-        "upper_arm_eased": upper_arm_eased,
-        "wrist_circ": wrist_circ,
-        "neck": neck,
-        "bust": bust,
-        "arm": arm,
-        "wrist": wrist,
-        "needed": needed,
-        "inc_rounds": inc_rounds,
-        "front_start": front_start,
-        "back_start": back_start,
-        "sleeve_start": sleeve_start,
-    })
+    _validate_inputs(
+        {
+            "ease": ease,
+            "upper_arm_ease": upper_arm_ease,
+            "inc": inc,
+            "freq": freq,
+            "neck_circ": neck_circ,
+            "bust_circ": bust_circ,
+            "upper_arm_eased": upper_arm_eased,
+            "wrist_circ": wrist_circ,
+            "neck": neck,
+            "bust": bust,
+            "arm": arm,
+            "wrist": wrist,
+            "needed": needed,
+            "inc_rounds": inc_rounds,
+            "front_start": front_start,
+            "back_start": back_start,
+            "sleeve_start": sleeve_start,
+        }
+    )
 
     try:
         raglan = raglan_increases(
@@ -389,13 +391,13 @@ def compute(inputs):
     marker = ""
     ms_pos = raglan.find("Marker setup:")
     if ms_pos != -1:
-        after = raglan[ms_pos + len("Marker setup:"):]
+        after = raglan[ms_pos + len("Marker setup:") :]
         marker = after.split("\n", 1)[0].strip()
 
     inc_row_str = ""
     ir_start = raglan.find("Increase row:")
     if ir_start != -1 and ms_pos != -1:
-        between = raglan[ir_start + len("Increase row:"):ms_pos]
+        between = raglan[ir_start + len("Increase row:") : ms_pos]
         inc_row_str = between.strip()
 
     raglan_total_rounds = inc_rounds if freq == "every_round" else 2 * inc_rounds
