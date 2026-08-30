@@ -453,6 +453,7 @@ def compute(inputs):
     warnings = _build_warnings(depth_in, sleeve_shaping_rounds, arm, wrist)
 
     sections = [
+        _materials_section(),
         _math_section(locals()),
         _measurements_section(locals()),
         _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg),
@@ -584,6 +585,27 @@ def compute(inputs):
 # ---------------------------------------------------------------------------
 
 
+def _materials_section():
+    """Materials and needles overview -- mirrors the Tin Can Knits Flax tutorial's
+    first step: what to gather before you cast on."""
+    return _section(
+        "0. Materials and needles",
+        intro=("Gather your supplies before you cast on. " "This is a seamless top-down raglan knit in the round."),
+        steps=[
+            "Yarn: choose a weight suitable for your gauge (worsted/aran, DK, or fingering/sport). "
+            "You will need enough for the full sweater -- the Yarn Estimator can help.",
+            "Needles: smaller circular needles for the ribbing (collar, hem, cuffs), "
+            "larger circular needles for the body and yoke. "
+            "For the sleeves you will need double-pointed needles (DPNs) or a long circular "
+            "for magic loop, since the sleeve diameter is too small for a short circular.",
+            "Notions: 4 stitch markers for the raglan seams, a beginning-of-round marker, "
+            "waste yarn or stitch holders for the sleeve stitches, a tapestry needle for "
+            "weaving in ends.",
+            "Optional: a third needle size for the swatch, to match the needle you will " "actually knit with.",
+        ],
+    )
+
+
 def _math_section(v):
     "Section 0: the visible math behind every derived number."
 
@@ -622,7 +644,7 @@ def _math_section(v):
             f"starts, bringing the cast-on to {v['calc_neck']} stitches",
         )
     return _section(
-        "0. The math behind these numbers",
+        "1. The math behind these numbers",
         intro="Every number in this plan is derived from your gauge and "
         "measurements. The formulas are shown so you can see the reasoning "
         "and adjust if needed.",
@@ -652,7 +674,7 @@ def _measurements_section(v):
         ("Sleeve length (underarm to cuff)", f"{_num(v['sleeve_len'])} in"),
     ]
     return _section(
-        "1. Gauge and finished measurements",
+        "2. Gauge and finished measurements",
         intro="The finished garment, as computed from your inputs.",
         table={"columns": table[0], "rows": table[1:]},
         rows=[f"{label}: {value}" for label, value in table[1:]],
@@ -673,7 +695,7 @@ def _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg):
             "divide evenly between the four sections."
         )
     return _section(
-        "2. Cast on and neck setup",
+        "3. Cast on and neck setup",
         intro="Start at the neckline and work downwards.",
         steps=steps,
     )
@@ -681,7 +703,7 @@ def _cast_on_section(inc_row_str, calc_neck, neck, collar_rounds, rg):
 
 def _marker_section(marker, front_start, back_start, sleeve_start, calc_neck, inc, seg):
     return _section(
-        "3. Raglan marker setup",
+        "4. Raglan marker setup",
         intro="Four seams divide the sweater into front, back and two "
         "sleeves. Place a marker on each side of every seam.",
         steps=[
@@ -722,11 +744,14 @@ def _increase_schedule_section(
         f"After {inc_rounds} increase rounds you are at the underarm: "
         f"{working} stitches total ({front_final} front, {back_final} back, "
         f"{sleeve_final} on each sleeve).",
+        "Optional: work short rows now to raise the back neck relative to the front. "
+        "This improves the fit by bringing the back neckline up so the collar sits "
+        "evenly. Short rows are worked between the increase rounds and the separation.",
     ]
     if pre:
         steps.append(f"The {pre}-stitch neck increase round from section 2 is already included in these counts.")
     return _section(
-        "4. Raglan increase schedule with stitch transitions",
+        "5. Raglan increase schedule with stitch transitions",
         intro=intro,
         steps=steps,
         table={
@@ -746,7 +771,7 @@ def _freq_step(freq):
 
 def _separation_section(front_final, back_final, sleeve_final, armpit, bust, arm):
     return _section(
-        "5. Sleeve separation and underarm cast-on",
+        "6. Sleeve separation and underarm cast-on",
         intro="Divide the work into the body and the two sleeves.",
         steps=[
             f"Knit across the {front_final} front stitches, then place the "
@@ -766,7 +791,7 @@ def _separation_section(front_final, back_final, sleeve_final, armpit, bust, arm
 
 def _body_section(body_stock_rounds, rg, body_len):
     return _section(
-        "6. Body instructions",
+        "7. Body instructions",
         intro="Knit the body in the round, all stitches on the needles.",
         steps=[
             f"Knit every round in stockinette for {body_stock_rounds} rounds "
@@ -781,7 +806,7 @@ def _body_section(body_stock_rounds, rg, body_len):
 
 def _hem_section(hem_rounds, rg, body_len):
     return _section(
-        "7. Hem instructions",
+        "8. Hem instructions",
         intro="A ribbed hem keeps the bottom edge from rolling.",
         steps=[
             f"Work {hem_rounds} rounds of k2, p2 ribbing (about {_num(hem_rounds / rg)} in).",
@@ -847,9 +872,13 @@ def _sleeve_section(
         f"Try the sweater on and adjust the sleeve length before "
         f"starting the cuff (target {_num(sleeve_len)} in from the "
         "underarm).",
+        "Tip: maintain a garter stitch panel down the centre of each sleeve "
+        "(the central stitches established at marker setup) to match the "
+        "Flax sweater style. Work these stitches as knit on odd rounds and "
+        "purl on even rounds, while all other stitches are stockinette.",
     ]
     section = _section(
-        "8. Sleeve instructions and shaping",
+        "9. Sleeve instructions and shaping",
         intro="Work each sleeve the same way. The table below is a complete, row-by-row plan you can knit directly.",
         steps=steps,
         table=table,
@@ -863,16 +892,20 @@ def _sleeve_section(
 
 def _cuff_section(cuff_rounds, rg, sleeve_len):
     return _section(
-        "9. Cuff and finishing",
+        "10. Cuff and finishing",
         intro="Finish with a ribbed cuff, then tidy up.",
         steps=[
             f"Work {cuff_rounds} rounds of k2, p2 ribbing for the cuff (about {_num(cuff_rounds / rg)} in).",
-            "Bind off loosely in pattern.",
+            "Bind off loosely in pattern (a stretchy bind-off keeps the cuff from pulling in).",
             f"Repeat for the second sleeve. Each sleeve measures about "
             f"{_num(sleeve_len)} in from the underarm to the cuff.",
-            "Weave in ends and block. Because this sweater is knitted "
-            "top-down, you can adjust body and sleeve length at any point by "
-            "knitting more rounds before the ribbing.",
+            "Finishing: weave in all ends. Use the tail from the cast-on to sew "
+            "the small hole at the underarm closed. Block the sweater by soaking "
+            "in lukewarm water, gently squeezing out excess water, and laying "
+            "flat to measurements. Blocking evens out the stitches and gives "
+            "the finished garment a professional look.",
+            "Because this sweater is knitted top-down, you can adjust body and "
+            "sleeve length at any point by knitting more rounds before the ribbing.",
         ],
     )
 
@@ -1142,8 +1175,8 @@ def _sweater_svg(neck, front_final, back_final, sleeve_final, armpit, bust, dept
 
     parts.append(f'<line x1="{neck_right}" y1="{body_top}" x2="{ur_x}" y2="{ur_y}" class="raglan"/>')
     parts.append(f'<line x1="{neck_left}" y1="{body_top}" x2="{ul_x}" y2="{ul_y}" class="raglan"/>')
-    parts.append(f'<line x1="{neck_right}" y1="{neck_bottom}" x2="{ur_x}" y2="{ur_y + sleeve_h}" class="raglan"/>')
-    parts.append(f'<line x1="{neck_left}" y1="{neck_bottom}" x2="{ul_x}" y2="{ul_y + sleeve_h}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_right}" y1="{neck_bottom}" x2="{ur_x}" y2="{ur_y}" class="raglan"/>')
+    parts.append(f'<line x1="{neck_left}" y1="{neck_bottom}" x2="{ul_x}" y2="{ul_y}" class="raglan"/>')
 
     # --- Neck opening (ellipse) ---
     parts.append(

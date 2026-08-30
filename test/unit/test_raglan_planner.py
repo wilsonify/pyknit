@@ -41,11 +41,12 @@ class TestRaglanSweaterPlan:
     def _section(self, result, needle):
         return next(s for s in self._sections(result) if needle in s["heading"])
 
-    def test_default_plan_has_all_ten_sections(self):
+    def test_default_plan_has_all_eleven_sections(self):
         _, result = self._compute()
         headings = [s["heading"] for s in self._sections(result)]
-        assert len(headings) == 10
+        assert len(headings) == 11
         for expected in (
+            "materials",
             "math",
             "gauge and finished measurements",
             "cast on",

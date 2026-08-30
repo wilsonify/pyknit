@@ -114,10 +114,7 @@ def main():
     # Sort heaviest-first so LPT scheduling balances the load:
     # the slowest demos start first and fast ones fill the gaps.
     specs_sorted = sorted(specs, key=lambda s: _estimate_cost(s), reverse=True)
-    print(
-        f"QA {len(specs)} demos across {WORKERS} parallel browser workers "
-        f"(BASE={BASE}, dynamic scheduling)"
-    )
+    print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE}, dynamic scheduling)")
     ctx = get_context("spawn")
     with ctx.Pool(WORKERS) as pool:
         reports = list(pool.imap_unordered(_worker_run_one, specs_sorted))

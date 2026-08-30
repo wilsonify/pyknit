@@ -953,7 +953,14 @@ k all</textarea>
               '<polygon id="raglanWedge" points="' + wedge + '" fill="rgba(123,63,160,0.12)"/>' +
               '<path id="raglanSeamL" d="M108,' + T + ' L92,' + U + '" stroke="rgba(90,42,117,0.4)" stroke-width="2.5" stroke-linecap="round"/>' +
               '<path id="raglanSeamR" d="M212,' + T + ' L228,' + U + '" stroke="rgba(90,42,117,0.4)" stroke-width="2.5" stroke-linecap="round"/>' +
-              '<g id="raglan-inc-dots"></g>' +
+              '<g id="raglan-inc-dots"></g>
+              <!-- Waste yarn: dashed sleeve outlines visible during body/hem -->
+              <g id="raglan-waste-yarn" style="display:none">
+                <path d="M82,76 L108,66 L92,152 L82,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+                <path d="M238,76 L212,66 L228,152 L238,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+                <text x="82" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>
+                <text x="238" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>
+              </g>' +
               '<g id="raglan-hem"></g>' +
               '<rect x="0" y="0" width="320" height="340" fill="url(#raglanShade)"/>' +
             '</g>' +
@@ -1122,6 +1129,13 @@ k all</textarea>
     }
 
     function updateSectionInfo() {
+      /* Show waste yarn outlines during body/hem sections (sleeves are on holders) */
+      var wy = document.getElementById('raglan-waste-yarn');
+      if (wy && raglanMode) {
+        var sec = step ? step.section : '';
+        var inBodyPhase = (sec === 'body' || sec === 'hem');
+        wy.style.display = inBodyPhase ? '' : 'none';
+      }
       var ph = $('sim-phase-line');
       var sp = $('section-progress');
       if (!ph || !sp) return;
@@ -1176,6 +1190,10 @@ k all</textarea>
         }
         sp.innerHTML = marks;
         sp.style.display = '';
+        /* Show finishing badge when all sections are complete */
+        if (cur >= steps.length - 1 && raglanMode) {
+          ph.innerHTML += '<div style="margin-top:0.3rem;font-size:0.82rem;color:#2e7d32">&#10003; All done! Weave in ends, sew the underarm holes, and block.</div>';
+        }
       } else {
         ph.style.display = 'none';
         sp.style.display = 'none';
