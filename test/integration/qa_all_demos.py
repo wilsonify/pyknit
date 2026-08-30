@@ -20,7 +20,6 @@ Exit code 0 = all demos passed; 1 = at least one failure.
 
 import os
 import sys
-from multiprocessing import Pool
 from multiprocessing import get_context
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
