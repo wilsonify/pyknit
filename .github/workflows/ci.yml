@@ -141,6 +141,7 @@ jobs:
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.sources=pyknit/
             -Dsonar.tests=test/
+            -Dsonar.exclusions=**/*.png,**/*.jpg,**/*.jpeg,**/*.gif,**/*.ico,**/*.svg,**/*.woff,**/*.woff2,**/*.ttf,**/*.eot
 
   # ── Stage 4: clean Python package build ──────────────────────────────
   python-build:
