@@ -31,7 +31,7 @@ PAD_LABELS = {
 
 
 def to_html(result):
-    "Render the staircase chart, summary pills, math, and plan table." ""
+    "Render the staircase chart, summary pills, math, and plan table."
     pills = [
         ("Starting", f"{result['starting']} sts"),
         ("Ending", f"{result['ending']} sts"),
@@ -123,7 +123,7 @@ def _esc(text):
 
 
 def compute(inputs):
-    "Return the decrease schedule with plan table, math, and SVG." ""
+    "Return the decrease schedule with plan table, math, and SVG."
     from pyknit import sleeve_decreases
 
     rows = int(inputs["number_of_rows"])
@@ -275,7 +275,7 @@ def _layout_schedule(plan, mode):
 
 
 def _make_plan_entry(idx, kind, before, after, instruction):
-    "Assemble a single plan row dictionary." ""
+    "Assemble a single plan row dictionary."
     return {
         "round": idx + 1,
         "kind": kind,
@@ -287,7 +287,7 @@ def _make_plan_entry(idx, kind, before, after, instruction):
 
 
 def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decrease):
-    "Stitches removed after a given decrease row." ""
+    "Stitches removed after a given decrease row."
     target = min(
         (dec_index + 1) * per_row,
         total_decrease - (remainder if dec_index < num_dec - 1 else 0),
@@ -298,7 +298,7 @@ def _decrease_target_removed(dec_index, num_dec, per_row, remainder, total_decre
 
 
 def _decrease_instruction(per_row, remainder, dec_index, num_dec, ending):
-    "Build the human-readable instruction for a decrease row." ""
+    "Build the human-readable instruction for a decrease row."
     if remainder and dec_index == num_dec - 1:
         return f"k2tog at each side ({per_row} sts) plus {remainder} extra k2tog to reach {ending} sts"
     if remainder == 0 or dec_index < num_dec - 1:
@@ -309,7 +309,7 @@ def _decrease_instruction(per_row, remainder, dec_index, num_dec, ending):
 
 
 def _build_full_plan(schedule, rows, starting, ending, per_row, remainder):
-    "Build the full row-by-row plan with exactly *rows* entries." ""
+    "Build the full row-by-row plan with exactly *rows* entries."
     dec_set = set(schedule)
     sorted_dec = sorted(dec_set)
     num_dec = len(schedule)
@@ -390,7 +390,7 @@ DECREASE_ROW = "decrease row"
 
 
 def _parse_schedule(text):
-    "Legacy parser for ``sleeve_decreases`` instruction strings (fallback)." ""
+    "Legacy parser for ``sleeve_decreases`` instruction strings (fallback)."
     import re
 
     schedule = []
@@ -403,7 +403,7 @@ def _parse_schedule(text):
 
 
 def _parse_item(token, position):
-    "Handle a single comma-split instruction token." ""
+    "Handle a single comma-split instruction token."
     import re
 
     token = token.strip()
@@ -419,7 +419,7 @@ def _parse_item(token, position):
 
 
 def _parse_repeated(match, position):
-    "Parse a ``[body] * N times`` bracket group (legacy fallback)." ""
+    "Parse a ``[body] * N times`` bracket group (legacy fallback)."
     import re
 
     body, times = match.group(1), int(match.group(2))
@@ -456,13 +456,13 @@ def _parse_repeated(match, position):
 
 
 def _parse_decrease(token, position):
-    "Parse a bare ``decrease row`` item (possibly counted)." ""
+    "Parse a bare ``decrease row`` item (possibly counted)."
     count = int(token.split(DECREASE_ROW)[0].strip() or "1") or 1
     return position + count, [position + i for i in range(count)]
 
 
 def _staircase_svg(schedule, rows, starting, ending):
-    "Staircase line chart: stitch count per row with decreases marked." ""
+    "Staircase line chart: stitch count per row with decreases marked."
     width = 460
     height = 220
     margin = 36
@@ -477,9 +477,9 @@ def _staircase_svg(schedule, rows, starting, ending):
     ]
     # axes
     parts.append(
-        f'<line x1="{margin}" y1="{height - margin}" ' f'x2="{width - margin}" y2="{height - margin}" stroke="#999"/>'
+        f'<line x1="{margin}" y1="{height - margin}"  x2="{width - margin}" y2="{height - margin}" stroke="#999"/>'
     )
-    parts.append(f'<line x1="{margin}" y1="{margin * 0.4}" x2="{margin}" ' f'y2="{height - margin}" stroke="#999"/>')
+    parts.append(f'<line x1="{margin}" y1="{margin * 0.4}" x2="{margin}"  y2="{height - margin}" stroke="#999"/>')
     parts.append(f'<text x="{margin}" y="{height - 10}" font-size="11" fill="#5a2a75">' "row -></text>")
     parts.append(
         f'<text x="8" y="{height - 3 * margin}" font-size="11" fill="#5a2a75" '
