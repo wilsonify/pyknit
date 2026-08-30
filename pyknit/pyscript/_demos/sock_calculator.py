@@ -24,7 +24,7 @@ TITLE = "Sock Calculator"
 
 
 def _ease_factor(inputs):
-    "Turn a negative-ease percent (e.g. 20 = 20% smaller) into a factor." ""
+    "Turn a negative-ease percent (e.g. 20 = 20% smaller) into a factor."
     pct = float(inputs["negative_ease"])
     if pct < 0 or pct > 50:
         raise ValueError("negative ease must be between 0% and 50%")
@@ -92,8 +92,8 @@ def _sim_pattern(sock):
     for _ in range(flap):
         add("heel_slip", "heel flap · slip 1, k1", flap, flap, 0, "heel")
 
-    current = _add_heel_turn(add, flap, heel_rem)
-    current = _add_gusset(add, sock, heel_rem, after_pickup)
+    _add_heel_turn(add, flap, heel_rem)
+    _add_gusset(add, sock, heel_rem, after_pickup)
     _add_foot(add, sock, ankle)
     _add_toe(add, toe, ankle)
 
@@ -154,7 +154,7 @@ def _build_sock_result(cast, ankle, sock, rounds):
 
 
 def compute(inputs):
-    "Return the Sock plan as a plain dict plus the SVG diagram." ""
+    "Return the Sock plan as a plain dict plus the SVG diagram."
     sock = Sock()
     sock.init(
         rows_per_inch=_pos(inputs, "rows_per_inch"),
@@ -313,7 +313,7 @@ def _sock_svg(m):
 
     # --- section labels on the left ---
     parts.append(
-        f'<text x="{bx + 4}" y="{ty - 6}" font-size="12" font-weight="600" ' f'fill="#5a2a75">cast on {cast} sts</text>'
+        f'<text x="{bx + 4}" y="{ty - 6}" font-size="12" font-weight="600" fill="#5a2a75">cast on {cast} sts</text>'
     )
     parts.append(
         f'<text x="{bx + 4}" y="{min(sole_y - 4, max(ty + 14, rib_y + 14)):.1f}" '
@@ -330,9 +330,7 @@ def _sock_svg(m):
         'font-size="11" fill="#5a2a75">leg · '
         f'{m["number_of_decrease_rows"]} decrease rounds</text>'
     )
-    parts.append(
-        f'<text x="{bx + 4}" y="{sole_y + 18:.1f}" font-size="11" ' f'fill="#5a2a75">foot · {ankle} sts</text>'
-    )
+    parts.append(f'<text x="{bx + 4}" y="{sole_y + 18:.1f}" font-size="11" fill="#5a2a75">foot · {ankle} sts</text>')
     parts.append(
         f'<text x="{toe_end_x - 6:.1f}" y="{sole_y - toe_rise - 6:.1f}" '
         'font-size="11" fill="#5a2a75" text-anchor="end">toe · '
@@ -442,7 +440,7 @@ def _render_sections(plan):
 
 
 def to_html(result):
-    "Render the SVG diagram plus the full guided plan." ""
+    "Render the SVG diagram plus the full guided plan."
     plan = result["plan"]
 
     warnings = ""
