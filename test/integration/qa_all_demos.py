@@ -30,15 +30,32 @@ WORKERS = int(os.environ.get("PYQ_WORKERS", "4"))
 import qa_demos  # noqa: E402  (same directory; local import)
 
 
-def _chunked(items, n):
-    return [items[i::n] for i in range(n)]
+def _estimate_cost(spec):
+    """Heuristic cost weight for a demo (higher = slower).
+
+    The extras (simulate-nav, knit-simulator) add navigation, polling, and
+    multi-click sequences that dominate wall-clock time.  Sorting demos by
+    this weight before dispatching lets the longest-processing-time-first
+    (LPT) scheduler keep all workers busy.
+    """
+    weight = 1
+    extra = spec.get("extra")
+    if extra == "simulate-nav":
+        sim = spec.get("sim", {})
+        # More steps and longer instructions = more polling time.
+        weight = 3 + sim.get("min_steps", 0) // 20
+    elif extra == "knit-simulator":
+        weight = 5
+    if len(spec.get("buttons", [])) > 1:
+        weight += 1
+    return weight
 
 
-def worker(specs):
-    """Run one browser over a chunk of demo specs (one process per worker).
+def _worker_run_one(spec):
+    """Run a single demo and return its QAReport.
 
-    A crash in a single demo must not kill the whole parallel run: each spec
-    is wrapped so an exception becomes a recorded failure with the traceback.
+    Each call opens its own browser, runs the demo, and closes the browser.
+    Used with ``pool.imap_unordered`` for dynamic load balancing.
     """
     import traceback  # noqa: F401
 
@@ -48,19 +65,17 @@ def worker(specs):
 
     from playwright.sync_api import sync_playwright
 
-    reports = []
+    name = spec["dir"]
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        for spec in specs:
-            try:
-                reports.append(qd.run_demo(browser, spec))
-            except Exception:
-                tb = traceback.format_exc().splitlines()[-6:]
-                rep = qd.QAReport(spec["dir"])
-                rep.fail("crash during QA", "; ".join(tb))
-                reports.append(rep)
+        try:
+            report = qd.run_demo(browser, spec)
+        except Exception:
+            tb = traceback.format_exc().splitlines()[-6:]
+            report = qd.QAReport(name)
+            report.fail("crash during QA", "; ".join(tb))
         browser.close()
-    return reports
+    return report
 
 
 def _flag_if_present(items, headline, limit):
@@ -96,12 +111,16 @@ def _print_report(r):
 
 def main():
     specs = qa_demos.DEMOS
-    print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE})")
-    chunks = [c for c in _chunked(specs, WORKERS) if c]
+    # Sort heaviest-first so LPT scheduling balances the load:
+    # the slowest demos start first and fast ones fill the gaps.
+    specs_sorted = sorted(specs, key=lambda s: _estimate_cost(s), reverse=True)
+    print(
+        f"QA {len(specs)} demos across {WORKERS} parallel browser workers "
+        f"(BASE={BASE}, dynamic scheduling)"
+    )
     ctx = get_context("spawn")
     with ctx.Pool(WORKERS) as pool:
-        per_worker = pool.map(worker, chunks)
-    reports = [r for chunk in per_worker for r in chunk]
+        reports = list(pool.imap_unordered(_worker_run_one, specs_sorted))
 
     from playwright.sync_api import sync_playwright
 
