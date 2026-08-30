@@ -128,7 +128,7 @@ class GaugeSwatch(BaseModel):
         if self.yardage_per_unit is None:
             raise ValueError("yardage_per_unit not set on this swatch")
         yardage = self.yardage_per_unit
-        return yardage * stitch_count
+        return float(yardage) * stitch_count
 
     @validate_call
     def estimate_weight(self, stitch_count: PositiveInt) -> float:
@@ -141,7 +141,7 @@ class GaugeSwatch(BaseModel):
         if self.weight_per_unit is None:
             raise ValueError("weight_per_unit not set on this swatch")
         weight = self.weight_per_unit
-        return weight * stitch_count
+        return float(weight) * stitch_count
 
 
 # Gauge and stich count related functions
