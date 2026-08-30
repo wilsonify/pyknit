@@ -109,15 +109,41 @@ def _print_report(r):
     return ok
 
 
+def _run_one_sync(spec):
+    """Run a single demo serially (no subprocess) with live progress output."""
+    import traceback  # noqa: F401
+
+    name = spec["dir"]
+    print(f"\n--- [{name}] starting ---", flush=True)
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            report = qa_demos.run_demo(browser, spec)
+        except Exception:
+            tb = traceback.format_exc().splitlines()[-6:]
+            report = qa_demos.QAReport(name)
+            report.fail("crash during QA", "; ".join(tb))
+        browser.close()
+    status = "PASS" if report.passed else "FAIL"
+    print(f"--- [{name}] {status} ---", flush=True)
+    return report
+
+
 def main():
     specs = qa_demos.DEMOS
     # Sort heaviest-first so LPT scheduling balances the load:
     # the slowest demos start first and fast ones fill the gaps.
     specs_sorted = sorted(specs, key=lambda s: _estimate_cost(s), reverse=True)
     print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE}, dynamic scheduling)")
-    ctx = get_context("spawn")
-    with ctx.Pool(WORKERS) as pool:
-        reports = list(pool.imap_unordered(_worker_run_one, specs_sorted))
+
+    if WORKERS <= 1:
+        reports = [_run_one_sync(spec) for spec in specs_sorted]
+    else:
+        ctx = get_context("spawn")
+        with ctx.Pool(WORKERS) as pool:
+            reports = list(pool.imap_unordered(_worker_run_one, specs_sorted))
 
     from playwright.sync_api import sync_playwright
 
