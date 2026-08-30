@@ -590,7 +590,7 @@ def _materials_section():
     first step: what to gather before you cast on."""
     return _section(
         "0. Materials and needles",
-        intro=("Gather your supplies before you cast on. " "This is a seamless top-down raglan knit in the round."),
+        intro="Gather your supplies before you cast on. This is a seamless top-down raglan knit in the round.",
         steps=[
             "Yarn: choose a weight suitable for your gauge (worsted/aran, DK, or fingering/sport). "
             "You will need enough for the full sweater -- the Yarn Estimator can help.",
@@ -601,7 +601,7 @@ def _materials_section():
             "Notions: 4 stitch markers for the raglan seams, a beginning-of-round marker, "
             "waste yarn or stitch holders for the sleeve stitches, a tapestry needle for "
             "weaving in ends.",
-            "Optional: a third needle size for the swatch, to match the needle you will " "actually knit with.",
+            "Optional: a third needle size for the swatch, to match the needle you will actually knit with.",
         ],
     )
 
