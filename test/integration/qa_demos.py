@@ -221,9 +221,10 @@ def _read_banner_state(page):
     return None
 
 
-def wait_for_ready(page, report, timeout=240_000):
+def wait_for_ready(page, report, timeout=120_000):
     """Wait until status banner has class 'ready' or buttons are enabled."""
     deadline = time.time() + timeout / 1000
+    last_log = 0
     while time.time() < deadline:
         state = _read_banner_state(page)
         if state in ("ready", "error"):
@@ -231,6 +232,11 @@ def wait_for_ready(page, report, timeout=240_000):
         # also detect boot errors printed to console
         if report.page_errors:
             return "page-error"
+        elapsed = time.time() - (deadline - timeout / 1000)
+        if elapsed - last_log >= 15:
+            last_log = elapsed
+            banner = _banner_text(page)
+            print(f"    ... waiting for ready ({elapsed:.0f}s) banner={banner!r}", flush=True)
         time.sleep(0.5)
     return "timeout"
 
