@@ -558,7 +558,7 @@ def _estimator_svg(yards, grams, project_stitches):
     parts.append(f'<text x="{margin}" y="62" font-size="11" fill="#4aa3a2">grams</text>')
     parts.append(f'<rect x="{margin}" y="70" width="{grams * scale:.1f}" height="16" ' 'fill="#4aa3a2" rx="4"/>')
     parts.append(
-        f'<text x="{margin + grams * scale + 6:.1f}" y="82" font-size="11" ' f'fill="#4aa3a2">{grams:.0f} g</text>'
+        f'<text x="{margin + grams * scale + 6:.1f}" y="82" font-size="11" fill="#4aa3a2">{grams:.0f} g</text>'
     )
     parts.append(
         f'<text x="{margin}" y="115" font-size="11" fill="#888">' f"{project_stitches:,} stitches total</text>"

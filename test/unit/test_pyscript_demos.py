@@ -1564,7 +1564,8 @@ class TestRaglanToSimulator:
         body = [s for s in steps if s["section"] == "body"]
         # the body phase begins with the sleeve separation: the body is cast
         # on at the planner's real bust count, then knitted plain
-        assert body[0]["kind"] == "cast_on" and body[0]["n"] == meta["bust"]
+        assert body[0]["kind"] == "cast_on"
+        assert body[0]["n"] == meta["bust"]
         assert body[1]["op_short"] == "Knit all"
 
         for side, cuff_id in (
@@ -1572,7 +1573,8 @@ class TestRaglanToSimulator:
             ("right_sleeve", "right_cuff"),
         ):
             sec = [s for s in steps if s["section"] == side]
-            assert sec[0]["kind"] == "cast_on" and sec[0]["n"] == meta["arm"]
+            assert sec[0]["kind"] == "cast_on"
+            assert sec[0]["n"] == meta["arm"]
             cuff = [s for s in steps if s["section"] == cuff_id]
             rib = next(s for s in cuff if "ribbing" in s["op_short"])
             assert rib["n"] == meta["wrist"]  # cuff starts at wrist count
@@ -1611,7 +1613,8 @@ class TestRaglanToSimulator:
         assert yoke["n"] == plan["meta"]["calc_neck"] + plan["meta"]["inc"]
         # every bind-off round reports its full run-down
         bo = [s for s in steps if s["kind"] == "bind_off"]
-        assert bo and all(s["before"] > 0 and s["n"] == 0 for s in bo)
+        assert bo
+        assert all(s["before"] > 0 and s["n"] == 0 for s in bo)
 
     def test_manual_steps_carry_before_counts(self):
         module = load_demo("knit_simulator")
@@ -1645,12 +1648,14 @@ class TestRaglanToSimulator:
         body = [s for s in steps if s["section"] == "body"]
         hem = [s for s in steps if s["section"] == "hem"]
         # separation cast-on, then every body/hem round at bust
-        assert body[0]["kind"] == "cast_on" and body[0]["n"] == meta["bust"]
+        assert body[0]["kind"] == "cast_on"
+        assert body[0]["n"] == meta["bust"]
         assert all(s["n"] == meta["bust"] for s in body[1:])
         assert all(s["n"] == meta["bust"] for s in hem[:-1])
         # the hem bind-off runs the body down 180 -> 0, not 272 -> 0
         assert hem[-1]["kind"] == "bind_off"
-        assert hem[-1]["before"] == meta["bust"] and hem[-1]["n"] == 0
+        assert hem[-1]["before"] == meta["bust"]
+        assert hem[-1]["n"] == 0
 
     def test_cuff_and_bind_off_phases_are_visible(self):
         """The compact progress view shows the cuffs and bind-offs as their
@@ -1658,7 +1663,9 @@ class TestRaglanToSimulator:
         sleeve, right cuff."""
         sim = self._plan()["sim_plan"]
         ids = [s["id"] for s in sim["sections"]]
-        assert "hem" in ids and "left_cuff" in ids and "right_cuff" in ids
+        assert "hem" in ids
+        assert "left_cuff" in ids
+        assert "right_cuff" in ids
         labels = {s["label"] for s in sim["sections"]}
         assert "Hem & bind-off" in labels
         assert "Left cuff & bind-off" in labels

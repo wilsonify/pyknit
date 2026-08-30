@@ -129,8 +129,10 @@ def test_whole_numbers_and_consistency(kwargs, _name):
 
     cast = sock.cast_on_stitches
     ankle = sock.ankle_stitches
-    assert cast % 2 == 0 and ankle % 2 == 0
-    assert cast > 0 and ankle > 0
+    assert cast % 2 == 0
+    assert ankle % 2 == 0
+    assert cast > 0
+    assert ankle > 0
 
     # ---- leg: decreases sum exactly to the taper ----
     plan = sock.leg_decrease_plan()

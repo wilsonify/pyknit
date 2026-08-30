@@ -69,5 +69,6 @@ def test_crescent_increases_at_both_ends():
 
 
 def test_unknown_shape_raises_value_error():
+    gauge = make_swatch()
     with pytest.raises(ValueError):
-        generate_shawl("dodecagon", width=20, length=30, gauge=make_swatch())
+        generate_shawl("dodecagon", width=20, length=30, gauge=gauge)

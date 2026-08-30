@@ -21,6 +21,7 @@ Exit code 0 = all demos passed; 1 = at least one failure.
 import os
 import sys
 from multiprocessing import Pool
+from multiprocessing import get_context
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -98,7 +99,8 @@ def main():
     specs = qa_demos.DEMOS
     print(f"QA {len(specs)} demos across {WORKERS} parallel browser workers " f"(BASE={BASE})")
     chunks = [c for c in _chunked(specs, WORKERS) if c]
-    with Pool(WORKERS) as pool:
+    ctx = get_context("spawn")
+    with ctx.Pool(WORKERS) as pool:
         per_worker = pool.map(worker, chunks)
     reports = [r for chunk in per_worker for r in chunk]
 
