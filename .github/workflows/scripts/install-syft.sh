@@ -25,10 +25,12 @@ fi
 
 echo "Downloading Syft ${VERSION}..."
 curl -sSfL -o "$ARCHIVE" "${BASE_URL}/syft_${VERSION}_linux_amd64.tar.gz"
-curl -sSfL -o "$CHECKSUM" "${BASE_URL}/syft_${VERSION}_linux_amd64.tar.gz.sha256"
+# Syft releases publish a single checksums file rather than a per-asset
+# .sha256 file (the latter returns 404 for current releases).
+curl -sSfL -o "$CHECKSUM" "${BASE_URL}/syft_${VERSION}_checksums.txt"
 
 echo "Verifying checksum..."
-cd /tmp && sha256sum -c "$CHECKSUM"
+cd /tmp && grep "syft_${VERSION}_linux_amd64.tar.gz$" "$CHECKSUM" | sha256sum -c -
 
 echo "Installing Syft..."
 tar -xzf "$ARCHIVE" -C /tmp syft
