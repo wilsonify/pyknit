@@ -956,23 +956,22 @@ k all</textarea>
               '<polygon id="raglanWedge" points="' + wedge + '" fill="rgba(123,63,160,0.12)"/>' +
               '<path id="raglanSeamL" d="M108,' + T + ' L92,' + U + '" stroke="rgba(90,42,117,0.4)" stroke-width="2.5" stroke-linecap="round"/>' +
               '<path id="raglanSeamR" d="M212,' + T + ' L228,' + U + '" stroke="rgba(90,42,117,0.4)" stroke-width="2.5" stroke-linecap="round"/>' +
-              '<g id="raglan-inc-dots"></g>
-              <!-- Waste yarn: dashed sleeve outlines visible during body/hem -->
-              <g id="raglan-waste-yarn" style="display:none">
-                <path d="M82,76 L108,66 L92,152 L82,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
-                <path d="M238,76 L212,66 L228,152 L238,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
-                <text x="82" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>
-                <text x="238" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>
-              </g>' +
-              '
-              <!-- Underarm pickup indicator: visible when a sleeve section starts -->
-              <g id="raglan-pickup-indicator" style="display:none">
-                <circle cx="92" cy="155" r="4" fill="#e74c3c" stroke="white" stroke-width="1.5"/>
-                <text x="92" y="168" text-anchor="middle" font-size="7" fill="#a33e5c" font-weight="600">pick up</text>
-                <circle cx="228" cy="155" r="4" fill="#e74c3c" stroke="white" stroke-width="1.5"/>
-                <text x="228" y="168" text-anchor="middle" font-size="7" fill="#a33e5c" font-weight="600">pick up</text>
-              </g>
-              <g id="raglan-hem"></g>' +
+              '<g id="raglan-inc-dots"></g>' +
+              '<!-- Waste yarn: dashed sleeve outlines visible during body/hem -->' +
+              '<g id="raglan-waste-yarn" style="display:none">' +
+                '<path d="M82,76 L108,66 L92,152 L82,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>' +
+                '<path d="M238,76 L212,66 L228,152 L238,152 Z" fill="none" stroke="#a9b0bd" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>' +
+                '<text x="82" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>' +
+                '<text x="238" y="162" text-anchor="middle" font-size="7" fill="#8a82a0">on waste yarn</text>' +
+              '</g>' +
+              '<!-- Underarm pickup indicator: visible when a sleeve section starts -->' +
+              '<g id="raglan-pickup-indicator" style="display:none">' +
+                '<circle cx="92" cy="155" r="4" fill="#e74c3c" stroke="white" stroke-width="1.5"/>' +
+                '<text x="92" y="168" text-anchor="middle" font-size="7" fill="#a33e5c" font-weight="600">pick up</text>' +
+                '<circle cx="228" cy="155" r="4" fill="#e74c3c" stroke="white" stroke-width="1.5"/>' +
+                '<text x="228" y="168" text-anchor="middle" font-size="7" fill="#a33e5c" font-weight="600">pick up</text>' +
+              '</g>' +
+              '<g id="raglan-hem"></g>' +
               '<rect x="0" y="0" width="320" height="340" fill="url(#raglanShade)"/>' +
             '</g>' +
           '</g>' +
