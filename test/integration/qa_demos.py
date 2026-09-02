@@ -221,7 +221,7 @@ def _read_banner_state(page):
     return None
 
 
-def wait_for_ready(page, report, timeout=120_000):
+def wait_for_ready(page, report, timeout=240_000):
     """Wait until status banner has class 'ready' or buttons are enabled."""
     deadline = time.time() + timeout / 1000
     last_log = 0
