@@ -10,7 +10,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 IMAGE = os.environ.get("PYKNIT_DEMO_IMAGE", "pyknit-demos:test")
-DOCKERFILE = REPO_ROOT / "demos" / "Dockerfile"
+DOCKERFILE = REPO_ROOT / "Dockerfile"
 CONTAINER = "pyknit-demos-e2e"
 
 
