@@ -220,6 +220,9 @@ jobs:
       - name: Install from wheel (not source)
         run: .github/workflows/scripts/install-wheel-for-testing.sh
 
+      - name: Download PyScript runtime assets
+        run: .github/workflows/scripts/download-pyscript-runtime.sh
+
       - name: Start demo server
         run: |
           python -m http.server 8000 --directory demos &
@@ -255,6 +258,9 @@ jobs:
 
       - name: Install from wheel (not source)
         run: .github/workflows/scripts/install-wheel-for-testing.sh
+
+      - name: Download PyScript runtime assets
+        run: .github/workflows/scripts/download-pyscript-runtime.sh
 
       - name: Start demo server
         run: |

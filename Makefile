@@ -8,15 +8,16 @@ PYSCRIPT_DIR := $(BUILD_DIR)/pyscript
 DOCKER ?= docker
 IMAGE ?= pyknit-demos
 
-.PHONY: help setup wheel favicon serve run clean docker-build docker-test docker-serve docker-server runtime-cache docker
+.PHONY: help setup wheel favicon serve run clean docker-build docker-test docker-serve docker-server runtime-cache docker copy-pyscript-assets
 
 help:
 	@echo "PyKnit browser demo helpers"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make setup         Build local wheel and ensure favicon exists"
+	@echo "  make setup         Build local wheel, ensure favicon, copy pyscript assets"
 	@echo "  make wheel         Build local wheel into build/wheel"
 	@echo "  make runtime-cache Download Pyodide runtime files into build/"
+	@echo "  make copy-pyscript-assets  Copy pyscript/pyodide assets to demos/_assets/"
 	@echo "  make favicon       Create an empty demos/favicon.ico if missing"
 	@echo "  make serve         Run http.server from demos/ (default port 8000)"
 	@echo "  make run           setup + serve"
@@ -33,7 +34,7 @@ help:
 	@echo "  DOCKER=docker      Container engine"
 	@echo "  IMAGE=pyknit-demos  Image name for docker targets"
 
-setup: wheel favicon demo-assets
+setup: wheel favicon demo-assets copy-pyscript-assets
 
 demo-assets:
 	mkdir -p demos/_assets
@@ -41,6 +42,12 @@ demo-assets:
 	  '"""Gauge conversion demo bootstrap (recreated by make demo-assets)."""' \
 	  'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401  # auto-bootstraps' \
 	  > demos/_assets/gauge-conversion.py
+
+copy-pyscript-assets: runtime-cache
+	mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels
+	cp -a $(PYSCRIPT_DIR)/* demos/_assets/pyscript/
+	cp -a $(PYODIDE_DIR)/* demos/_assets/pyodide/
+	cp -a $(WHEELS_DIR)/* demos/_assets/wheels/
 
 wheel:
 	mkdir -p $(BUILD_DIR) $(WHEEL_DIR)
@@ -83,7 +90,7 @@ $(PYSCRIPT_DIR):
 favicon:
 	test -f demos/favicon.ico || : > demos/favicon.ico
 
-serve:
+serve: copy-pyscript-assets
 	$(PYTHON) -m http.server $(PORT) --directory demos
 
 run: setup serve
