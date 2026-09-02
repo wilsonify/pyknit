@@ -1,0 +1,87 @@
+# 3D Knitting Visualization
+
+## Why
+
+The Knit Simulator currently visualizes knitting primarily as a 2D garment or shape growing over time. This does not clearly communicate how knitting actually works.
+
+A useful knitting visualization needs to show:
+
+* individual stitches and their topology
+* rows and stitch columns
+* fabric growing row by row
+* increases and decreases changing fabric geometry
+* yarn overs creating visible holes
+* shaping changing the silhouette
+* garment construction events such as separating sleeves and body
+
+The goal is not photorealistic rendering. The goal is an intuitive visual model that helps a knitter understand what the instructions are doing.
+
+The visualization should work for simple swatches as well as hats, socks, sleeves, and sweaters. It must not assume every input represents a sweater.
+
+## What Changes
+
+Add an interactive 3D fabric visualization to the Knit Simulator.
+
+The visualization should:
+
+* render stitches as recognizable 3D yarn loops or an equivalent stylized representation
+* render rows and stitch columns with clear topology
+* grow the fabric as instructions are executed
+* visually represent knit, purl, yarn-over, increase, decrease, and bind-off operations
+* preserve the actual stitch count and instruction semantics
+* support rotation, zoom, and pan
+* work in a static HTML/PyScript deployment
+* degrade gracefully if WebGL/3D rendering is unavailable
+
+Use a lightweight browser-based 3D approach such as Three.js/WebGL rather than attempting to create a full physically accurate yarn simulator.
+
+Keep the existing knitting instruction engine independent from the renderer. The renderer should consume the knitting state produced by the simulator.
+
+The first implementation should focus on a small knitted swatch and establish a reusable rendering model that can later support complete garments.
+
+## Capabilities
+
+### Stitch-level visualization
+
+Represent individual stitches in a visually recognizable way rather than rendering the fabric as a flat polygon.
+
+### Fabric topology
+
+Maintain a logical relationship between stitches, rows, and neighboring stitches so that shaping operations produce corresponding geometric changes.
+
+### Construction events
+
+Provide a foundation for later visualization of events such as sleeve separation, held stitches, underarm stitches, and finishing.
+
+### Interactive 3D
+
+Allow the user to rotate, zoom, and inspect the fabric from different angles.
+
+### Static deployment
+
+The visualization must work when the PyScript demo is served statically from GitHub Pages.
+
+### Performance
+
+The renderer must remain responsive for normal demo-sized patterns and avoid creating unnecessary geometry for every animation frame.
+
+### Accessibility and fallback
+
+The existing textual/step-based simulator information must remain available. If 3D rendering is unavailable, the simulator must still function normally.
+
+## Scope
+
+Start with:
+
+1. A 10–20 stitch swatch.
+2. Multiple knitted rows.
+3. Knit and purl stitches.
+4. Yarn overs.
+5. Increases and decreases.
+6. Bind-off.
+7. Step-by-step animation.
+8. Interactive camera controls.
+
+Do not attempt realistic yarn physics, cloth simulation, or photorealistic rendering in the first version.
+
+The architecture should make those capabilities possible later without requiring a rewrite of the knitting engine.
