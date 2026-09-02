@@ -44,10 +44,11 @@ demo-assets:
 	  > demos/_assets/gauge-conversion.py
 
 copy-pyscript-assets: runtime-cache
-	mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels
+	mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels demos/_wheel
 	cp -a $(PYSCRIPT_DIR)/* demos/_assets/pyscript/
 	cp -a $(PYODIDE_DIR)/* demos/_assets/pyodide/
 	cp -a $(WHEELS_DIR)/* demos/_assets/wheels/
+	cp -a $(WHEEL_DIR)/*.whl demos/_wheel/ 2>/dev/null || true
 
 wheel:
 	mkdir -p $(BUILD_DIR) $(WHEEL_DIR)

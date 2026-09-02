@@ -32,3 +32,9 @@ for f in typing_extensions-4.7.1-py3-none-any.whl \
          Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; do
     curl -fsSL -o "demos/_assets/wheels/$f" "$PYODIDE/$f"
 done
+
+# Copy the built pyknit wheel into demos/_wheel/ so the <py-config> can load it.
+if ls dist/*.whl 1>/dev/null 2>&1; then
+    mkdir -p demos/_wheel
+    cp dist/*.whl demos/_wheel/
+fi
