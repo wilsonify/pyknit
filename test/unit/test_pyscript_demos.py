@@ -1397,14 +1397,22 @@ class TestHatCrownToSimulator:
     def test_page_plumbing(self):
         root = pathlib.Path(__file__).resolve().parents[2]
         hat_html = (root / "demos" / "hat-crown" / "demo.html").read_text(encoding="utf-8")
-        hat_js = (root / "demos" / "hat-crown" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "hat-crown" / "actions.js").exists() else ""
+        hat_js = (
+            (root / "demos" / "hat-crown" / "actions.js").read_text(encoding="utf-8")
+            if (root / "demos" / "hat-crown" / "actions.js").exists()
+            else ""
+        )
         hat = hat_html + hat_js
         assert "simulate-hat" in hat
         assert "hat_sim_plan" in hat
         assert "hat_sim_ready" in hat
         assert "knit_sim_instructions" in hat
         sim = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
-        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        sim_js = (
+            (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8")
+            if (root / "demos" / "knit-simulator" / "simulator.js").exists()
+            else ""
+        )
         sim_all = sim + sim_js
         assert "hatMode" in sim_all
         assert "buildHat" in sim_all
@@ -1473,7 +1481,11 @@ class TestRaglanToSimulator:
     def test_raglan_page_has_simulate_button(self):
         root = pathlib.Path(__file__).resolve().parents[2]
         raglan_html = (root / "demos" / "raglan-sweater" / "demo.html").read_text(encoding="utf-8")
-        raglan_js = (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "raglan-sweater" / "actions.js").exists() else ""
+        raglan_js = (
+            (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8")
+            if (root / "demos" / "raglan-sweater" / "actions.js").exists()
+            else ""
+        )
         content = raglan_html + raglan_js
         assert "simulate-sweater" in content
         assert "knit_sim_instructions" in content
@@ -1482,7 +1494,11 @@ class TestRaglanToSimulator:
     def test_knit_sim_page_prefills_from_storage(self):
         root = pathlib.Path(__file__).resolve().parents[2]
         sim_html = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
-        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        sim_js = (
+            (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8")
+            if (root / "demos" / "knit-simulator" / "simulator.js").exists()
+            else ""
+        )
         content = sim_html + sim_js
         assert "knit_sim_instructions" in content
         assert "raglan-plan-note" in content
@@ -1721,7 +1737,11 @@ class TestRaglanToSimulator:
     def test_raglan_page_publishes_plan(self):
         root = pathlib.Path(__file__).resolve().parents[2]
         raglan_html = (root / "demos" / "raglan-sweater" / "demo.html").read_text(encoding="utf-8")
-        raglan_js = (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "raglan-sweater" / "actions.js").exists() else ""
+        raglan_js = (
+            (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8")
+            if (root / "demos" / "raglan-sweater" / "actions.js").exists()
+            else ""
+        )
         content = raglan_html + raglan_js
         assert "raglan_sim_plan" in content
         assert "knit_sim_plan" in content
@@ -1729,7 +1749,11 @@ class TestRaglanToSimulator:
     def test_knit_sim_page_reads_plan(self):
         root = pathlib.Path(__file__).resolve().parents[2]
         sim_html = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
-        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        sim_js = (
+            (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8")
+            if (root / "demos" / "knit-simulator" / "simulator.js").exists()
+            else ""
+        )
         content = sim_html + sim_js
         assert "knit_sim_plan" in content
         assert "_read_raglan_plan" in content
