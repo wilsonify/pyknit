@@ -477,23 +477,22 @@ jobs:
         run: |
           mkdir -p sboms
           syft dir:. -o spdx-json=sboms/source.spdx.json &
-          syft " artifacts/python/*.whl" -o spdx-json=sboms/wheel.spdx.json &
+          syft "artifacts/python/*.whl" -o spdx-json=sboms/wheel.spdx.json &
           syft artifacts/android/app-debug.apk -o spdx-json=sboms/android.spdx.json &
           syft dir:artifacts/pyscript/ -o spdx-json=sboms/pyscript.spdx.json &
           wait
           echo "All SBOMs generated"
           ls -lh sboms/
 
-      - name: Scan for vulnerabilities (parallel)
+      - name: Scan for vulnerabilities
         id: scan
-        run: |
-          mkdir -p sarif
-          grype sbom:sboms/source.spdx.json --fail-on high --output sarif --file sarif/source.sarif &
-          grype sbom:sboms/wheel.spdx.json --fail-on high --output sarif --file sarif/wheel.sarif &
-          grype sbom:sboms/android.spdx.json --fail-on high --output sarif --file sarif/android.sarif &
-          grype sbom:sboms/pyscript.spdx.json --fail-on high --output sarif --file sarif/pyscript.sarif &
-          wait
-          echo "All scans complete"
+        run: .github/workflows/scripts/scan-vulns.sh
+
+      - name: Sanitize SARIF for CodeQL upload
+        run: .github/workflows/scripts/sanitize-sarif.sh
+
+      - name: Fail on high/critical findings
+        run: .github/workflows/scripts/fail-on-high.sh
 
       - name: Upload SARIF (source)
         if: always()
