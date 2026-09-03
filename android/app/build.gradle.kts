@@ -52,7 +52,6 @@ chaquopy {
     }
     defaultConfig {
         version = "3.11"
-        buildPython("C:/Users/toman/AppData/Roaming/uv/python/cpython-3.11.15-windows-x86_64-none/python.exe")
         pip {
             install("-r", "../requirements-android.txt")
         }
