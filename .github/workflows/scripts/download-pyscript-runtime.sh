@@ -9,6 +9,15 @@ PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full
 
 mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels
 
+# The gauge-conversion page loads its bootstrap from a gitignored _assets
+# file (it is generated, never committed).  Generate it here too so the
+# runtime-download path (used by the integration server) matches the full
+# clean build in build-pyscript-clean.sh.
+printf '%s\n' \
+  '"""Gauge conversion demo bootstrap."""' \
+  'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401' \
+  > demos/_assets/gauge-conversion.py
+
 for f in core.css core.js core.js.map core-DHft4mQJ.js \
          core-DHft4mQJ.js.map \
          toml-CvAfdf9_.js toml-DiUM0_qs.js \
