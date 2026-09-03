@@ -477,7 +477,7 @@ jobs:
         run: |
           mkdir -p sboms
           syft dir:. -o spdx-json=sboms/source.spdx.json &
-          syft "artifacts/python/*.whl" -o spdx-json=sboms/wheel.spdx.json &
+          syft artifacts/python/*.whl -o spdx-json=sboms/wheel.spdx.json &
           syft artifacts/android/app-debug.apk -o spdx-json=sboms/android.spdx.json &
           syft dir:artifacts/pyscript/ -o spdx-json=sboms/pyscript.spdx.json &
           wait
@@ -486,13 +486,13 @@ jobs:
 
       - name: Scan for vulnerabilities
         id: scan
-        run: .github/workflows/scripts/scan-vulns.sh
+        run: bash .github/workflows/scripts/scan-vulns.sh
 
       - name: Sanitize SARIF for CodeQL upload
-        run: .github/workflows/scripts/sanitize-sarif.sh
+        run: bash .github/workflows/scripts/sanitize-sarif.sh
 
       - name: Fail on high/critical findings
-        run: .github/workflows/scripts/fail-on-high.sh
+        run: bash .github/workflows/scripts/fail-on-high.sh
 
       - name: Upload SARIF (source)
         if: always()

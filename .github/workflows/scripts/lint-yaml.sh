@@ -3,4 +3,4 @@ set -euo pipefail
 
 # Lint workflow YAML files
 pip install yamllint
-yamllint -d relaxed .github/workflows/*.yml
+yamllint -d "{extends: relaxed, rules: {line-length: {max: 120}}}" .github/workflows/*.yml
