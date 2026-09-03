@@ -10,7 +10,12 @@ pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 
 from typing import TYPE_CHECKING, Literal, Optional
 
-from pydantic import BaseModel, PositiveFloat, PositiveInt, validate_call
+from pydantic import BaseModel, PositiveFloat, PositiveInt
+
+try:
+    from pydantic import validate_call
+except ImportError:
+    from pydantic import validate_arguments as validate_call
 
 if TYPE_CHECKING:
     from .Chart import PatternRow
