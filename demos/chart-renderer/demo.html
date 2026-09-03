@@ -85,14 +85,6 @@ p3 k2tog yo p1</textarea>
     from pyknit.pyscript._demos import chart_renderer as DEMO
     shared.bootstrap_demo(DEMO, action_label="Render Chart", export_button_id="export-pattern")
 </script>
-<script>
-document.addEventListener("click", function(e) {
-    var btn = e.target.closest(".send-to-estimator");
-    if (!btn) return;
-    var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
-    sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
-    window.location.href = "/yarn-estimator/demo.html";
-});
-</script>
+<script src="../_shared/estimator.js"></script>
 </body>
 </html>
