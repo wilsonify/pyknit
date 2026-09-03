@@ -10,7 +10,12 @@ import math
 from logging.config import dictConfig
 from typing import List, Set, Tuple
 
-from pydantic import PositiveInt, validate_call
+from pydantic import PositiveInt
+
+try:
+    from pydantic import validate_call
+except ImportError:
+    from pydantic import validate_arguments as validate_call
 
 from .Chart import (
     Stitch,
