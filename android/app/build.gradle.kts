@@ -52,6 +52,15 @@ chaquopy {
     }
     defaultConfig {
         version = "3.11"
+        // Machine-specific build Python must not be hard-coded (it broke CI).
+        // Default to Chaquopy's PATH discovery (python3.11/python3/python), and
+        // allow an explicit override via -Pchaquopy.python=... or
+        // $CHAQUOPY_PYTHON for local builds.
+        val buildPy: String? = project.findProperty("chaquopy.python") as String?
+            ?: System.getenv("CHAQUOPY_PYTHON")
+        if (buildPy != null) {
+            buildPython(buildPy)
+        }
         pip {
             install("-r", "../requirements-android.txt")
         }
