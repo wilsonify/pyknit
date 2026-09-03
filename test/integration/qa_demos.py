@@ -232,6 +232,10 @@ def wait_for_ready(page, report, timeout=240_000):
         # also detect boot errors printed to console
         if report.page_errors:
             return "page-error"
+        # Python tracebacks during PyScript import appear as console errors;
+        # fail immediately instead of waiting the full timeout.
+        if report.console_errors:
+            return "console-error"
         elapsed = time.time() - (deadline - timeout / 1000)
         if elapsed - last_log >= 15:
             last_log = elapsed
@@ -478,6 +482,11 @@ def run_demo(browser, spec):
         report.fail("status banner reached error state", _banner_text(page))
     elif state == "page-error":
         report.fail("pyScript boot aborted by page error", "; ".join(report.page_errors[:2]))
+    elif state == "console-error":
+        report.fail(
+            "pyScript boot failed (console error during import)",
+            report.console_errors[-1],
+        )
     elif state == "timeout":
         report.fail("never became ready (timeout)", _banner_text(page))
 
