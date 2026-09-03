@@ -114,21 +114,7 @@
     <p>Powered by <code>pyknit.Sock.Sock</code> — classic top-down heel-flap sock.</p>
   </footer>
 
-  <script>
-    // Size helper: fills the measurement fields, leaving the gauge alone.
-    document.addEventListener("DOMContentLoaded", function () {
-      var sel = document.getElementById("sock-size");
-      if (!sel) return;
-      sel.addEventListener("change", function () {
-        var o = sel.options[sel.selectedIndex];
-        if (!o || !o.dataset.top) return;
-        document.getElementById("circumference_at_top").value = o.dataset.top;
-        document.getElementById("circumference_of_ankle").value = o.dataset.ankle;
-        document.getElementById("length_from_sock_top_to_heel_bottom").value = o.dataset.leg;
-        document.getElementById("length_from_heel_to_toe").value = o.dataset.foot;
-      });
-    });
-  </script>
+  <script src="size-helper.js"></script>
 
   <script type="py">
     import json as _json
@@ -167,35 +153,6 @@
 
     shared.bootstrap_demo(sock_calculator, action_label="Knit me a sock plan", export_button_id="export-pattern")
   </script>
-  <script>
-  document.addEventListener("click", function(e) {
-      var btn = e.target.closest(".send-to-estimator");
-      if (!btn) return;
-      var data = {stitch_count: parseInt(btn.dataset.stitches), project_type: btn.dataset.type};
-      sessionStorage.setItem("estimator_prefill", JSON.stringify(data));
-      window.location.href = "/yarn-estimator/demo.html";
-  });
-
-  document.addEventListener("click", function (e) {
-    var btn = e.target.closest("#simulate-sock");
-    if (!btn) return;
-    var raw = window.sock_sim_pattern;
-    if (!raw) {
-      var err = document.getElementById("demo-error");
-      if (err) {
-        err.textContent = "Error: Run the Sock Calculator first (or fix your measurements), then try again.";
-        err.style.display = "block";
-      }
-      return;
-    }
-    var plan = JSON.parse(raw);
-    var sel = document.getElementById("sock-size");
-    if (sel && sel.selectedOptions && sel.selectedOptions.length) {
-      plan.size = sel.selectedOptions[0].textContent;
-    }
-    sessionStorage.setItem("sock_sim_plan", JSON.stringify(plan));
-    window.location.href = "/knit-simulator/demo.html";
-  });
-  </script>
+  <script src="actions.js"></script>
 </body>
 </html>
