@@ -124,9 +124,14 @@ class TestDemoErrors:
 class TestKnitSimulatorBrowserBehavior:
     """The simulator must keep polling for fresh instruction updates."""
 
+    def _sim_content(self):
+        root = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator"
+        html = (root / "demo.html").read_text(encoding="utf-8")
+        js = (root / "simulator.js").read_text(encoding="utf-8") if (root / "simulator.js").exists() else ""
+        return html + js
+
     def test_poll_loop_keeps_listening_after_first_capture(self):
-        html = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator" / "demo.html"
-        text = html.read_text(encoding="utf-8")
+        text = self._sim_content()
         assert "if (captureSteps() || pollCount > 120) clearInterval(poll);" not in text
         assert "captureSteps();" in text
         assert "pollCount > 120" in text
@@ -135,8 +140,7 @@ class TestKnitSimulatorBrowserBehavior:
     def test_swatch_renderer_present(self):
         """Small manual patterns render as a stitch swatch (needle + loops +
         per-row knit/purl glyphs), driven by each step's own row_ops."""
-        html = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator" / "demo.html"
-        text = html.read_text(encoding="utf-8")
+        text = self._sim_content()
         assert "swatchMode" in text
         assert "isSwatchPattern" in text
         assert "swatch-loops" in text
@@ -1158,34 +1162,33 @@ class TestKnitSimulator:
             assert isinstance(step["stitches"], list)
 
     def test_demo_html_no_broken_shared_reference(self):
-        """demo.html JS block must not reference the Python 'shared' module."""
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("demo.html not found")
-        import re
-
-        content = html_path.read_text()
-        js_blocks = re.findall(r"<script>(?!.*type=)(.*?)</script>", content, re.DOTALL)
-        for block in js_blocks:
-            assert "shared." not in block, (
-                "JS block references 'shared' (a Python module). " "Use window.sim_steps instead."
-            )
+        """JS must not reference the Python 'shared' module."""
+        root = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator"
+        js_path = root / "simulator.js"
+        if not js_path.exists():
+            pytest.skip("simulator.js not found")
+        content = js_path.read_text()
+        assert "shared." not in content, (
+            "simulator.js references 'shared' (a Python module). " "Use window.sim_steps instead."
+        )
 
     def test_demo_html_has_sim_steps_bridge(self):
-        """demo.html must bridge steps to window.sim_steps for the JS player."""
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("demo.html not found")
-        content = html_path.read_text()
+        """simulator.js must bridge steps to window.sim_steps for the JS player."""
+        root = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator"
+        js_path = root / "simulator.js"
+        if not js_path.exists():
+            pytest.skip("simulator.js not found")
+        content = js_path.read_text()
         assert "window.sim_steps" in content
         assert "sim_steps" in content
 
     def test_demo_html_uses_json_roundtrip_for_sim_steps(self):
         """The JS bridge must hand the browser a JSON string that it parses into a real array."""
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("demo.html not found")
-        content = html_path.read_text()
+        root = pathlib.Path(__file__).resolve().parents[2] / "demos" / "knit-simulator"
+        js_path = root / "simulator.js"
+        if not js_path.exists():
+            pytest.skip("simulator.js not found")
+        content = js_path.read_text()
         assert "sim_steps_json" in content
         assert "JSON.parse(raw)" in content
         assert "window.sim_steps_json" in content
@@ -1393,16 +1396,20 @@ class TestHatCrownToSimulator:
 
     def test_page_plumbing(self):
         root = pathlib.Path(__file__).resolve().parents[2]
-        hat = (root / "demos" / "hat-crown" / "demo.html").read_text(encoding="utf-8")
+        hat_html = (root / "demos" / "hat-crown" / "demo.html").read_text(encoding="utf-8")
+        hat_js = (root / "demos" / "hat-crown" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "hat-crown" / "actions.js").exists() else ""
+        hat = hat_html + hat_js
         assert "simulate-hat" in hat
         assert "hat_sim_plan" in hat
         assert "hat_sim_ready" in hat
         assert "knit_sim_instructions" in hat
         sim = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
-        assert "hatMode" in sim
-        assert "buildHat" in sim
-        assert "hat-plan-note" in sim
-        assert "clear-hat-plan" in sim
+        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        sim_all = sim + sim_js
+        assert "hatMode" in sim_all
+        assert "buildHat" in sim_all
+        assert "hat-plan-note" in sim_all
+        assert "clear-hat-plan" in sim_all
 
 
 class TestRaglanToSimulator:
@@ -1464,19 +1471,19 @@ class TestRaglanToSimulator:
         assert result["steps"][1]["op"] == "knit all"
 
     def test_raglan_page_has_simulate_button(self):
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "raglan-sweater" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("raglan demo.html not found")
-        content = html_path.read_text(encoding="utf-8")
+        root = pathlib.Path(__file__).resolve().parents[2]
+        raglan_html = (root / "demos" / "raglan-sweater" / "demo.html").read_text(encoding="utf-8")
+        raglan_js = (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "raglan-sweater" / "actions.js").exists() else ""
+        content = raglan_html + raglan_js
         assert "simulate-sweater" in content
         assert "knit_sim_instructions" in content
         assert "raglan_sim_instructions" in content
 
     def test_knit_sim_page_prefills_from_storage(self):
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("knit-simulator demo.html not found")
-        content = html_path.read_text(encoding="utf-8")
+        root = pathlib.Path(__file__).resolve().parents[2]
+        sim_html = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
+        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        content = sim_html + sim_js
         assert "knit_sim_instructions" in content
         assert "raglan-plan-note" in content
         assert "raglan_orientation" in content
@@ -1712,18 +1719,18 @@ class TestRaglanToSimulator:
         assert any("15" in w and "10" in w for w in result["warnings"])
 
     def test_raglan_page_publishes_plan(self):
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "raglan-sweater" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("raglan demo.html not found")
-        content = html_path.read_text(encoding="utf-8")
+        root = pathlib.Path(__file__).resolve().parents[2]
+        raglan_html = (root / "demos" / "raglan-sweater" / "demo.html").read_text(encoding="utf-8")
+        raglan_js = (root / "demos" / "raglan-sweater" / "actions.js").read_text(encoding="utf-8") if (root / "demos" / "raglan-sweater" / "actions.js").exists() else ""
+        content = raglan_html + raglan_js
         assert "raglan_sim_plan" in content
         assert "knit_sim_plan" in content
 
     def test_knit_sim_page_reads_plan(self):
-        html_path = DEMOS_DIR.parent.parent.parent / "demos" / "knit-simulator" / "demo.html"
-        if not html_path.exists():
-            pytest.skip("knit-simulator demo.html not found")
-        content = html_path.read_text(encoding="utf-8")
+        root = pathlib.Path(__file__).resolve().parents[2]
+        sim_html = (root / "demos" / "knit-simulator" / "demo.html").read_text(encoding="utf-8")
+        sim_js = (root / "demos" / "knit-simulator" / "simulator.js").read_text(encoding="utf-8") if (root / "demos" / "knit-simulator" / "simulator.js").exists() else ""
+        content = sim_html + sim_js
         assert "knit_sim_plan" in content
         assert "_read_raglan_plan" in content
         assert "sim-phase-line" in content

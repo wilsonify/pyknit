@@ -706,9 +706,13 @@ class TestBrowserUX:
 
     def test_planner_pages_have_send_to_estimator_js(self):
         demos_dir = pathlib.Path(__file__).resolve().parents[2] / "demos"
-        for subdir in ("hat-crown", "pi-shawl", "raglan-sweater", "shawl-shapes"):
-            page = demos_dir / subdir / "demo.html"
-            text = page.read_text(encoding="utf-8")
-            assert "send-to-estimator" in text, f"{subdir} missing send-to-estimator"
-            assert "sessionStorage" in text, f"{subdir} missing sessionStorage"
-            assert "estimator_prefill" in text, f"{subdir} missing estimator_prefill"
+        # estimator JS was extracted from inline <script> to external files
+        js_files = [
+            demos_dir / "_shared" / "estimator.js",
+            demos_dir / "hat-crown" / "actions.js",
+            demos_dir / "raglan-sweater" / "actions.js",
+        ]
+        combined = "\n".join(f.read_text(encoding="utf-8") for f in js_files if f.exists())
+        assert "send-to-estimator" in combined, "send-to-estimator handler missing from JS files"
+        assert "sessionStorage" in combined, "sessionStorage missing from JS files"
+        assert "estimator_prefill" in combined, "estimator_prefill missing from JS files"
