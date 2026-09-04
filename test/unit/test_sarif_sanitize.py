@@ -1,5 +1,8 @@
 # Tests for sanitize-sarif.sh and validate-sarif.sh
-import json, os, subprocess, pytest
+import json
+import os
+import subprocess
+import pytest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SCRIPTS_DIR = os.path.join(REPO_ROOT, ".github", "workflows", "scripts")
@@ -77,16 +80,16 @@ def _ix():
 
 class TestSanitizeLogic:
     def _r(self, res):
-        def a(l):
-            a2 = l.get("physicalLocation", {}).get("artifactLocation")
+        def a(loc):
+            a2 = loc.get("physicalLocation", {}).get("artifactLocation")
             if not a2 or not isinstance(a2, dict):
                 return False
             u = a2.get("uri")
             return bool(u and isinstance(u, str) and u.strip())
 
         def rp(r):
-            for l in r.get("locations", []):
-                p = l.get("physicalLocation")
+            for loc in r.get("locations", []):
+                p = loc.get("physicalLocation")
                 if not p:
                     continue
                 al = p.get("artifactLocation")
@@ -100,7 +103,7 @@ class TestSanitizeLogic:
             return None
 
         def ok(r):
-            return any(a(l) for l in r.get("locations", []))
+            return any(a(loc) for loc in r.get("locations", []))
 
         c, s = [], {"t": len(res), "k": 0, "r": 0, "nl": 0, "ur": 0}
         for r in res:
@@ -261,8 +264,8 @@ class TestSanitizeE2E:
         s._w(tmp_path, "s", _mk([_na(), _ea(), _nu()]))
         subprocess.run(["bash", SANITIZE], cwd=str(tmp_path), check=True, capture_output=True, text=True)
         for r in s._rd(tmp_path, "s")["runs"][0]["results"]:
-            for l in r.get("locations", []):
-                al = l.get("physicalLocation", {}).get("artifactLocation", {})
+            for loc in r.get("locations", []):
+                al = loc.get("physicalLocation", {}).get("artifactLocation", {})
                 assert al.get("uri"), str(al)
 
 

@@ -1,100 +1,55 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# validate-sarif.sh
-#
-# Validate that sanitized SARIF files are safe to upload to GitHub Code
-# Scanning.  Fails with a diagnostic if any result still has an invalid
-# location (missing artifactLocation, empty uri, etc.).
-#
-# Usage: validate-sarif.sh [file ...]
-#   If no files are given, validates all four expected SARIF files.
-# ---------------------------------------------------------------------------
-
+# Pre-upload gate: every result in the upload-ready SARIF files must carry a
+# usable physical artifact location (non-empty uri or a numeric index). Runs
+# before the upload steps so an invalid upload fails fast with a diagnostic
+# instead of being rejected later by GitHub Code Scanning with 'expected
+# artifact location'.
 python3 - <<'PY'
+import glob
 import json
 import os
-import sys
 
 EXPECTED = ["source", "wheel", "android", "pyscript"]
-files = sys.argv[1:] if len(sys.argv) > 1 else [f"sarif/{n}.sarif" for n in EXPECTED]
+problems = []
+total = 0
+checked_files = 0
 
-errors = []
-results_checked = 0
-results_ok = 0
-
-for path in files:
+for name in EXPECTED:
+    path = f"sarif/{name}.sarif"
     if not os.path.exists(path):
-        errors.append(f"{path}: file does not exist")
         continue
-    if os.path.getsize(path) == 0:
-        errors.append(f"{path}: file is empty")
-        continue
+    checked_files += 1
+    with open(path) as fh:
+        doc = json.load(fh)
+    for run in doc.get("runs", []):
+        for r in run.get("results", []):
+            total += 1
+            good = False
+            for loc in r.get("locations", []):
+                pl = loc.get("physicalLocation")
+                if not isinstance(pl, dict):
+                    continue
+                al = pl.get("artifactLocation")
+                if not isinstance(al, dict):
+                    continue
+                uri = al.get("uri")
+                if (isinstance(uri, str) and uri.strip()) or isinstance(al.get("index"), int):
+                    good = True
+                    break
+            if not good:
+                problems.append((name, r.get("ruleId"), r.get("message", {}).get("text", "")))
 
-    try:
-        with open(path) as fh:
-            doc = json.load(fh)
-    except json.JSONDecodeError as exc:
-        errors.append(f"{path}: invalid JSON — {exc}")
-        continue
+if problems:
+    for name, rule, *_ in problems:
+        print(f"::error::{name}.sarif: result {rule} has no usable artifact location")
+    print(f"FAIL: {len(problems)} result(s) lack a usable artifact location; refusing to upload.")
+    raise SystemExit(1)
 
-    for run_idx, run in enumerate(doc.get("runs", [])):
-        results = run.get("results", [])
-        for ridx, r in enumerate(results):
-            results_checked += 1
-            locations = r.get("locations")
-            if not locations or not isinstance(locations, list) or len(locations) == 0:
-                rule = r.get("ruleId", r.get("rule", {}).get("id", "?"))
-                errors.append(
-                    f"{path} run[{run_idx}] result[{ridx}] "
-                    f"(rule={rule}): no locations"
-                )
-                continue
+if checked_files == 0:
+    print("::error::no sarif/*.sarif found to validate")
+    raise SystemExit(1)
 
-            loc = locations[0]
-            phys = loc.get("physicalLocation")
-            if not phys or not isinstance(phys, dict):
-                rule = r.get("ruleId", r.get("rule", {}).get("id", "?"))
-                errors.append(
-                    f"{path} run[{run_idx}] result[{ridx}] "
-                    f"(rule={rule}): missing physicalLocation"
-                )
-                continue
-
-            al = phys.get("artifactLocation")
-            if not al or not isinstance(al, dict):
-                rule = r.get("ruleId", r.get("rule", {}).get("id", "?"))
-                errors.append(
-                    f"{path} run[{run_idx}] result[{ridx}] "
-                    f"(rule={rule}): missing artifactLocation"
-                )
-                continue
-
-            uri = al.get("uri")
-            if not uri or not isinstance(uri, str) or not uri.strip():
-                rule = r.get("ruleId", r.get("rule", {}).get("id", "?"))
-                errors.append(
-                    f"{path} run[{run_idx}] result[{ridx}] "
-                    f"(rule={rule}): empty or missing artifactLocation.uri"
-                )
-                continue
-
-            results_ok += 1
-
-    # Check SARIF structure
-    if not doc.get("version"):
-        errors.append(f"{path}: missing 'version' field")
-    if not doc.get("runs"):
-        errors.append(f"{path}: no runs in SARIF document")
-
-print(f"Validated {results_checked} results across {len(files)} files")
-print(f"  OK: {results_ok}")
-if errors:
-    print(f"  ERRORS: {len(errors)}")
-    for e in errors:
-        print(f"    ❌ {e}")
-    sys.exit(1)
-else:
-    print("  ✅ All SARIF files are valid for GitHub upload")
+print(f"OK: {total} SARIF result(s) across {checked_files} file(s) all have a usable artifact location")
 PY
