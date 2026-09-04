@@ -7,7 +7,7 @@ authors = [
 description = "A set of math and charting tools for knitters."
 readme = "README.md"
 license = { text = "GPL-2.0-or-later" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "pydantic>=1.0",
   "Pillow>=12.3.0",

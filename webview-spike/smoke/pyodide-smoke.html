@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit WebView smoke test</title>
+</head>
+<body>
+  <h1>pyKnit WebView smoke test</h1>
+  <p id="status">Booting Pyodide (real bundled runtime, no CDN)...</p>
+  <pre id="log"></pre>
+  <script type="module">
+    // Isolates WebView<->Pyodide compatibility BEFORE loading the full app.
+    // Uses the same files the demos use: ../pyodide/pyodide.mjs + stdlib.
+    window.__pyknitSmoke = { ok: false };
+    window.__pyknitBridge = { ready: false };
+    const log = (m) => {
+      document.getElementById("log").textContent += m + "\n";
+      try { window.__pyknitLog && window.__pyknitLog.log(m); } catch (e) {}
+      console.log("[smoke] " + m);
+    };
+    window.addEventListener("error", (e) => log("WINDOW-ERROR: " + e.message));
+    try {
+      const { loadPyodide } = await import("../pyodide/pyodide.mjs");
+      log("pyodide.mjs imported, calling loadPyodide()...");
+      const t0 = performance.now();
+      const py = await loadPyodide({ indexURL: "../pyodide/" });
+      const ms = Math.round(performance.now() - t0);
+      const result = py.runPython("1+1");
+      log("loadPyodide OK in " + ms + "ms, 1+1=" + result);
+      document.getElementById("status").textContent = "Pyodide ready in " + ms + "ms (1+1=" + result + ")";
+      window.__pyknitSmoke = { ok: result === 2, ms, result };
+      window.__pyknitBridge = { ready: true, ms };
+      try { window.__pyknitLog && window.__pyknitLog.log("pyodide-ready ms=" + ms); } catch (e) {}
+    } catch (err) {
+      log("SMOKE-FAILED: " + (err && err.stack || err));
+      document.getElementById("status").textContent = "FAILED: " + err;
+      window.__pyknitSmoke = { ok: false, error: String(err) };
+    }
+  </script>
+</body>
+</html>
