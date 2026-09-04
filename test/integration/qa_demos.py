@@ -451,13 +451,22 @@ def exercise_simulate_nav(page, report, sim):
         report.ok(f"plan consumed: {total} steps ready on {sim['target']}")
 
 
-def run_demo(browser, spec):
-    name = spec["dir"]
-    report = QAReport(name)
-    print("  DEMO: " + name)
+# Transient micropip install failures during boot (e.g. a one-time wheel fetch
+# error) are flaky network conditions, not real demo bugs.  Retry the boot a
+# few times before marking it failed.  Real failures (banner "error" state,
+# console import errors, timeouts) always surface immediately.
+MAX_BOOT_ATTEMPTS = 3
 
+
+def _retryable(page_error):
+    # A micropip install abort during PyScript load aborts boot with a page
+    # error coming out of micropip's transaction machinery.
+    return "micropip" in (page_error or "").lower()
+
+
+def _attempt_boot(browser, report, ready_flag):
+    """Open the demo page and wait for boot once; returns boot state."""
     page = browser.new_page(viewport={"width": 1280, "height": 1000})
-    ready_flag = {"done": False}
     page.on("console", _console_handler(report, ready_flag))
     page.on("requestfailed", _requestfailed_handler(report))
     page.on("response", _response_handler(report))
@@ -465,15 +474,48 @@ def run_demo(browser, spec):
 
     t0 = time.time()
     try:
-        page.goto(f"{BASE}/{name}/demo.html", wait_until="domcontentloaded", timeout=120_000)
+        page.goto(f"{BASE}/{report.name}/demo.html", wait_until="domcontentloaded", timeout=120_000)
     except Exception as exc:
         report.fail("navigation failed", str(exc)[:200])
         page.close()
-        return report
+        return page, "nav-failed"
 
-    # wait for pyScript boot
     state = wait_for_ready(page, report)
     report.load_ms = int((time.time() - t0) * 1000)
+    return page, state
+
+
+def run_demo(browser, spec):
+    name = spec["dir"]
+    report = QAReport(name)
+    print("  DEMO: " + name)
+
+    ready_flag = {"done": False}
+
+    page = None
+    for attempt in range(1, MAX_BOOT_ATTEMPTS + 1):
+        if attempt > 1:
+            print(
+                f"      retrying boot after transient install error (attempt {attempt}/{MAX_BOOT_ATTEMPTS})",
+                flush=True,
+            )
+        page, state = _attempt_boot(browser, report, ready_flag)
+
+        # Retry only a transient micropip install abort (a one-time wheel fetch
+        # error during boot).  Real failures (banner "error", console import
+        # errors, timeouts) fall through and are reported normally.
+        if state == "page-error" and any(_retryable(e) for e in report.page_errors):
+            last_error = " ".join(report.page_errors[:2])
+            if attempt < MAX_BOOT_ATTEMPTS:
+                # Reset per-attempt boot collections before the next attempt.
+                report.console_errors.clear()
+                report.page_errors.clear()
+                report.failed_requests.clear()
+                page.close()
+                page = None
+                continue
+            # Out of retries: surface the last transient error as a page error.
+            report.page_errors[:] = [last_error]
 
     if report.page_errors:
         report.fail("page (JS/Python) errors during load", "; ".join(report.page_errors[:3]))
@@ -490,7 +532,7 @@ def run_demo(browser, spec):
     elif state == "timeout":
         report.fail("never became ready (timeout)", _banner_text(page))
 
-    if state in ("error", "page-error", "timeout"):
+    if state in ("error", "page-error", "timeout", "nav-failed"):
         ready_flag["done"] = True
         report.note("skipping interaction because boot failed")
         page.close()
