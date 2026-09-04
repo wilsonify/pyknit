@@ -376,7 +376,7 @@ jobs:
           python-version: "3.11"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407  # v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407  # v4
 
       - name: Determine version
         id: ver
@@ -489,35 +489,41 @@ jobs:
         run: bash .github/workflows/scripts/scan-vulns.sh
 
       - name: Sanitize SARIF for CodeQL upload
+        id: sanitize
         run: bash .github/workflows/scripts/sanitize-sarif.sh
 
-      - name: Fail on high/critical findings
-        run: bash .github/workflows/scripts/fail-on-high.sh
+      - name: Validate SARIF before upload
+        id: validate
+        run: bash .github/workflows/scripts/validate-sarif.sh
 
       - name: Upload SARIF (source)
-        if: always()
-        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/source.sarif
           category: grype-source
 
       - name: Upload SARIF (Python wheel)
-        if: always()
-        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/wheel.sarif
           category: grype-wheel
 
       - name: Upload SARIF (Android APK)
-        if: always()
-        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/android.sarif
           category: grype-android
 
       - name: Upload SARIF (PyScript dist)
-        if: always()
-        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d  # v3
+        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/pyscript.sarif
           category: grype-pyscript
+
+      - name: Fail on high/critical findings
+        if: always()
+        run: bash .github/workflows/scripts/fail-on-high.sh
