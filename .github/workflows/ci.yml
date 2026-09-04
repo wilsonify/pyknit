@@ -476,7 +476,7 @@ jobs:
       - name: Generate SBOMs (parallel)
         run: |
           mkdir -p sboms
-          syft dir:. -o spdx-json=sboms/source.spdx.json &
+          syft dir:. --select-catalogers python --exclude "./.venv/**" --exclude "./android/app/build/**" --exclude "./sarif/**" -o spdx-json=sboms/source.spdx.json &
           syft artifacts/python/*.whl -o spdx-json=sboms/wheel.spdx.json &
           syft artifacts/android/app-debug.apk -o spdx-json=sboms/android.spdx.json &
           syft dir:artifacts/pyscript/ -o spdx-json=sboms/pyscript.spdx.json &

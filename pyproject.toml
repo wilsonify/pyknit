@@ -10,7 +10,7 @@ license = { text = "GPL-2.0-or-later" }
 requires-python = ">=3.9"
 dependencies = [
   "pydantic>=1.0",
-  "Pillow>=7.0",
+  "Pillow>=12.3.0",
 ]
 classifiers = [
     "Development Status :: 1 - Planning",
