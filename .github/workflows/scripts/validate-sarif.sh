@@ -6,17 +6,22 @@ set -euo pipefail
 # before the upload steps so an invalid upload fails fast with a diagnostic
 # instead of being rejected later by GitHub Code Scanning with 'expected
 # artifact location'.
+#
+# Usage: validate-sarif.sh [file ...]
+#   If no files are given, validates all four expected SARIF files.
+SARIF_FILES="${*:-source wheel android pyscript}"
+export SARIF_FILES
 python3 - <<'PY'
-import glob
 import json
 import os
+import sys
 
-EXPECTED = ["source", "wheel", "android", "pyscript"]
+names = os.environ.get("SARIF_FILES", "source wheel android pyscript").split()
 problems = []
 total = 0
 checked_files = 0
 
-for name in EXPECTED:
+for name in names:
     path = f"sarif/{name}.sarif"
     if not os.path.exists(path):
         continue
