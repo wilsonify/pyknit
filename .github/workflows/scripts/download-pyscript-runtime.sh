@@ -7,6 +7,10 @@ set -euo pipefail
 PYSCRIPT=https://pyscript.net/releases/2024.10.1
 PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full
 
+# Retry on transient failures (e.g. curl 35 "connection reset") so a flaky
+# CDN does not abort the whole integration setup.
+DL="curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 30"
+
 mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels
 
 # The gauge-conversion page loads its bootstrap from a gitignored _assets
@@ -27,19 +31,19 @@ for f in core.css core.js core.js.map core-DHft4mQJ.js \
          error-CdZsd8BO.js \
          py-editor-BRZBRs2T.js \
          py-terminal-D_z3jMz-.js; do
-    curl -fsSL -o "demos/_assets/pyscript/$f" "$PYSCRIPT/$f"
+    $DL -o "demos/_assets/pyscript/$f" "$PYSCRIPT/$f"
 done
 
 for f in pyodide.mjs pyodide.asm.js pyodide.asm.wasm pyodide-lock.json \
          python_stdlib.zip micropip-0.5.0-py3-none-any.whl \
          packaging-23.1-py3-none-any.whl; do
-    curl -fsSL -o "demos/_assets/pyodide/$f" "$PYODIDE/$f"
+    $DL -o "demos/_assets/pyodide/$f" "$PYODIDE/$f"
 done
 
 for f in typing_extensions-4.7.1-py3-none-any.whl \
          pydantic-1.10.7-py3-none-any.whl \
          Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; do
-    curl -fsSL -o "demos/_assets/wheels/$f" "$PYODIDE/$f"
+    $DL -o "demos/_assets/wheels/$f" "$PYODIDE/$f"
 done
 
 # Copy the built pyknit wheel into demos/_wheel/ so the <py-config> can load it.
