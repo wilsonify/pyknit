@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher icon background: light rose so the yarn ball pops. -->
+    <color name="ic_launcher_background">#FFF1F2</color>
+</resources>

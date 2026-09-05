@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ball-of-yarn launcher foreground, converted by hand from
+  android/app/src/main/assets/ball-of-yarn.svg (that file stays the source
+  of truth). The SVG feDropShadow filter has no VectorDrawable equivalent
+  and is intentionally dropped — launchers apply their own depth.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+
+    <!-- Base spherical ball -->
+    <path android:pathData="M154,84a58,58 0 1,1 -116,0a58,58 0 1,1 116,0">
+        <gradient
+            android:type="radial"
+            android:centerX="73"
+            android:centerY="61.4"
+            android:gradientRadius="125"
+            android:tileMode="clamp">
+            <item android:offset="0" android:color="#F43F5E" />
+            <item android:offset="0.6" android:color="#E11D48" />
+            <item android:offset="1" android:color="#9F1239" />
+        </gradient>
+    </path>
+
+    <!-- Deep shadow yarn strands (underneath) -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M46,62 C68,104 124,104 146,62"
+        android:strokeColor="#9F1239"
+        android:strokeLineCap="round"
+        android:strokeWidth="11" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M146,106 C124,64 68,64 46,106"
+        android:strokeColor="#BE123C"
+        android:strokeLineCap="round"
+        android:strokeWidth="11" />
+
+    <!-- Main midtone yarn strands -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M40,84 C68,124 124,124 152,84"
+        android:strokeColor="#FB7185"
+        android:strokeLineCap="round"
+        android:strokeWidth="11" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M58,42 C102,74 102,126 58,126"
+        android:strokeColor="#FB7185"
+        android:strokeLineCap="round"
+        android:strokeWidth="11" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M134,42 C90,74 90,126 134,126"
+        android:strokeColor="#F43F5E"
+        android:strokeLineCap="round"
+        android:strokeWidth="11" />
+
+    <!-- Highlight yarn strands (top layer) -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M64,34 C104,56 136,80 148,100"
+        android:strokeAlpha="0.95"
+        android:strokeColor="#FFE4E6"
+        android:strokeLineCap="round"
+        android:strokeWidth="8" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M44,72 C76,96 116,96 148,72"
+        android:strokeAlpha="0.85"
+        android:strokeColor="#FFE4E6"
+        android:strokeLineCap="round"
+        android:strokeWidth="7" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M82,28 C112,58 112,110 86,138"
+        android:strokeColor="#FB7185"
+        android:strokeLineCap="round"
+        android:strokeWidth="9" />
+
+    <!-- Loose trailing strand -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M86,138 C70,160 42,148 28,162 C18,172 26,182 40,180 C60,177 82,182 98,174"
+        android:strokeColor="#F43F5E"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="10" />
+    <!-- Trailing strand highlight -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M86,138 C70,160 42,148 28,162 C18,172 26,182 40,180 C60,177 82,182 98,174"
+        android:strokeAlpha="0.6"
+        android:strokeColor="#FFE4E6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="3" />
+</vector>
