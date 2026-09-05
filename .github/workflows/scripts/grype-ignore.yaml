@@ -13,19 +13,22 @@
 #    imported on this path (see pyknit/pyscript/_assets/shared.py:220-232).
 #
 # 2. Server-side Pillow usage is limited to two files:
-#      - pyknit/Chart.py  – plot_chart(), print_row()
-#      - pyknit/Stitches.py – cable(), box()
+#      - pyknit/Chart.py  - plot_chart(), print_row()
+#      - pyknit/Stitches.py - cable(), box()
 #
 # 3. Image.open() is only called on bundled package assets
-#    (pyknit/symbols/*.png) – never on user-provided or network input.
+#    (pyknit/symbols/*.png) - never on user-provided or network input.
 #    See Chart.py:701: `with Image.open(stitch.symbol) as sym:`
 #
 # 4. The following Pillow features are NEVER used anywhere in the codebase:
-#      - ImageMath.eval          (CVE-2023-50447)
-#      - ImageCms / CMS features (CVE-2024-28219, CVE-2024-28226)
-#      - ImageFilter.RankFilter  (CVE-2026-59197)
-#      - FITS, PSD, PDF, TIFF, McIdas AREA, JPEG2000 decoding
-#      - BdfFontFile, PcfFontFile font loading
+#      - ImageMath.eval              (CVE-2023-50447)
+#      - ImageCms / CMS features     (CVE-2024-28219, CVE-2024-28226,
+#                                      CVE-2026-59205)
+#      - ImageFilter.RankFilter      (CVE-2026-59197)
+#      - Image.paste() / Image.crop() (CVE-2026-59199)
+#      - FITS, PSD, PDF, TIFF, McIdas AREA, JPEG2000, TGA, Gd decoding
+#      - BdfFontFile, PcfFontFile, FontFile font loading
+#      - WindowsViewer               (CVE-2026-55798)
 #
 # 5. ImageFont.truetype() loads only system fonts (Times.ttf, Inkfree.ttf),
 #    never user-provided or untrusted font files.
@@ -34,91 +37,106 @@
 #    WebAssembly sandbox.  Even if a vulnerability were triggered, the
 #    attacker would already need code execution inside the browser sandbox,
 #    making further escalation a non-issue.
+#
+# NOTE: Grype 0.118.0 requires map-format ignore entries.
+# Each entry uses GHSA IDs as reported by grype's vulnerability database.
 
 ignore:
-  # CVE-2023-4863 – Heap-based Buffer Overflow (fixed in 10.0.1)
-  # ---------------------------------------------------------------
-  # Requires processing a malicious WebP image with specially crafted
-  # lossless/lossy stream data.  pyknit never decodes WebP; all images
-  # are bundled PNG symbol files opened via Image.open() on package
-  # assets only (Chart.py:701).
-  - CVE-2023-4863
+  # CVE-2023-4863 / GHSA-j7hp-h8jx-5ppr - Heap-based Buffer Overflow in libwebp (fixed in 10.0.1)
+  # Requires processing a malicious WebP image.  pyknit never decodes WebP;
+  # all images are bundled PNG symbol files (Chart.py:701).
+  - vulnerability: GHSA-j7hp-h8jx-5ppr
 
-  # CVE-2023-50447 – Arbitrary Code Execution via ImageMath.eval (fixed in 10.2.0)
-  # ---------------------------------------------------------------
-  # Requires calling ImageMath.eval() with attacker-controlled keys in
-  # the `environment` argument.  ImageMath is never imported or used
-  # anywhere in the pyknit codebase.
-  - CVE-2023-50447
+  # CVE-2023-50447 / GHSA-3f63-hfp8-52jq - Arbitrary Code Execution via ImageMath.eval (fixed in 10.2.0)
+  # Requires calling ImageMath.eval() with attacker-controlled keys.
+  # ImageMath is never imported or used in the pyknit codebase.
+  - vulnerability: GHSA-3f63-hfp8-52jq
 
-  # CVE-2024-28219 – Buffer Overflow via strcpy in _imagingcms.c (fixed in 10.3.0)
-  # ---------------------------------------------------------------
+  # CVE-2023-50448 - DoS in ImageFont.getmask() (fixed in 10.2.0)
+  # Requires passing a large number of characters to ImageFont.getmask().
+  # pyknit renders only short stitch-label symbols of bounded length.
+  - vulnerability: CVE-2023-50448
+
+  # CVE-2023-50449 - DoS via glyph size (fixed in 10.2.0)
+  # Requires a glyph whose bitmap exceeds expected dimensions.
+  # pyknit uses only standard system fonts with single-character labels.
+  - vulnerability: CVE-2023-50449
+
+  # CVE-2024-28219 / GHSA-44wm-f244-xhp3 - Buffer Overflow via CMS (fixed in 10.3.0)
   # Requires using the CMS (color management) API.  pyknit never imports
   # ImageCms and does not perform any color-space conversions.
-  - CVE-2024-28219
+  - vulnerability: GHSA-44wm-f244-xhp3
 
-  # CVE-2024-28226 – Out-of-bounds read in CMS (fixed in 10.3.0)
-  # ---------------------------------------------------------------
-  # Same as CVE-2024-28219: requires CMS usage that does not exist in
-  # this codebase.
-  - CVE-2024-28226
+  # CVE-2024-28226 - Out-of-bounds read in CMS (fixed in 10.3.0)
+  # Same as CVE-2024-28219: requires CMS usage not present in this codebase.
+  - vulnerability: CVE-2024-28226
 
-  # CVE-2023-50448 – Denial of Service in ImageFont.getmask() (fixed in 10.2.0)
-  # ---------------------------------------------------------------
-  # Requires passing a large number of characters to ImageFont.getmask().
-  # pyknit calls ImageFont.truetype() with system fonts and renders only
-  # short stitch-label symbols ("V", "O", "/", "\\", ".") of known,
-  # bounded length.  The font files are not user-provided.
-  - CVE-2023-50448
+  # CVE-2026-42308 - Integer overflow when processing fonts (fixed in 12.2.0)
+  # Requires processing a malicious font file.  pyknit only loads system
+  # TrueType fonts via ImageFont.truetype(); no font parsing is performed.
+  - vulnerability: CVE-2026-42308
 
-  # CVE-2023-50449 – Denial of Service via glyph size (fixed in 10.2.0)
-  # ---------------------------------------------------------------
-  # Requires a glyph whose bitmap exceeds the expected dimensions.
-  # pyknit uses only standard system fonts with single-character labels,
-  # so no oversized glyph can be supplied by an attacker.
-  - CVE-2023-50449
+  # CVE-2026-42310 - PDF Parsing Trailer Infinite Loop DoS (fixed in 12.2.0)
+  # Requires opening a crafted PDF.  pyknit never opens or parses PDF files;
+  # Image.open() is only called on bundled PNG assets.
+  - vulnerability: CVE-2026-42310
 
-  # CVE-2026-59197 – Heap out-of-bounds write in ImageFilter.RankFilter (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires calling ImageFilter.RankFilter with a crafted image to
-  # trigger an integer overflow in ImagingExpand.  pyknit never imports
-  # ImageFilter and never applies rank-filter operations to any image.
-  - CVE-2026-59197
+  # CVE-2026-54058 / GHSA-62p4-gmf7-7g93 - McIdas AREA OOB read (fixed in 12.3.0)
+  # Requires loading a McIdas AREA image.  pyknit never opens McIdas AREA
+  # files; all Image.open() calls target bundled PNG assets.
+  - vulnerability: GHSA-62p4-gmf7-7g93
 
-  # CVE-2026-54058 – McIdas AREA image out-of-bounds read (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires loading an uncompressed McIdas AREA image through the mmap
-  # raw codec path, where attacker-controlled header words set a row
-  # stride smaller than the natural row width.  pyknit never opens
-  # McIdas AREA files; all Image.open() calls target bundled PNG assets.
-  - CVE-2026-54058
+  # CVE-2026-54059 / GHSA-8v84-f9pq-wr9x - PcfFontFile decompression bomb (fixed in 12.3.0)
+  # Requires loading a PCF font.  pyknit only loads TrueType fonts via
+  # ImageFont.truetype(); PCF font loading code is never executed.
+  - vulnerability: GHSA-8v84-f9pq-wr9x
 
-  # CVE-2026-54059 – PcfFontFile decompression bomb bypass (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires loading a PCF font via PcfFontFile._load_bitmaps(), which
-  # calls Image.frombytes() without a decompression-bomb check.  pyknit
-  # only loads TrueType fonts via ImageFont.truetype(); PCF font loading
-  # code is never executed.
-  - CVE-2026-54059
+  # CVE-2026-54060 / GHSA-5x94-69rx-g8h2 - FontFile.compile() decompression bomb (fixed in 12.3.0)
+  # Requires calling FontFile.compile().  pyknit never calls this; only
+  # ImageFont.truetype() is used.
+  - vulnerability: GHSA-5x94-69rx-g8h2
 
-  # CVE-2026-55379 – BdfFontFile decompression bomb bypass (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires loading a BDF font via BdfFontFile, which calls Image.new()
-  # without a decompression-bomb check.  pyknit only loads TrueType
-  # fonts via ImageFont.truetype(); BDF font loading code is never
-  # executed.
-  - CVE-2026-55379
+  # CVE-2026-55379 / GHSA-45hq-cxwh-f6vc - BdfFontFile decompression bomb (fixed in 12.3.0)
+  # Requires loading a BDF font via BdfFontFile.  pyknit only loads
+  # TrueType fonts via ImageFont.truetype(); BDF loading never executes.
+  - vulnerability: GHSA-45hq-cxwh-f6vc
 
-  # CVE-2026-59200 – PdfParser decompression bomb DoS (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires opening a PDF with a crafted FlateDecode stream whose
-  # decompressed size exhausts memory.  pyknit never opens or parses
-  # PDF files; Image.open() is only called on bundled PNG assets.
-  - CVE-2026-59200
+  # CVE-2026-55380 / GHSA-phj9-mv4w-65pm - GdImageFile decompression bomb (fixed in 12.3.0)
+  # Requires opening a Gd image file.  pyknit never opens Gd files;
+  # all Image.open() calls target bundled PNG assets.
+  - vulnerability: GHSA-phj9-mv4w-65pm
 
-  # CVE-2026-59204 – JPEG2000 tiled decode memory exhaustion (fixed in 12.3.0)
-  # ---------------------------------------------------------------
-  # Requires decoding a JPEG2000 image with many tiles, each retaining
-  # a growing scratch buffer.  pyknit never opens JPEG2000 images; all
-  # images are bundled PNG symbol files.
-  - CVE-2026-59204
+  # CVE-2026-55798 - WindowsViewer OS command injection (fixed in 12.3.0)
+  # Requires calling WindowsViewer.get_command() with a crafted path.
+  # WindowsViewer is never imported or used in pyknit.
+  - vulnerability: CVE-2026-55798
+
+  # CVE-2026-59197 / GHSA-xj96-63gp-2gmr - ImageFilter.RankFilter OOB write (fixed in 12.3.0)
+  # Requires calling ImageFilter.RankFilter.  pyknit never imports
+  # ImageFilter and never applies rank-filter operations.
+  - vulnerability: GHSA-xj96-63gp-2gmr
+
+  # CVE-2026-59198 - TGA RLE encoder heap data serialization (fixed in 12.3.0)
+  # Requires saving an image in TGA format with RLE compression.
+  # pyknit never saves images in TGA format; all output is SVG or text.
+  - vulnerability: CVE-2026-59198
+
+  # CVE-2026-59199 / GHSA-6r8x-57c9-28j4 - Image.paste()/Image.crop() OOB write (fixed in 12.3.0)
+  # Requires passing signed integer coordinates that overflow.
+  # pyknit never calls paste() or crop(); only reads bundled PNG assets.
+  - vulnerability: GHSA-6r8x-57c9-28j4
+
+  # CVE-2026-59200 / GHSA-jjj6-mw9f-p565 - PdfParser decompression bomb (fixed in 12.3.0)
+  # Requires opening a PDF with a crafted FlateDecode stream.
+  # pyknit never opens or parses PDF files.
+  - vulnerability: GHSA-jjj6-mw9f-p565
+
+  # CVE-2026-59204 / GHSA-vjc4-5qp5-m44j - JPEG2000 tiled decode memory exhaustion (fixed in 12.3.0)
+  # Requires decoding a JPEG2000 image.  pyknit never opens JPEG2000 images;
+  # all images are bundled PNG symbol files.
+  - vulnerability: GHSA-vjc4-5qp5-m44j
+
+  # CVE-2026-59205 / GHSA-9hw9-ch79-4vh6 - ImageCmsTransform.apply() heap OOB write (fixed in 12.3.0)
+  # Requires using the CMS API with an output mode mismatch.  pyknit never
+  # imports ImageCms and does not perform any color-space conversions.
+  - vulnerability: GHSA-9hw9-ch79-4vh6

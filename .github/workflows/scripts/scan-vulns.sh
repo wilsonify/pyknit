@@ -12,13 +12,13 @@ mkdir -p sarif
 IGNORE_FILE="$(dirname "$0")/grype-ignore.yaml"
 
 set +e
-grype sbom:sboms/source.spdx.json --fail-on high --ignore "$IGNORE_FILE" --output sarif --file sarif/source.sarif
+grype sbom:sboms/source.spdx.json --fail-on high --config "$IGNORE_FILE" --output sarif --file sarif/source.sarif
 echo $? > sarif/.rc_source
-grype sbom:sboms/wheel.spdx.json --fail-on high --ignore "$IGNORE_FILE" --output sarif --file sarif/wheel.sarif
+grype sbom:sboms/wheel.spdx.json --fail-on high --config "$IGNORE_FILE" --output sarif --file sarif/wheel.sarif
 echo $? > sarif/.rc_wheel
-grype sbom:sboms/android.spdx.json --fail-on high --ignore "$IGNORE_FILE" --output sarif --file sarif/android.sarif
+grype sbom:sboms/android.spdx.json --fail-on high --config "$IGNORE_FILE" --output sarif --file sarif/android.sarif
 echo $? > sarif/.rc_android
-grype sbom:sboms/pyscript.spdx.json --fail-on high --ignore "$IGNORE_FILE" --output sarif --file sarif/pyscript.sarif
+grype sbom:sboms/pyscript.spdx.json --fail-on high --config "$IGNORE_FILE" --output sarif --file sarif/pyscript.sarif
 echo $? > sarif/.rc_pyscript
 set -e
 
