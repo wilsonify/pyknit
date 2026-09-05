@@ -8,7 +8,7 @@ patterns and more
 import logging
 import math
 from logging.config import dictConfig
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 from pydantic import PositiveInt
 
@@ -158,7 +158,7 @@ def _format_single_plan(plan_entry: Tuple[int, float]) -> str:
     """Format a single spacing plan entry as a decrease pattern."""
     interval, times = plan_entry
     k = interval - 2
-    decrease_pattern = f"[k{k:.0f}, k2tog] * {times:.0f}"
+    decrease_pattern = f"[k{k}, k2tog] * {times}"
 
     # Add singular/plural form
     if times == 1:
@@ -175,8 +175,8 @@ def _format_multi_plan(plan: List[Tuple[int, float]]) -> str:
     k = small_interval - 2
     k_higher = large_interval - 2
 
-    k_string = "k2tog" if k == 0 else f"k{k:.0f}, k2tog"
-    k_higher_string = "k2tog" if k_higher == 0 else f"k{k_higher:.0f}, k2tog"
+    k_string = "k2tog" if k == 0 else f"k{k}, k2tog"
+    k_higher_string = "k2tog" if k_higher == 0 else f"k{k_higher}, k2tog"
 
     if times % 2 == 0:
         return _handle_even_times(times, k_string, higher_times, k_higher_string)
@@ -241,18 +241,18 @@ def _format_flat_single_plan(plan_entry: Tuple[int, float]) -> str:
     decrease_pattern = ""
     if k_first != 0:
         times = times - 1
-        decrease_pattern += f"k{k_first:.0f}, "
+        decrease_pattern += f"k{k_first}, "
 
     if k != 0:
-        decrease_pattern += f"[k2tog, k{k:.0f}]"
+        decrease_pattern += f"[k2tog, k{k}]"
     else:
         decrease_pattern += "[k2tog] "
 
     if times > 1:
-        decrease_pattern += f" * {times:.0f} times"
+        decrease_pattern += f" * {times} times"
 
     if k_second != 0:
-        decrease_pattern += f", k2tog, k{k_second:.0f}"
+        decrease_pattern += f", k2tog, k{k_second}"
 
     return decrease_pattern
 
@@ -263,8 +263,8 @@ def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
     k = small_interval - 2
     k_higher = large_interval - 2
 
-    k_string = f"k2tog, k{k:.0f}" if k != 0 else "k2tog"
-    k_higher_string = f"k2tog, k{k_higher:.0f}" if k_higher != 0 else "k2tog"
+    k_string = f"k2tog, k{k}" if k != 0 else "k2tog"
+    k_higher_string = f"k2tog, k{k_higher}" if k_higher != 0 else "k2tog"
 
     if times % 2 == 0:
         return _handle_flat_even_times(times, k_string, higher_times, k_higher, k_higher_string)
@@ -290,9 +290,9 @@ def _handle_flat_even_times(
             f", {k_higher_string}" if higher_times == 1 else f", [{k_higher_string}] * {higher_times} times"
         )
     times_string = f", {k_string}" if times == 1 else f", [{k_string}] * {times:.0f} times"
-    balanced_str_first = f"k{math.ceil(k_higher / 2):.0f}" if math.ceil(k_higher / 2) != 0 else ""
+    balanced_str_first = f"k{math.ceil(k_higher / 2)}" if math.ceil(k_higher / 2) != 0 else ""
     balanced_str_last = (
-        f", k2tog k{k_higher - math.ceil(k_higher / 2):.0f}" if (k_higher - math.ceil(k_higher / 2)) != 0 else ""
+        f", k2tog k{k_higher - math.ceil(k_higher / 2)}" if (k_higher - math.ceil(k_higher / 2)) != 0 else ""
     )
     return f"{balanced_str_first}{times_string}{higher_times_string}{times_string}{balanced_str_last}"
 
