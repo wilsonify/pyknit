@@ -547,8 +547,6 @@ def parse_chart(chart_instructions: str, legend=None) -> Pattern:
 def print_row(stitch_array: PatternRow) -> Image:
     "Print a chart from a stitch array"
     # Set up the image
-    cell_height = 50
-    cell_width = 50
     chart_image = Image.new(
         "RGB",
         ((cell_width + 1) * sum(st.width for st in stitch_array), cell_height),
@@ -591,9 +589,6 @@ def instruction_to_plot_order(
 
 def plot_chart(stitch_array: Pattern, lr_direction: str = "lr", tb_direction: str = "tb") -> Image:
     "Print a chart from a stitch array"
-
-    cell_height = 50
-    cell_width = 50
 
     num_rows = len(stitch_array) if isinstance(stitch_array[0], list) else 1
     if num_rows <= 0:
