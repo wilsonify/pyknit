@@ -150,9 +150,9 @@ demos/_assets/
 .freebuff/
 
 # Android/Gradle build artifacts
-android/.gradle/
-android/local.properties
-android/**/build/
-
+.gradle/
+local.properties
+**/build/
+**/dist/
 .dec*
 *.apk
