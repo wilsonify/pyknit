@@ -825,8 +825,6 @@ def render_chart_svg(stitch_array: Pattern, lr_direction: str = "lr", tb_directi
 
     pattern_to_plot = instruction_to_plot_order(stitch_array, tb_direction, lr_direction)
 
-    cell_width = 50
-    cell_height = 50
     canvas_width = cell_width * (longest_row_len + 1)
     canvas_height = cell_height * (num_rows + 1)
 
