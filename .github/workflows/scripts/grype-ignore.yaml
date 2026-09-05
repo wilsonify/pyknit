@@ -1,0 +1,78 @@
+# Vulnerability exceptions for Pillow 10.0.0
+#
+# Pyodide 0.24.1 ships Pillow 10.0.0 for wasm32.  We cannot upgrade
+# without upgrading Pyodide itself.  The following evidence shows why
+# each CVE is not exploitable in this application.
+#
+# Evidence summary
+# ----------------
+#
+# 1. Pillow is NOT used in browser demos.  All PyScript chart rendering
+#    goes through render_chart_svg() (pyknit/Chart.py), which builds SVG
+#    strings using only the Python standard library.  Pillow is never
+#    imported on this path (see pyknit/pyscript/_assets/shared.py:220-232).
+#
+# 2. Server-side Pillow usage is limited to two files:
+#      - pyknit/Chart.py  – plot_chart(), print_row()
+#      - pyknit/Stitches.py – cable(), box()
+#
+# 3. Image.open() is only called on bundled package assets
+#    (pyknit/symbols/*.png) – never on user-provided or network input.
+#    See Chart.py:701: `with Image.open(stitch.symbol) as sym:`
+#
+# 4. The following Pillow features are NEVER used anywhere in the codebase:
+#      - ImageMath.eval          (CVE-2023-50447)
+#      - ImageCms / CMS features (CVE-2024-28219, CVE-2024-28226)
+#      - ImageFilter.RankFilter  (CVE-2026-59197)
+#      - FITS, PSD, PDF, TIFF decoding
+#
+# 5. ImageFont.truetype() loads only system fonts (Times.ttf, Inkfree.ttf),
+#    never user-provided or untrusted font files.
+#
+# 6. In the PyScript/browser context, Pillow is loaded into a Pyodide
+#    WebAssembly sandbox.  Even if a vulnerability were triggered, the
+#    attacker would already need code execution inside the browser sandbox,
+#    making further escalation a non-issue.
+
+ignore:
+  # CVE-2023-4863 – Heap-based Buffer Overflow (fixed in 10.0.1)
+  # ---------------------------------------------------------------
+  # Requires processing a malicious WebP image with specially crafted
+  # lossless/lossy stream data.  pyknit never decodes WebP; all images
+  # are bundled PNG symbol files opened via Image.open() on package
+  # assets only (Chart.py:701).
+  - CVE-2023-4863
+
+  # CVE-2023-50447 – Arbitrary Code Execution via ImageMath.eval (fixed in 10.2.0)
+  # ---------------------------------------------------------------
+  # Requires calling ImageMath.eval() with attacker-controlled keys in
+  # the `environment` argument.  ImageMath is never imported or used
+  # anywhere in the pyknit codebase.
+  - CVE-2023-50447
+
+  # CVE-2024-28219 – Buffer Overflow via strcpy in _imagingcms.c (fixed in 10.3.0)
+  # ---------------------------------------------------------------
+  # Requires using the CMS (color management) API.  pyknit never imports
+  # ImageCms and does not perform any color-space conversions.
+  - CVE-2024-28219
+
+  # CVE-2024-28226 – Out-of-bounds read in CMS (fixed in 10.3.0)
+  # ---------------------------------------------------------------
+  # Same as CVE-2024-28219: requires CMS usage that does not exist in
+  # this codebase.
+  - CVE-2024-28226
+
+  # CVE-2023-50448 – Denial of Service in ImageFont.getmask() (fixed in 10.2.0)
+  # ---------------------------------------------------------------
+  # Requires passing a large number of characters to ImageFont.getmask().
+  # pyknit calls ImageFont.truetype() with system fonts and renders only
+  # short stitch-label symbols ("V", "O", "/", "\\", ".") of known,
+  # bounded length.  The font files are not user-provided.
+  - CVE-2023-50448
+
+  # CVE-2023-50449 – Denial of Service via glyph size (fixed in 10.2.0)
+  # ---------------------------------------------------------------
+  # Requires a glyph whose bitmap exceeds the expected dimensions.
+  # pyknit uses only standard system fonts with single-character labels,
+  # so no oversized glyph can be supplied by an attacker.
+  - CVE-2023-50449

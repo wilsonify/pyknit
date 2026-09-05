@@ -1,0 +1,452 @@
+/* Shared stylesheet for all pyKnit PyScript demos. */
+
+:root {
+  --primary: #7b3fa0;
+  --primary-dark: #5a2a75;
+  --primary-light: #f3ecf7;
+  --accent: #4aa3a2;
+  --success: #28a745;
+  --error: #dc3545;
+  --warning: #b8860b;
+  --info: #17a2b8;
+  --light: #f6f5f4;
+  --dark: #2b2333;
+  --border: #ddd8d4;
+  --radius: 10px;
+  --shadow: 0 3px 12px rgba(43, 35, 51, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.2rem;
+  color: var(--dark);
+  background: #fdfcfa;
+  line-height: 1.55;
+}
+
+header.demo-header {
+  border-bottom: 3px solid var(--primary);
+  padding-bottom: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+
+.demo-header .eyebrow {
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.demo-header h1 {
+  margin: 0.2rem 0 0.3rem;
+  font-size: 1.9rem;
+  color: var(--primary-dark);
+}
+
+.demo-header p {
+  margin: 0;
+  color: #6b6572;
+}
+
+.linkbar {
+  margin: 0.9rem 0;
+  font-size: 0.9rem;
+}
+
+.linkbar a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--primary);
+}
+
+.status-banner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--light);
+}
+
+.status-banner .status-icon {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.status-banner.loading {
+  background: #e7f3ff;
+  border-color: var(--info);
+}
+.status-banner.loading .status-icon::before {
+  content: "⏳";
+}
+.status-banner.ready {
+  background: #e8f5e9;
+  border-color: var(--success);
+}
+.status-banner.ready .status-icon::before {
+  content: "✓";
+  color: var(--success);
+}
+.status-banner.error {
+  background: #ffebee;
+  border-color: var(--error);
+}
+.status-banner.error .status-icon::before {
+  content: "✕";
+  color: var(--error);
+}
+
+.status-text {
+  flex: 1;
+}
+.status-text p {
+  margin: 0;
+}
+.status-text .detail {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.2rem 0;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  margin: 0 0 0.7rem;
+  font-size: 1.15rem;
+  color: var(--primary-dark);
+  border-bottom: 1px solid var(--light);
+  padding-bottom: 0.4rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+@media (max-width: 760px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  margin-bottom: 0.8rem;
+}
+
+.form-help {
+  font-size: 0.88rem;
+  color: #6b6572;
+  background: var(--light);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin: 0 0 0.9rem;
+}
+
+.field-hint {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #8a8391;
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem 0.2rem;
+  margin: 0 0 1.1rem;
+  background: white;
+}
+
+fieldset legend {
+  font-weight: 600;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+}
+
+input[type="number"],
+input[type="text"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 0.95rem;
+  background: white;
+}
+
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(123, 63, 160, 0.15);
+}
+
+textarea {
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  resize: vertical;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.8rem 0;
+}
+
+button {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+button.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+button.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+button.btn-secondary {
+  background: var(--light);
+  color: var(--dark);
+  border: 1px solid var(--border);
+}
+button.btn-secondary:hover:not(:disabled) {
+  background: #e7e4ee;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: var(--error);
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.7rem 0;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  color: var(--success);
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.7rem 0;
+  font-size: 0.9rem;
+}
+
+.info-message {
+  color: #004d99;
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.7rem 0;
+  font-size: 0.9rem;
+}
+
+.output-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin: 0.8rem 0;
+  min-height: 60px;
+  overflow-x: auto;
+}
+
+.output-box svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.output-box pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.8rem 0;
+}
+
+.stat-pill {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid #dcc8e8;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.stat-pill em {
+  font-style: normal;
+  color: var(--primary);
+}
+
+.mono {
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+table.instructions {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+table.instructions th,
+table.instructions td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+table.instructions th {
+  background: var(--light);
+  color: var(--primary-dark);
+}
+
+/* Guided sock plan */
+.plan-title {
+  color: var(--primary-dark);
+  font-size: 1.25rem;
+  margin: 1.4rem 0 0.6rem;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.3rem;
+}
+
+.plan-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.plan-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.02rem;
+  color: var(--primary-dark);
+}
+
+.plan-intro {
+  margin: 0 0 0.6rem;
+  font-size: 0.92rem;
+  color: #5c5563;
+}
+
+ol.plan-steps,
+ul.plan-assumptions {
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 1.3rem;
+}
+
+ol.plan-steps li,
+ul.plan-assumptions li {
+  margin-bottom: 0.45rem;
+}
+
+table.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+}
+
+table.plan-table th,
+table.plan-table td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+table.plan-table th {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+table.plan-table .unit {
+  color: #888;
+  font-size: 0.82rem;
+}
+
+.measure-table th {
+  width: 55%;
+}
+
+ul.plan-rows {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  font-size: 0.86rem;
+}
+
+ul.plan-rows li {
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.warning-box {
+  border: 1px solid #e0c252;
+  background: #fff8e1;
+  color: #6b5200;
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.9rem 0;
+  font-size: 0.9rem;
+}
+
+.warning-box ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.warning-box li {
+  margin-bottom: 0.3rem;
+}

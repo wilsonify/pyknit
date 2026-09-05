@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Sleeve Decreases</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Sleeve Decreases</h1>
+    <p>Plan evenly-spaced decrease rows for a tapered sleeve. Enter your stitch counts and how many rows you have available, and the planner will schedule where to place each decrease.</p>
+    <div class="linkbar">
+      <a href="/index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Sleeve</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="number_of_rows">Total rows available for shaping</label>
+        <input id="number_of_rows" type="number" value="61" min="1" step="1" />
+        <span class="field-hint">How many rows you have between the upper arm and the start of the cuff ribbing.</span>
+      </div>
+      <div class="form-group">
+        <label for="starting_count">Upper arm stitches</label>
+        <input id="starting_count" type="number" value="59" min="2" step="1" />
+        <span class="field-hint">Stitch count at the widest part of the sleeve (after picking up underarm stitches).</span>
+      </div>
+      <div class="form-group">
+        <label for="ending_count">Cuff stitches</label>
+        <input id="ending_count" type="number" value="43" min="1" step="1" />
+        <span class="field-hint">Stitch count at the wrist where the cuff ribbing begins.</span>
+      </div>
+      <div class="form-group">
+        <label for="decrease_per_row">Stitches removed per decrease row</label>
+        <input id="decrease_per_row" type="number" value="2" min="1" step="1" />
+        <span class="field-hint">2 is standard (one k2tog at each side of the underarm seam).</span>
+      </div>
+      <div class="form-group">
+        <label for="padding_mode">Spacing</label>
+        <select id="padding_mode">
+          <option value="after" selected>After each decrease (default)</option>
+          <option value="before">Before each decrease</option>
+          <option value="both">Split evenly around each decrease</option>
+          <option value="none">No plain rows between decreases</option>
+        </select>
+        <span class="field-hint">Where to put the plain knit rows between decrease rows.</span>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Plan Decreases</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.sleeve_decreases</code>.</p>
+  </footer>
+
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import sleeve_decreases as DEMO
+    shared.bootstrap_demo(DEMO, action_label="Plan Decreases", export_button_id="export-pattern")
+</script>
+<script src="../_shared/estimator.js"></script>
+</body>
+</html>

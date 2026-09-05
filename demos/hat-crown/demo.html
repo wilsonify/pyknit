@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Hat Crown Planner</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Hat Crown Planner</h1>
+    <p>Work out the decrease rounds to shape the crown of a hat in the round.</p>
+    <div class="linkbar">
+      <a href="/index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Hat</h2>
+    <p class="form-help">Enter cast-on stitches and decrease repeats. The planner validates even division and shows each stitch-count transition round by round.</p>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="stitches">Cast-on stitches</label>
+        <input id="stitches" type="number" value="80" min="2" step="1" />
+        <span class="field-hint">Must divide evenly by repeats and allow at least 2 stitches per repeat.</span>
+      </div>
+      <div class="form-group">
+        <label for="repeats">Decrease repeats per round</label>
+        <input id="repeats" type="number" value="8" min="1" step="1" />
+        <span class="field-hint">Each decrease round removes exactly this many stitches.</span>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Plan Crown</button>
+      <button id="simulate-hat" class="btn-secondary">Simulate hat &rarr;</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.Hat.Hat.crown_decreases</code>.</p>
+  </footer>
+
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import hat_crown as mod
+    import json as _json
+
+    _DEMO = mod
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Keep the demo behaviour identical; on top of it, publish the computed
+    # simulation pattern to the JS side after every successful run so the
+    # "Simulate hat" button can hand it to the Knit Simulator.
+    _ORIG_COMPUTE = _DEMO.DEMO["compute"]
+
+    def _compute_and_publish(inputs):
+        try:
+            result = _ORIG_COMPUTE(inputs)
+        except Exception:
+            if _win is not None:
+                _win.hat_sim_instructions = ""
+                _win.hat_sim_ready = False
+            raise
+        try:
+            instr = result.get("sim_instructions") or ""
+            plan = result.get("sim_plan")
+            if _win is not None:
+                # serialize here: a raw Python dict becomes a JSProxy the
+                # page's JS cannot enumerate, so hand over a JSON string
+                _win.hat_sim_instructions = instr
+                _win.hat_sim_plan = _json.dumps(plan) if isinstance(plan, dict) else ""
+                _win.hat_sim_ready = bool(instr and _win.hat_sim_plan)
+        except Exception:
+            pass
+        return result
+
+    _DEMO.DEMO["compute"] = _compute_and_publish
+
+    shared.bootstrap_demo(_DEMO, action_label="Plan Crown", export_button_id="export-pattern")
+</script>
+<script src="actions.js"></script>
+</body>
+</html>

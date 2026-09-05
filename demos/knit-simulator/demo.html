@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Knit Simulator</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+  <style>
+    .sim-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.8rem 0;
+    }
+    .sim-controls button { min-width: 60px; }
+    .sim-controls .step-counter {
+      font-size: 0.9rem;
+      color: #6b6572;
+      margin: 0 0.5rem;
+    }
+    .sim-controls .speed-select { margin-left: auto; }
+
+    .sim-view {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .view-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      background: white;
+      min-height: 100px;
+    }
+    .view-box h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--primary-dark); }
+    .view-box svg { max-width: 100%; height: auto; display: block; }
+
+    /* ── Garment stage ─────────────────────────────────────── */
+    .garment-stage {
+      background:
+        radial-gradient(120% 90% at 50% 0%, #fbf7ff 0%, #f2eaf9 55%, #e8dcf2 100%);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.6rem 0.8rem 0.9rem;
+    }
+    .garment-stage svg {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+    }
+    .sim-op-line {
+      margin-top: 0.55rem;
+      font-size: 0.88rem;
+      color: #5a2a75;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.28rem 0.9rem;
+      text-align: center;
+      max-width: 100%;
+    }
+    .sim-op-line .now-label {
+      font-weight: 600;
+      color: #6b6572;
+      margin-right: 0.4rem;
+    }
+
+    .sim-summary {
+      margin-bottom: 0.7rem;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f6effa;
+      font-size: 0.88rem;
+    }
+    .sim-summary-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .sim-pill {
+      background: #e6d7f0;
+      color: #5a2a75;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .sim-summary-hint { margin: 0.45rem 0 0.3rem; color: #6b6572; font-size: 0.82rem; }
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .step-active { background: #fff3cd; border-color: #ffc107; }
+    .step-log div { padding: 0.15rem 0.3rem; border-left: 3px solid transparent; }
+    .step-log .step-active { border-left-color: #ffc107; }
+    #sock-plan-note { margin-top: 0.4rem; display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+
+    /* ── Knitter's status line + compact section progress ── */
+    .sim-phase-line {
+      margin: 0.1rem 0 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #4a3557;
+      background: #f6effa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+    }
+    .sim-phase-line div + div {
+      margin-top: 0.15rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #5a2a75;
+    }
+    .section-progress {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.5rem;
+      margin: 0 0 0.6rem;
+      font-size: 0.88rem;
+    }
+    .sec-mark {
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: #f1eaf7;
+      color: #8a7a97;
+      border: 1px solid #e3d5f2;
+    }
+    .sec-done { background: #dff0e2; color: #2e7d32; border-color: #bfe3c6; }
+    .sec-active { background: #e3d5f2; color: #5a2a75; border-color: #c9aee3; font-weight: 700; }
+    details.step-details { margin-top: 0.3rem; }
+    details.step-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--primary-dark);
+    }
+  </style>
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Knit Simulator</h1>
+    <p>Type simple instructions and watch a sweater grow row by row — or send
+    a sock plan from the Sock Calculator, or a sweater plan from the Raglan
+    Sweater Planner, and watch the garment construct itself. Play, pause, or
+    step through to see the fabric build up.</p>
+    <div class="linkbar"><a href="/index.html">&larr; all tools</a></div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Instructions</h2>
+    <p class="form-help">One instruction per line. Use: co (cast on), k (knit), p (purl), yo (yarn over), k2tog, ssk, bo (bind off). Put * before a row or end it with "across" to repeat it across the row.</p>
+    <div class="form-group">
+      <label for="instructions">Knitting instructions</label>
+      <textarea id="instructions" rows="6" style="font-family:ui-monospace,Consolas,monospace;font-size:0.95rem">co 10
+k2 p2 across
+k2 p2 across
+k all</textarea>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Build Simulation</button>
+    </div>
+    <div id="sock-plan-note" class="sim-summary-hint" style="display:none">
+      Using the sock plan from the Sock Calculator &mdash; the instructions below are ignored for this build.
+      <button id="clear-sock-plan" class="btn-link" type="button">Clear it and use manual instructions</button>
+    </div>
+    <div id="raglan-plan-note" class="sim-summary-hint" style="display:none">
+      Instructions loaded from the Raglan Sweater Planner.
+      <button id="clear-raglan-plan" class="btn-link" type="button">Clear it and use the default pattern</button>
+    </div>
+    <div id="hat-plan-note" class="sim-summary-hint" style="display:none">
+      Instructions loaded from the Hat Crown Planner.
+      <button id="clear-hat-plan" class="btn-link" type="button">Clear it and use the default pattern</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display:none;"></div>
+  </section>
+
+  <section id="sim-section" class="card" style="display:none">
+    <h2>Simulation</h2>
+    <div class="sim-controls">
+      <button id="sim-reset" class="btn-secondary">&laquo; Reset</button>
+      <button id="sim-prev" class="btn-secondary">&lsaquo; Prev</button>
+      <button id="sim-play" class="btn-primary">Play</button>
+      <button id="sim-next" class="btn-secondary">Next &rsaquo;</button>
+      <span class="step-counter">Step <span id="sim-step-num">0</span> / <span id="sim-step-total">0</span></span>
+      <div class="speed-select">
+        <label for="sim-speed" style="font-weight:600;font-size:0.85rem">Speed:</label>
+        <select id="sim-speed" style="width:auto;padding:0.3rem;font-size:0.85rem">
+          <option value="slow">Slow</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Fast</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="sim-phase-line" class="sim-phase-line" style="display:none"></div>
+    <div id="section-progress" class="section-progress" style="display:none"></div>
+
+    <div class="sim-view">
+      <div class="view-box">
+        <h4 id="garment-title">Garment</h4>
+        <div id="sim-summary" class="sim-summary" style="display:none"></div>
+        <div class="garment-stage" id="garment-view">
+          <p style="color:#888;font-size:0.9rem;padding:2rem 0">Build the simulation to see the sweater.</p>
+        </div>
+        <div class="sim-op-line" id="sim-op-line"></div>
+      </div>
+    </div>
+
+    <div class="view-box" style="margin-top:0.8rem">
+      <details class="step-details">
+        <summary>Step log &mdash; every row, expanded</summary>
+        <div id="step-log" class="step-log" style="max-height:180px;overflow-y:auto;font-size:0.88rem"></div>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <p>Instructional visualization. Each row of knitting adds one band of the garment;
+    stitch counts only change when an instruction (yo, k2tog, ssk, bo) — or the Sock
+    Calculator / Raglan Sweater Planner pattern — changes them.</p>
+  </footer>
+
+  <script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import knit_simulator as mod
+    import json as _json
+
+    _DEMO = mod.DEMO
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Bumped on every successful build so the JS player can re-render even
+    # when the produced steps are identical to the previous build.
+    _REVISION = [0]
+
+    # The Raglan Sweater Planner's canonical plan (instructions + sections),
+    # read once on load.  The plan is passed to compute only while the
+    # instructions field still contains its exact text, so any user edit
+    # silently drops the sections and runs the edited instructions instead.
+    _PENDING_PLAN = [None]
+
+    def _read_sock_plan():
+        """Return the Sock Calculator pattern saved by the sock page, if any."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("sock_sim_plan")
+            if raw:
+                return _json.loads(str(raw))
+        except Exception:
+            pass
+        return None
+
+    def _read_raglan_plan():
+        """One-shot read of the Raglan Sweater Planner's canonical plan
+        (instructions + sections + counts).  The key is consumed on read, so
+        a later Build uses whatever the user has in the instructions field."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("knit_sim_plan")
+            if raw:
+                plan = _json.loads(str(raw))
+                if isinstance(plan, dict) and plan.get("instructions"):
+                    _win.sessionStorage.removeItem("knit_sim_plan")
+                    return plan
+        except Exception:
+            return None
+        return None
+
+    def _read_instruction_prefill():
+        """Fallback prefill (instructions text only, no sections), kept for
+        direct links that stored only the instruction text."""
+        if _win is None:
+            return None
+        try:
+            raw = _win.sessionStorage.getItem("knit_sim_instructions")
+            if raw:
+                _win.sessionStorage.removeItem("knit_sim_instructions")
+                return str(raw)
+        except Exception:
+            return None
+        return None
+
+    def _publish(result):
+        steps_json = _json.dumps(result["steps"])
+        construction = (
+            "top_down"
+            if getattr(_win, "raglan_orientation", False)
+            else "bottom_up"
+        )
+        plan = None
+        if result.get("sections"):
+            plan = {
+                "sections": result["sections"],
+                "counts": result.get("counts"),
+            }
+        meta_json = _json.dumps({
+            "garment": result.get("garment", "sweater"),
+            "sock": result.get("sock_summary"),
+            "construction": construction,
+            "plan": plan,
+        })
+        if _win is not None:
+            _REVISION[0] += 1
+            _win.sim_revision = _REVISION[0]
+            _win.sim_steps_json = steps_json
+            _win.sim_steps = _json.loads(steps_json)
+            _win.sim_meta_json = meta_json
+
+    def _invalidate():
+        if _win is not None:
+            _REVISION[0] += 1
+            _win.sim_revision = _REVISION[0]
+            _win.sim_steps_json = "[]"
+            _win.sim_steps = []
+            _win.sim_meta_json = "null"
+
+    def _bridge_run(event=None):
+        try:
+            inputs = shared.collect_inputs(_DEMO["DEFAULT_INPUTS"])
+            sock_plan = _read_sock_plan()
+            if sock_plan is not None:
+                inputs["sock_plan"] = sock_plan
+            pending = _PENDING_PLAN[0]
+            if pending is not None:
+                field = _win.document.getElementById("instructions").value \
+                    if _win is not None else ""
+                if str(field).strip() == str(pending["instructions"]).strip():
+                    inputs["plan"] = pending
+            result = _DEMO["compute"](inputs)
+        except Exception as exc:
+            _invalidate()
+            shared.show_error("demo-error", str(exc))
+            shared.set_status("ready", "Please check your inputs", str(exc))
+            return
+        shared.hide_error("demo-error")
+        _publish(result)
+        shared.set_status("ready", "Simulation updated", "Rendering garment...")
+
+    shared.bind_click("run", _bridge_run)
+    shared.set_status("loading", "Loading pyknit...", "First load takes 30-60 seconds.")
+
+    _plan = _read_raglan_plan()
+    if _plan is not None:
+        _PENDING_PLAN[0] = _plan
+        try:
+            _win.document.getElementById("instructions").value = _plan["instructions"]
+            _win.raglan_orientation = _plan.get("garment") == "raglan"
+        except Exception:
+            pass
+    else:
+        _prefill = _read_instruction_prefill()
+        if _prefill:
+            try:
+                _win.document.getElementById("instructions").value = _prefill
+                _win.raglan_orientation = True
+            except Exception:
+                pass
+
+    try:
+        _bridge_run()
+    except Exception:
+        pass
+    shared.set_status("ready", "pyknit loaded", "Edit instructions, then click 'Build Simulation'.")
+  </script>
+
+  <script src="simulator.js"></script>
+</body>
+</html>

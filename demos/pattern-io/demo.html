@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Pattern I/O</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Pattern I/O</h1>
+    <p>Export a pattern to CSV or JSON and round-trip it back into instructions.</p>
+    <div class="linkbar">
+      <a href="/index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Pattern</h2>
+    <div class="form-group">
+      <label for="pattern">Knitting instructions (one row per line)</label>
+      <textarea id="pattern" rows="4">k2 yo k2tog yo k1
+p1 k2 yo k2tog p2</textarea>
+    </div>
+    <div class="form-group">
+      <label for="format">Export format</label>
+      <select id="format">
+        <option value="json" selected>JSON</option>
+        <option value="csv">CSV</option>
+      </select>
+    </div>
+    <button id="run" class="btn-primary">Export &amp; Round-trip</button>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.io</code> (pattern_to_csv/json, csv_to_pattern/json_to_pattern).</p>
+  </footer>
+
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import pattern_io as DEMO
+    shared.bootstrap_demo(DEMO, action_label="Export and Round-trip")
+</script>
+</body>
+</html>

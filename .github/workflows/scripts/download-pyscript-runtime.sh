@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Download PyScript runtime assets into demos/_assets/ so the demo server
+# can serve them during integration / index tests.
+
+PYSCRIPT=https://pyscript.net/releases/2024.10.1
+PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full
+
+# Retry on transient failures (e.g. curl 35 "connection reset") so a flaky
+# CDN does not abort the whole integration setup.
+DL="curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 30"
+
+mkdir -p demos/_assets/pyscript demos/_assets/pyodide demos/_assets/wheels
+
+# The gauge-conversion page loads its bootstrap from a gitignored _assets
+# file (it is generated, never committed).  Generate it here too so the
+# runtime-download path (used by the integration server) matches the full
+# clean build in build-pyscript-clean.sh.
+printf '%s\n' \
+  '"""Gauge conversion demo bootstrap."""' \
+  'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401' \
+  > demos/_assets/gauge-conversion.py
+
+for f in core.css core.js core.js.map core-DHft4mQJ.js \
+         core-DHft4mQJ.js.map \
+         toml-CvAfdf9_.js toml-DiUM0_qs.js \
+         zip-Bf48tRr5.js \
+         deprecations-manager-BDRw2fed.js \
+         donkey-c355Wa24.js \
+         error-CdZsd8BO.js \
+         py-editor-BRZBRs2T.js \
+         py-terminal-D_z3jMz-.js; do
+    $DL -o "demos/_assets/pyscript/$f" "$PYSCRIPT/$f"
+done
+
+for f in pyodide.mjs pyodide.asm.js pyodide.asm.wasm pyodide-lock.json \
+         python_stdlib.zip micropip-0.5.0-py3-none-any.whl \
+         packaging-23.1-py3-none-any.whl; do
+    $DL -o "demos/_assets/pyodide/$f" "$PYODIDE/$f"
+done
+
+for f in typing_extensions-4.7.1-py3-none-any.whl \
+         pydantic-1.10.7-py3-none-any.whl \
+         Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; do
+    $DL -o "demos/_assets/wheels/$f" "$PYODIDE/$f"
+done
+
+# Copy the built pyknit wheel into demos/_wheel/ so the <py-config> can load it.
+if ls dist/*.whl 1>/dev/null 2>&1; then
+    mkdir -p demos/_wheel
+    cp dist/*.whl demos/_wheel/
+fi

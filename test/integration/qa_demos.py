@@ -1,0 +1,1022 @@
+"""Real-browser QA harness for the pyKnit PyScript demos.
+
+Runs each demo through a headless Chromium via Playwright and verifies:
+  - page loads, no failed requests / broken assets
+  - no console errors or page errors (JS or Python)
+  - status banner reaches 'ready' (pyknit loaded)
+  - the demo's run button(s) become enabled
+  - clicking produces non-blank output
+  - changing an input changes the output
+  - invalid input shows a visible error element
+"""
+
+import os
+import re
+import sys
+import time
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    sync_playwright = None
+
+BASE = os.environ.get("PYQ_BASE", "http://127.0.0.1:8000")
+
+DEMOS = [
+    {
+        "dir": "gauge-conversion",
+        "buttons": ["run-calc", "run-chart"],
+        "outputs": ["calc-output", "chart-output"],
+        "errors": ["calc-error", "chart-error"],
+    },
+    {
+        "dir": "chart-renderer",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "even-shaping",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "hat-crown",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-hat",
+            "target": "knit-simulator",
+            "note": "hat-plan-note",
+            "min_steps": 10,
+            "instr_min_len": 200,
+            "instr_prefix": "co",
+        },
+    },
+    {
+        "dir": "pi-shawl",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "pattern-io",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "raglan-sweater",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-sweater",
+            "target": "knit-simulator",
+            "note": "raglan-plan-note",
+            "min_steps": 100,
+            "instr_min_len": 1000,
+            "instr_prefix": "co",
+        },
+    },
+    {
+        "dir": "shawl-shapes",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "sleeve-decreases",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "sock-calculator",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "extra": "simulate-nav",
+        "sim": {
+            "button": "simulate-sock",
+            "target": "knit-simulator",
+            "note": "sock-plan-note",
+            "min_steps": 50,
+        },
+    },
+    {
+        "dir": "yarn-estimator",
+        "buttons": ["run", "run-advanced"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+    },
+    {
+        "dir": "knit-simulator",
+        "buttons": ["run"],
+        "outputs": ["sim-section"],
+        "errors": ["demo-error"],
+        "extra": "knit-simulator",
+    },
+    {
+        "dir": "needle-advisor",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "needs_svg": False,
+    },
+    {
+        "dir": "yarn-advisor",
+        "buttons": ["run"],
+        "outputs": ["demo-output"],
+        "errors": ["demo-error"],
+        "needs_svg": False,
+    },
+]
+
+SKIP_JS_NOISE = (
+    "favicon",
+    "DevTools",
+    "Third-party cookie",
+    "Autofill",
+    "cache",
+    "GetUserMedia",
+    "Offline",
+    "deprecated",
+    "Source map",
+)
+
+# pyknit logs progress to stderr (surfaced as console errors by PyScript);
+# these are benign. Real failures are tracebacks or JS errors.
+BENIGN_STDERR = (
+    "Attempting to import",
+    "pyknit imported",
+    "Running default",
+    "SVG generated",
+    "PNG generated",
+    "Text generated",
+    "Using text",
+    "Error: Pattern cannot",
+    "Available backends",
+)
+
+INNER_HTML = "el => el.innerHTML"
+BLOCK_DISPLAY = "display: block"
+BLOCK_DISPLAY_NO_SPACE = "display:block"
+
+
+def is_noise(text):
+    if any(tok in text for tok in SKIP_JS_NOISE):
+        return True
+    if any(tok in text for tok in BENIGN_STDERR):
+        return True
+    return False
+
+
+class QAReport:
+    def __init__(self, name):
+        self.name = name
+        self.failures = []
+        self.notes = []
+        self.console_errors = []  # boot-time console errors (failures)
+        self.interaction_console = []  # post-ready console errors (notes)
+        self.page_errors = []
+        self.failed_requests = []
+        self.load_ms = None
+
+    def ok(self, msg):
+        print("      PASS  " + msg)
+
+    def note(self, msg):
+        print("      note  " + msg)
+        self.notes.append(msg)
+
+    def fail(self, msg, detail=""):
+        print("      FAIL  " + msg + ("  [" + detail + "]" if detail else ""))
+        self.failures.append(msg)
+
+    @property
+    def passed(self):
+        return not self.failures
+
+
+def _read_banner_state(page):
+    try:
+        banner = page.query_selector("#status-banner")
+        if banner:
+            cls = banner.get_attribute("class") or ""
+            if "ready" in cls:
+                return "ready"
+            if "error" in cls:
+                return "error"
+            if "loading" in cls:
+                return "loading"
+    except Exception:
+        pass
+    return None
+
+
+def wait_for_ready(page, report, timeout=240_000):
+    """Wait until status banner has class 'ready' or buttons are enabled."""
+    deadline = time.time() + timeout / 1000
+    last_log = 0
+    while time.time() < deadline:
+        state = _read_banner_state(page)
+        if state in ("ready", "error"):
+            return state
+        # also detect boot errors printed to console
+        if report.page_errors:
+            return "page-error"
+        # Python tracebacks during PyScript import appear as console errors;
+        # fail immediately instead of waiting the full timeout.
+        if report.console_errors:
+            return "console-error"
+        elapsed = time.time() - (deadline - timeout / 1000)
+        if elapsed - last_log >= 15:
+            last_log = elapsed
+            banner = _banner_text(page)
+            print(f"    ... waiting for ready ({elapsed:.0f}s) banner={banner!r}", flush=True)
+        time.sleep(0.5)
+    return "timeout"
+
+
+def _apply_checks(report, fails, ok_msg):
+    for f in fails:
+        report.fail(f)
+    if not fails:
+        report.ok(ok_msg)
+
+
+def _console_handler(report, ready_flag):
+    def on_console(msg):
+        text = msg.text
+        if msg.type == "error" and not is_noise(text):
+            if ready_flag["done"]:
+                report.interaction_console.append(text[:400])
+            else:
+                report.console_errors.append(text[:400])
+        if msg.type in ("warning", "log", "info") and "pyknit" in text.lower():
+            report.note(f"console[{msg.type}]: {text[:120]}")
+
+    return on_console
+
+
+def _requestfailed_handler(report):
+    def on_requestfailed(req):
+        url = req.url
+        if url.startswith("http"):
+            report.failed_requests.append(f"{url} :: {req.failure}")
+
+    return on_requestfailed
+
+
+def _response_handler(report):
+    def on_response(resp):
+        if resp.status >= 400:
+            report.failed_requests.append(f"{resp.status} {resp.url[:160]}")
+
+    return on_response
+
+
+def _pageerror_handler(report):
+    def on_pageerror(exc):
+        report.page_errors.append(str(exc)[:400])
+
+    return on_pageerror
+
+
+def check_buttons_enabled(page, report, button_ids):
+    for bid in button_ids:
+        btn = page.query_selector(f"#{bid}")
+        if btn is None:
+            report.fail(f"button #{bid} missing from DOM")
+            continue
+        disabled = btn.get_attribute("disabled")
+        if disabled == "true" or disabled == "":
+            report.fail(f"button #{bid} is disabled after ready")
+
+
+def _element_visible(page, selector):
+    try:
+        el = page.query_selector(selector)
+        if el is None:
+            return False
+        return page.evaluate("el => getComputedStyle(el).display !== 'none'", el)
+    except Exception:
+        return False
+
+
+def _step_num(page):
+    try:
+        return int(page.eval_on_selector("#sim-step-num", "el => el.textContent") or 0)
+    except Exception:
+        return -1
+
+
+def exercise_knit_simulator_controls(page, report):
+    """After a build, verify the simulator's Next/Play/Pause/Prev/Reset and
+    the status line actually drive the simulation state."""
+    if not _element_visible(page, "#sim-section"):
+        report.fail("sim-section not visible after Build Simulation")
+        return
+    total = 0
+    try:
+        total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
+    except Exception:
+        pass
+    if total <= 0:
+        report.fail("no simulation steps after build")
+        return
+    report.ok(f"build produced {total} steps")
+
+    # The default small pattern (co 10 / k2 p2 ...) must render as a stitch
+    # swatch — a needle with loops and per-row glyphs — not a sweater.
+    try:
+        title = page.eval_on_selector("#garment-title", "el => el.textContent") or ""
+        svg = page.eval_on_selector("#garment-view svg", "el => el.outerHTML") or ""
+    except Exception:
+        title, svg = "", ""
+    if title.strip() == "Swatch" and "swatch-loops" in svg and "swatch-rows" in svg:
+        report.ok("default small pattern rendered as a stitch swatch (title 'Swatch')")
+    else:
+        report.fail("default pattern did not render as a swatch", f"title={title.strip()!r}")
+
+    n0 = _step_num(page)
+    page.click("#sim-next")
+    time.sleep(1.2)
+    n1 = _step_num(page)
+    if n1 <= n0:
+        report.fail(f"Next did not advance the step ({n0} -> {n1})")
+
+    page.click("#sim-play")
+    # startPlay() flips the label synchronously in the click handler; reading it
+    # immediately avoids racing a fast animation that finishes and flips back.
+    play_label = ""
+    try:
+        play_label = page.eval_on_selector("#sim-play", "el => el.textContent") or ""
+    except Exception:
+        pass
+    time.sleep(1.8)
+    n2 = _step_num(page)
+    if n2 <= n1:
+        report.fail(f"Play did not advance the step ({n1} -> {n2})")
+    if "pause" not in play_label.lower():
+        report.fail(f"Play button did not become 'Pause' while playing (got {play_label!r})")
+    page.click("#sim-play")  # pause
+    time.sleep(0.4)
+
+    page.click("#sim-prev")
+    time.sleep(1.2)
+    n3 = _step_num(page)
+    if n3 >= n2:
+        report.fail(f"Prev did not go back ({n2} -> {n3})")
+
+    page.click("#sim-reset")
+    time.sleep(1.2)
+    n4 = _step_num(page)
+    if n4 > 1:
+        report.fail(f"Reset did not return to the start (step {n4})")
+
+    op = page.eval_on_selector("#sim-op-line", "el => (el.textContent || '').trim()") or ""
+    if not op:
+        report.fail("status/operation line empty after build")
+    else:
+        report.ok(f"controls Next/Play/Pause/Prev/Reset OK; status: {op[:60]}")
+
+
+def exercise_simulate_nav(page, report, sim):
+    """Cross-demo integration: click the 'Simulate' button and verify the
+    Knit Simulator consumes the published plan (prefill/note + live build)."""
+    btn = page.query_selector(f"#{sim.get('button')}")
+    if btn is None:
+        report.fail(f"#{sim.get('button')} missing from page")
+        return
+    disabled = btn.get_attribute("disabled")
+    if disabled in ("", "true"):
+        report.fail(f"#{sim.get('button')} disabled after a successful run")
+        return
+    btn.click()
+    try:
+        page.wait_for_url(f"**/{sim['target']}/demo.html", timeout=30_000)
+    except Exception as exc:
+        report.fail(f"Simulate did not navigate to {sim['target']}", str(exc)[:120])
+        return
+    state = wait_for_ready(page, report, timeout=240_000)
+    if state != "ready":
+        report.fail(f"{sim['target']} did not become ready after navigation: {state}")
+        return
+    note_id = sim.get("note")
+    if note_id:
+        # The Python boot publishes the plan, but the JS player renders it on
+        # its 500 ms poll tick — poll for it instead of checking once.
+        note_ok = False
+        for _ in range(30):
+            if _element_visible(page, f"#{note_id}"):
+                note_ok = True
+                break
+            time.sleep(0.5)
+        if not note_ok:
+            report.fail(f"#{note_id} not visible on {sim['target']} (plan was not consumed)")
+    if sim.get("instr_min_len"):
+        try:
+            txt = page.eval_on_selector("#instructions", "el => el.value") or ""
+        except Exception:
+            txt = ""
+        prefix = sim.get("instr_prefix", "")
+        # The plan may open with # comment lines (e.g. the raglan plan's
+        # section annotations); the first real instruction must match.
+        first_line = next(
+            (line for line in txt.splitlines() if line.strip() and not line.strip().startswith("#")),
+            "",
+        )
+        if len(txt) < sim["instr_min_len"] or (prefix and not first_line.startswith(prefix)):
+            report.fail(f"instructions field not prefilled with the plan " f"({len(txt)} chars, starts {txt[:20]!r})")
+    total = 0
+    for _ in range(30):
+        try:
+            total = int(page.eval_on_selector("#sim-step-total", "el => el.textContent") or 0)
+        except Exception:
+            total = 0
+        if total >= sim.get("min_steps", 1):
+            break
+        time.sleep(0.5)
+    if total < sim.get("min_steps", 1):
+        report.fail(f"knit-simulator has too few steps after navigation ({total})")
+    else:
+        report.ok(f"plan consumed: {total} steps ready on {sim['target']}")
+
+
+# Transient micropip install failures during boot (e.g. a one-time wheel fetch
+# error) are flaky network conditions, not real demo bugs.  Retry the boot a
+# few times before marking it failed.  Real failures (banner "error" state,
+# console import errors, timeouts) always surface immediately.
+MAX_BOOT_ATTEMPTS = 3
+
+
+def _retryable(page_error):
+    # A micropip install abort during PyScript load aborts boot with a page
+    # error coming out of micropip's transaction machinery.
+    return "micropip" in (page_error or "").lower()
+
+
+def _attempt_boot(browser, report, ready_flag):
+    """Open the demo page and wait for boot once; returns boot state."""
+    page = browser.new_page(viewport={"width": 1280, "height": 1000})
+    page.on("console", _console_handler(report, ready_flag))
+    page.on("requestfailed", _requestfailed_handler(report))
+    page.on("response", _response_handler(report))
+    page.on("pageerror", _pageerror_handler(report))
+
+    t0 = time.time()
+    try:
+        page.goto(f"{BASE}/{report.name}/demo.html", wait_until="domcontentloaded", timeout=120_000)
+    except Exception as exc:
+        report.fail("navigation failed", str(exc)[:200])
+        page.close()
+        return page, "nav-failed"
+
+    state = wait_for_ready(page, report)
+    report.load_ms = int((time.time() - t0) * 1000)
+    return page, state
+
+
+def run_demo(browser, spec):
+    name = spec["dir"]
+    report = QAReport(name)
+    print("  DEMO: " + name)
+
+    ready_flag = {"done": False}
+
+    page = None
+    for attempt in range(1, MAX_BOOT_ATTEMPTS + 1):
+        if attempt > 1:
+            print(
+                f"      retrying boot after transient install error (attempt {attempt}/{MAX_BOOT_ATTEMPTS})",
+                flush=True,
+            )
+        page, state = _attempt_boot(browser, report, ready_flag)
+
+        # Retry only a transient micropip install abort (a one-time wheel fetch
+        # error during boot).  Real failures (banner "error", console import
+        # errors, timeouts) fall through and are reported normally.
+        if state == "page-error" and any(_retryable(e) for e in report.page_errors):
+            last_error = " ".join(report.page_errors[:2])
+            if attempt < MAX_BOOT_ATTEMPTS:
+                # Reset per-attempt boot collections before the next attempt.
+                report.console_errors.clear()
+                report.page_errors.clear()
+                report.failed_requests.clear()
+                page.close()
+                page = None
+                continue
+            # Out of retries: surface the last transient error as a page error.
+            report.page_errors[:] = [last_error]
+
+    if report.page_errors:
+        report.fail("page (JS/Python) errors during load", "; ".join(report.page_errors[:3]))
+
+    if state == "error":
+        report.fail("status banner reached error state", _banner_text(page))
+    elif state == "page-error":
+        report.fail("pyScript boot aborted by page error", "; ".join(report.page_errors[:2]))
+    elif state == "console-error":
+        report.fail(
+            "pyScript boot failed (console error during import)",
+            report.console_errors[-1],
+        )
+    elif state == "timeout":
+        report.fail("never became ready (timeout)", _banner_text(page))
+
+    if state in ("error", "page-error", "timeout", "nav-failed"):
+        ready_flag["done"] = True
+        report.note("skipping interaction because boot failed")
+        page.close()
+        return report
+
+    ready_flag["done"] = True
+    report.ok("pyScript booted, status ready (%.1fs)" % (report.load_ms / 1000))
+
+    # buttons enabled?
+    check_buttons_enabled(page, report, spec["buttons"])
+
+    # interactive: click each button with default inputs
+    for bid in spec["buttons"]:
+        _apply_checks(
+            report,
+            exercise(page, bid, spec),
+            f"default click on #{bid} produced output",
+        )
+
+    # verify rendered content (SVG chart or table/pre) is present after a run
+    _apply_checks(report, check_rendered(page, spec), "rendered chart/svg output verified")
+
+    # invalid input path (on this demo's own page, before any cross-demo navigation)
+    _apply_checks(
+        report,
+        exercise_invalid(page, spec, name),
+        "invalid input produced a visible error",
+    )
+
+    # demo-specific extra workflows (simulator controls, cross-demo navigation)
+    extra = spec.get("extra")
+    if extra == "knit-simulator":
+        exercise_knit_simulator_controls(page, report)
+    elif extra == "simulate-nav":
+        exercise_simulate_nav(page, report, spec.get("sim", {}))
+
+    page.close()
+    return report
+
+
+def check_rendered(page, spec):
+    """Verify the demo actually rendered visible content (svg/table/pre)."""
+    fails = []
+    if spec["dir"] == "gauge-conversion":
+        # calc -> text output; chart -> svg
+        chart_html = page.eval_on_selector("#chart-output", INNER_HTML) or ""
+        if "<svg" not in chart_html:
+            fails.append("gauge-conversion: chart-output has no <svg> after render")
+            return fails
+
+        # Ensure symbols are concise and visually distinct (not verbose black text).
+        gauge_svg_info = page.evaluate("""
+() => {
+  const svg = document.querySelector('#chart-output svg');
+  if (!svg) {
+    return {missing: true};
+  }
+  const labels = [...svg.querySelectorAll('text.stitch-label')];
+  const styleTag = svg.querySelector('style');
+  const labelTexts = labels.map(el => (el.textContent || '').trim()).filter(Boolean);
+  const uniqTexts = [...new Set(labelTexts)];
+  const fills = [...new Set(labels.map(el => getComputedStyle(el).fill))];
+    const hasVerboseNames = labels.some(el => /\\s/.test((el.textContent || '').trim()));
+  return {
+    missing: false,
+    labelCount: labels.length,
+    uniqTextCount: uniqTexts.length,
+    hasVerboseNames,
+    fills,
+    styleText: styleTag ? styleTag.textContent : "",
+  };
+}
+            """)
+
+        if gauge_svg_info.get("missing"):
+            fails.append("gauge-conversion: chart svg missing from DOM")
+            return fails
+        if gauge_svg_info.get("labelCount", 0) == 0:
+            fails.append("gauge-conversion: svg has no stitch-label text nodes")
+        if gauge_svg_info.get("uniqTextCount", 0) < 3:
+            fails.append("gauge-conversion: expected >=3 distinct stitch symbols")
+        if gauge_svg_info.get("hasVerboseNames"):
+            fails.append("gauge-conversion: stitch labels are verbose names, expected concise symbols")
+        if len(gauge_svg_info.get("fills", [])) < 2:
+            fails.append("gauge-conversion: expected >=2 distinct computed text fill colors")
+        style_text = gauge_svg_info.get("styleText", "")
+        if "{{" in style_text or "}}" in style_text:
+            fails.append("gauge-conversion: invalid double-brace CSS found in inline SVG style")
+        return fails
+    out_id = spec["outputs"][0]
+    out_html = page.eval_on_selector(f"#{out_id}", INNER_HTML) or ""
+    if not out_html.strip():
+        fails.append(f"#{out_id} empty after interaction")
+    if spec.get("needs_svg", True) and "<svg" not in out_html:
+        fails.append(f"#{out_id} has no <svg> element (chart fallback missing)")
+    return fails
+
+
+def out_text(page, oid):
+    el = page.query_selector(f"#{oid}")
+    if el is None:
+        return ""
+    html = el.inner_html() or ""
+    return re.sub(r"<[^>]+>", " ", html).strip()
+
+
+def _banner_text(page):
+    el = page.query_selector("#status-message")
+    return el.inner_text() if el else "(no status message)"
+
+
+def _targets_for(bid):
+    if bid == "run-calc":
+        return ["calc-output"], ["calc-error"]
+    if bid == "run-chart":
+        return ["chart-output"], ["chart-error"]
+    return ["demo-output"], ["demo-error"]
+
+
+def _check_outputs(page, oids):
+    fails = []
+    for oid in oids:
+        text = out_text(page, oid)
+        if not text.strip():
+            fails.append(f"output #{oid} blank after default click")
+    return fails
+
+
+def _check_no_error(page, eids):
+    fails = []
+    for eid in eids:
+        el = page.query_selector(f"#{eid}")
+        if el is not None:
+            style = el.get_attribute("style") or ""
+            if BLOCK_DISPLAY in style or BLOCK_DISPLAY_NO_SPACE in style:
+                fails.append(f"error #{eid} visible after valid click")
+    return fails
+
+
+def _ensure_clickable(page, bid):
+    """Open any collapsed <details> ancestors so the button is visible."""
+    try:
+        page.evaluate(
+            """
+            bid => {
+              var el = document.getElementById(bid);
+              while (el) {
+                if (el.tagName === 'DETAILS') el.open = true;
+                el = el.parentElement;
+              }
+            }
+        """,
+            bid,
+        )
+    except Exception:
+        pass
+
+
+def exercise(page, button_id, spec=None):
+    """Click with current inputs and check output non-blank + changed on input change."""
+    bid = button_id
+    fails = []
+
+    btn = page.query_selector(f"#{bid}")
+    if btn is None:
+        return ["missing button #" + bid]
+    _ensure_clickable(page, bid)
+    btn.click()
+    time.sleep(1.5)
+
+    if bid in ("run-calc", "run-chart"):
+        oids, eids = _targets_for(bid)
+    elif spec:
+        oids = spec.get("outputs", ["demo-output"])
+        eids = spec.get("errors", ["demo-error"])
+    else:
+        oids, eids = _targets_for(bid)
+    fails.extend(_check_outputs(page, oids))
+    fails.extend(_check_no_error(page, eids))
+
+    if not fails and not change_input_and_compare(page, oids, eids, bid):
+        fails.append("changing an input did not change the output")
+
+    return fails
+
+
+def _all_cards():
+    return "section.card input[type=number], section.card textarea"
+
+
+def change_input_and_compare(page, oids, eids, bid):
+    """Alter one input, click, and verify the corresponding output changes."""
+    if bid == "run-calc":
+        target, out_id = "#measurement", "calc-output"
+        before = out_text(page, out_id)
+        page.query_selector(target).fill("8")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        return after != before and bool(after.strip())
+    if bid == "run-chart":
+        target, out_id = "#pattern-input", "chart-output"
+        before = out_text(page, out_id)
+        page.query_selector(target).fill("k2 yo k2tog")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        page.query_selector(target).fill("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        return after != before and bool(after.strip())
+
+    out_id = oids[0]
+
+    # textarea-based demos: append a valid row
+    ta = page.query_selector("section.card textarea")
+    if ta is not None:
+        original = ta.input_value()
+        before = out_text(page, out_id)
+        ta.fill(original + "\nk2tog yo k3")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        ta.fill(original)
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        return after != before and bool(after.strip())
+
+    # hat-crown: cast-on must stay divisible by repeats, so bump to a
+    # value that is still a valid combination (80 -> 72 with repeats 8).
+    if page.query_selector("#stitches") is not None:
+        target, out_id = "#stitches", "demo-output"
+        before = out_text(page, out_id)
+        page.query_selector(target).fill("72")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        page.query_selector(target).fill("80")
+        return after != before and bool(after.strip())
+
+    # numeric demos: bump numeric inputs until output changes
+    inputs = page.query_selector_all("section.card input[type=number]")
+    if not inputs:
+        return True
+    before = out_text(page, out_id)
+    for el in inputs:
+        old = el.input_value()
+        try:
+            num = float(old)
+        except ValueError:
+            continue
+        new = str(int(num) + 1) if float(num).is_integer() else str(num + 1)
+        el.fill(new)
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        after = out_text(page, out_id)
+        el.fill(old)
+        if after != before and bool(after.strip()):
+            return True
+        # input was rejected as invalid (validation error shown): the demo is
+        # behaving correctly, so keep looking rather than treating the
+        # unchanged output as an interactivity failure.
+        if any(_error_visible(page, eid) for eid in eids):
+            continue
+    return False
+
+
+def _error_visible(page, eid):
+    err = page.query_selector(f"#{eid}")
+    if err is None:
+        return False
+    # true visibility = computed display (hidden errors keep stale text)
+    disp = page.evaluate("el => getComputedStyle(el).display", err)
+    return disp == "block"
+
+
+def _has_block_style(el):
+    return el is not None and (el.get_attribute("style") or "").find(BLOCK_DISPLAY) != -1
+
+
+def _gauge_conversion_invalid(page):
+    fails = []
+    el = page.query_selector("#measurement")
+    el.fill("-5")
+    page.query_selector("#run-calc").click()
+    time.sleep(1.0)
+    if not _has_block_style(page.query_selector("#calc-error")):
+        fails.append("gauge-conversion: invalid measurement produced no visible error")
+    el.fill("42")
+    page.evaluate("document.querySelector('#measurement').blur()")
+    # chart: invalid pattern
+    sel = page.query_selector("#pattern-input")
+    sel.fill("not a valid pattern xyz")
+    page.query_selector("#run-chart").click()
+    time.sleep(1.0)
+    if not _has_block_style(page.query_selector("#chart-error")):
+        fails.append("gauge-conversion: invalid pattern produced no visible error")
+    sel.fill("k2 yo k2tog yo k1\np1 k2 yo k2tog p2")
+    page.query_selector("#run-chart").click()
+    return fails
+
+
+def _invalid_textarea(page, bid, eid, ta):
+    original = ta.input_value()
+    ta.fill("this is not a valid knitting pattern zzz qqq")
+    page.query_selector(f"#{bid}").click()
+    time.sleep(1.2)
+    fails = []
+    if not _error_visible(page, eid):
+        fails.append(f"invalid (garbage) pattern produced no visible error in #{eid}")
+    ta.fill(original)
+    # rebuild from the restored input so the demo is left in a working state
+    page.query_selector(f"#{bid}").click()
+    time.sleep(1.2)
+    return fails
+
+
+def _invalid_numeric(page, bid, eid, out_id, inputs):
+    fails = []
+    triggered = False
+    for el in inputs:
+        original = el.input_value()
+        try:
+            float(original)
+        except ValueError:
+            continue
+        el.fill("0")
+        page.query_selector(f"#{bid}").click()
+        time.sleep(1.2)
+        if _error_visible(page, eid):
+            triggered = True
+            el.fill(original or "5")
+            break
+        el.fill(original)
+    if not triggered:
+        fails.append(f"no numeric input (zeroed) produced a visible error in #{eid}")
+        return fails
+
+    # recover: valid click again works
+    page.query_selector(f"#{bid}").click()
+    time.sleep(1.2)
+    out_html = (page.eval_on_selector(f"#{out_id}", INNER_HTML) or "").strip()
+    if not out_html or _error_visible(page, eid):
+        fails.append("demo did not recover after restoring valid input")
+    return fails
+
+
+def exercise_invalid(page, spec, name):
+    """Enter an invalid value, click, and require a visible error element."""
+    if name == "gauge-conversion":
+        return _gauge_conversion_invalid(page)
+
+    bid = spec["buttons"][0]
+    eid = spec["errors"][0]
+
+    # textarea-first demos: a non-parseable pattern must raise
+    ta = page.query_selector("section.card textarea")
+    if ta is not None:
+        return _invalid_textarea(page, bid, eid, ta)
+
+    # numeric demos: zero each numeric input until an error appears
+    inputs = page.query_selector_all("section.card input[type=number]")
+    if not inputs:
+        return []
+    return _invalid_numeric(page, bid, eid, spec["outputs"][0], inputs)
+
+
+def check_index(browser):
+    """Verify index.html loads and every demo link resolves to a page."""
+    page = browser.new_page()
+    problems = []
+    try:
+        resp = page.goto(f"{BASE}/index.html", wait_until="domcontentloaded", timeout=30000)
+        if resp is None or resp.status != 200:
+            problems.append(f"index.html status {resp.status if resp else 'None'}")
+            page.close()
+            return problems
+        links = page.eval_on_selector_all("a[href$='.html']", "els => els.map(e => e.getAttribute('href'))")
+        for href in links:
+            full = href if href.startswith("http") else f"{BASE}/{href.lstrip('/')}"
+            try:
+                r = page.request.get(full)
+                if r.status != 200:
+                    problems.append(f"{href} -> {r.status}")
+            except Exception as exc:
+                problems.append(f"{href} -> {str(exc)[:80]}")
+
+        # The landing page boots PyScript itself (like the demos) so the
+        # first visit pays the load there; its banner must reach 'ready'.
+        deadline = time.time() + 240
+        state = None
+        while time.time() < deadline:
+            try:
+                cls = page.query_selector("#status-banner").get_attribute("class") or ""
+                if "ready" in cls:
+                    state = "ready"
+                    break
+                if "error" in cls:
+                    state = "error"
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+        if state != "ready":
+            problems.append(f"index.html PyScript did not become ready (state={state})")
+    except Exception as exc:
+        problems.append("index.html navigation failed: " + str(exc)[:120])
+    page.close()
+    return problems
+
+
+def _launch_and_run(headless):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless, slow_mo=60 if not headless else 0)
+        reports = []
+        for spec in DEMOS:
+            reports.append(run_demo(browser, spec))
+        browser.close()
+    return reports
+
+
+def _check_index_once():
+    with sync_playwright() as p2:
+        b2 = p2.chromium.launch(headless=True)
+        try:
+            return check_index(b2)
+        finally:
+            b2.close()
+
+
+def _flag_if_present(items, headline, limit):
+    if not items:
+        return False
+    print(headline % len(items))
+    for item in items[:limit]:
+        print("        - " + item)
+    return True
+
+
+def _print_report(r):
+    status = "PASS" if r.passed else "FAIL"
+    print(f"\n[{status}] {r.name}  (loaded in {r.load_ms} ms)")
+    for n in r.notes:
+        print("     note: " + n)
+    for f in r.failures:
+        print("     FAIL: " + f)
+    ok = r.passed
+    if _flag_if_present(r.console_errors, "     boot console errors: %d", 5):
+        ok = False
+    if _flag_if_present(r.page_errors, "     page errors (%d):", 5):
+        ok = False
+    _flag_if_present(
+        [c[:160] for c in r.interaction_console],
+        "     interaction console messages (expected tracebacks): %d",
+        3,
+    )
+    if _flag_if_present(r.failed_requests, "     failed requests (%d):", 8):
+        ok = False
+    return ok
+
+
+def main():
+    use_headless = "--headed" not in sys.argv
+    all_reports = _launch_and_run(use_headless)
+    idx_problems = _check_index_once()
+
+    print("\n" + "=" * 70)
+    print("QA SUMMARY")
+    print("=" * 70)
+    if idx_problems:
+        print("\n[index.html] PROBLEMS")
+    else:
+        print("\n[index.html] PASS  (all demo links resolve)")
+    for p_ in idx_problems:
+        print("     FAIL: " + p_)
+
+    passed_all = not idx_problems
+    for r in all_reports:
+        passed_all = _print_report(r) and passed_all
+    print("\n" + "=" * 70)
+    print("ALL PASS" if passed_all else "SOME DEMOS FAILED")
+    print("=" * 70)
+    sys.exit(0 if passed_all else 1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Sock Calculator</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Sock Calculator</h1>
+    <p>Knit your first pair of socks, your size. Answer the 7 questions
+    below, press one button, and get a complete step-by-step plan.</p>
+    <div class="linkbar">
+      <a href="/index.html">← all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Your answers (6 fields)</h2>
+
+    <p class="form-help" id="size-help">
+      Not sure how to measure? Pick a rough size below and it will fill in
+      the measurement fields for you (the gauge is still yours to enter).
+    </p>
+    <div class="form-group">
+      <label for="sock-size">I don't know my measurements — use this size</label>
+      <select id="sock-size">
+        <option value="">— measure my own foot instead —</option>
+        <option value="child" data-top="7.5" data-ankle="6.5" data-leg="4.5" data-foot="6.5">Child (US shoe 8–10)</option>
+        <option value="w-s" data-top="9.5" data-ankle="8" data-leg="6" data-foot="8.5">Women's S (shoe 5–6)</option>
+        <option value="w-m" data-top="10.25" data-ankle="8.5" data-leg="6.5" data-foot="9.25">Women's M (shoe 7–8)</option>
+        <option value="w-l" data-top="11" data-ankle="9" data-leg="7" data-foot="10">Women's L (shoe 9–10)</option>
+        <option value="m-s" data-top="11.5" data-ankle="9.5" data-leg="7.25" data-foot="10.5">Men's S (shoe 8–9)</option>
+        <option value="m-m" data-top="12.5" data-ankle="10.25" data-leg="7.75" data-foot="11">Men's M (shoe 10–11)</option>
+        <option value="m-l" data-top="13.5" data-ankle="11" data-leg="8.25" data-foot="11.75">Men's L (shoe 12–13)</option>
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="stitches_per_inch">Stitches per inch</label>
+        <input id="stitches_per_inch" type="number" value="9" min="0.5" step="0.5" />
+        <span class="field-hint">From a stockinette swatch on the needle size you will use.</span>
+      </div>
+      <div class="form-group">
+        <label for="rows_per_inch">Rows per inch</label>
+        <input id="rows_per_inch" type="number" value="11" min="0.5" step="0.5" />
+        <span class="field-hint">Count the rows in the same swatch, with the swatch relaxed.</span>
+      </div>
+      <div class="form-group">
+        <label for="circumference_at_top">Leg circumference (in)</label>
+        <input id="circumference_at_top" type="number" value="10" min="0.5" step="0.25" />
+        <span class="field-hint">Around the widest part of your calf/leg, where the sock will start.</span>
+      </div>
+      <div class="form-group">
+        <label for="circumference_of_ankle">Ankle circumference (in)</label>
+        <input id="circumference_of_ankle" type="number" value="9.5" min="0.5" step="0.25" />
+        <span class="field-hint">Just above the ankle bone, around the narrowest part.</span>
+      </div>
+      <div class="form-group">
+        <label for="length_from_sock_top_to_heel_bottom">Leg length (in)</label>
+        <input id="length_from_sock_top_to_heel_bottom" type="number" value="7.75" min="0.5" step="0.25" />
+        <span class="field-hint">From where the cuff will sit down to the bottom of your heel.</span>
+      </div>
+      <div class="form-group">
+        <label for="length_from_heel_to_toe">Foot length (in)</label>
+        <input id="length_from_heel_to_toe" type="number" value="10.5" min="0.5" step="0.25" />
+        <span class="field-hint">From the back of your heel to the tip of your longest toe.</span>
+      </div>
+      <div class="form-group">
+        <label for="negative_ease">Negative ease</label>
+        <select id="negative_ease">
+          <option value="0">0% — no ease (loose)</option>
+          <option value="5">5% — a little snug</option>
+          <option value="10">10% — gently snug</option>
+          <option value="15">15% — snug</option>
+          <option value="20" selected>20% — classic (recommended)</option>
+          <option value="25">25% — very snug</option>
+        </select>
+        <span class="field-hint">How much smaller than your foot the sock is
+        knit. 20% is the classic fit; 0% makes a slouchier, saggy sock.</span>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button id="run" class="btn-primary">Knit me a sock plan</button>
+      <button id="simulate-sock" class="btn-secondary">Simulate sock &rarr;</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+  </section>
+
+  <div id="demo-output"></div>
+
+  <footer>
+    <p>Powered by <code>pyknit.Sock.Sock</code> — classic top-down heel-flap sock.</p>
+  </footer>
+
+  <script src="size-helper.js"></script>
+
+  <script type="py">
+    import json as _json
+
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import sock_calculator
+
+    try:
+        from js import window as _win
+    except Exception:
+        _win = None
+
+    # Keep the demo behaviour identical; on top of it, publish the computed
+    # simulation pattern to the JS side after every successful run so the
+    # "Simulate sock" button can hand it to the Knit Simulator.
+    _ORIG_COMPUTE = sock_calculator.DEMO["compute"]
+
+    def _compute_and_publish(inputs):
+        try:
+            result = _ORIG_COMPUTE(inputs)
+        except Exception:
+            if _win is not None:
+                _win.sock_sim_pattern = ""
+                _win.sock_sim_ready = False
+            raise
+        try:
+            plan = result.get("sim")
+            if _win is not None:
+                _win.sock_sim_pattern = _json.dumps(plan) if plan else ""
+                _win.sock_sim_ready = bool(plan)
+        except Exception:
+            pass
+        return result
+
+    sock_calculator.DEMO["compute"] = _compute_and_publish
+
+    shared.bootstrap_demo(sock_calculator, action_label="Knit me a sock plan", export_button_id="export-pattern")
+  </script>
+  <script src="actions.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Needle Advisor</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Needle Advisor</h1>
+    <p>Find the right needle size, type, and cable length for your project.
+    Enter your yarn weight and target gauge to get a starting recommendation.</p>
+    <div class="linkbar">
+      <a href="/index.html">&larr; all tools</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Your project details</h2>
+    <p class="form-help">This gives you a starting point. Always swatch to confirm — every knitter's tension is different.</p>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="yarn_weight">Yarn weight</label>
+        <select id="yarn_weight">
+          <option value="lace">Lace</option>
+          <option value="fingering">Fingering</option>
+          <option value="sport">Sport</option>
+          <option value="dk">DK</option>
+          <option value="worsted" selected>Worsted</option>
+          <option value="aran">Aran</option>
+          <option value="bulky">Bulky</option>
+          <option value="super_bulky">Super Bulky</option>
+        </select>
+        <span class="field-hint">The weight category on your yarn label.</span>
+      </div>
+      <div class="form-group">
+        <label for="target_gauge">Target stitch gauge (sts/in)</label>
+        <input id="target_gauge" type="number" value="18" min="4" max="40" step="0.5" />
+        <span class="field-hint">Stitches per inch in stockinette on the needles you plan to use.</span>
+      </div>
+      <div class="form-group">
+        <label for="project_type">Project type</label>
+        <select id="project_type">
+          <option value="scarf" selected>Scarf / Cowl</option>
+          <option value="hat">Hat / Beanie</option>
+          <option value="sock">Socks</option>
+          <option value="sweater">Sweater (top-down)</option>
+          <option value="shawl">Shawl</option>
+          <option value="blanket">Blanket</option>
+          <option value="mittens">Mittens</option>
+          <option value="baby">Baby garment</option>
+        </select>
+        <span class="field-hint">Determines needle type and cable length recommendations.</span>
+      </div>
+      <div class="form-group">
+        <label for="fabric_density">Fabric density</label>
+        <select id="fabric_density">
+          <option value="loose">Loose / open fabric</option>
+          <option value="balanced" selected>Balanced (standard)</option>
+          <option value="dense">Dense / tight fabric</option>
+          <option value="very_dense">Very dense (armor-like)</option>
+        </select>
+        <span class="field-hint">Adjusts needle size up or down from the baseline.</span>
+      </div>
+      <div class="form-group">
+        <label for="construction">How will you knit it?</label>
+        <select id="construction">
+          <option value="flat" selected>Flat (back and forth)</option>
+          <option value="round_seamless">In the round (seamless)</option>
+          <option value="round_dpns">In the round (DPNs)</option>
+          <option value="small_circumference">Small circumference (socks, sleeves)</option>
+        </select>
+        <span class="field-hint">Affects whether you need straights, circulars, or DPNs.</span>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="run" class="btn-primary">Recommend Needles</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+  </section>
+
+  <div id="demo-output"></div>
+
+  <footer>
+    <p>Recommendations are a starting point. Your gauge swatch determines the
+    final needle size — go up a size for looser fabric, down for tighter.</p>
+  </footer>
+
+  <script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import needle_advisor as DEMO
+    shared.bootstrap_demo(DEMO, action_label="Recommend Needles")
+  </script>
+</body>
+</html>

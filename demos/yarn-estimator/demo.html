@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyKnit · Yarn &amp; Time Estimator</title>
+  <link rel="stylesheet" href="/_assets/pyscript/core.css" />
+  <script type="module" src="/_assets/pyscript/core.js"></script>
+  <link rel="stylesheet" href="/_assets/common.css" />
+  <style>
+    .preset-dims { font-size: 0.82rem; color: #888; margin-top: 0.2rem; }
+    .radio-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
+    .radio-group label {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-weight: 400; font-size: 0.9rem; cursor: pointer;
+      padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 6px; background: white; transition: all 0.15s;
+    }
+    .radio-group label:has(input:checked) {
+      border-color: var(--primary); background: var(--primary-light);
+    }
+    .radio-group input[type="radio"] { margin: 0; }
+    details.advanced { margin-top: 0.8rem; }
+    details.advanced summary {
+      cursor: pointer; font-weight: 600; font-size: 0.9rem;
+      color: var(--primary-dark); padding: 0.4rem 0;
+    }
+    details.advanced summary:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <header class="demo-header">
+    <div class="eyebrow">pyKnit · PyScript demo</div>
+    <h1>Yarn &amp; Time Estimator</h1>
+    <p>Estimate how much yarn and knitting time your project needs.</p>
+    <div class="linkbar">
+      <a href="/index.html">&larr; all demos</a>
+    </div>
+  </header>
+
+  <div id="status-banner" class="status-banner loading">
+    <div class="status-icon"></div>
+    <div class="status-text">
+      <p id="status-message">Loading pyknit...</p>
+      <p id="status-detail" class="detail"></p>
+    </div>
+  </div>
+
+  <py-config>
+    interpreter = "/_assets/pyodide/pyodide.mjs"
+    packages = ["/_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl", "/_assets/wheels/pydantic-1.10.7-py3-none-any.whl", "/_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl", "/_wheel/pyknit-0.1.4-py3-none-any.whl"]
+    terminal = false
+  </py-config>
+
+  <section class="card">
+    <h2>Project</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="project_type">Project type</label>
+        <select id="project_type">
+          <option value="hat" selected>Hat / Beanie</option>
+          <option value="scarf">Scarf / Cowl</option>
+          <option value="shawl_triangle">Triangular Shawl</option>
+          <option value="shawl_rectangle">Rectangle Shawl / Wrap</option>
+          <option value="shawl_crescent">Crescent Shawl</option>
+          <option value="sweater">Sweater (body only)</option>
+          <option value="blanket">Baby Blanket</option>
+          <option value="custom">Custom dimensions</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="knitting_pace">Knitting pace</label>
+        <div class="radio-group">
+          <label><input type="radio" name="knitting_pace" value="slow"> Slow</label>
+          <label><input type="radio" name="knitting_pace" value="medium" checked> Medium</label>
+          <label><input type="radio" name="knitting_pace" value="fast"> Fast</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="project_width">Width / circumference (inches)</label>
+        <input id="project_width" type="number" value="20" min="1" step="1" />
+        <span class="field-hint" id="width-hint">Hat typical: 18-24 in</span>
+      </div>
+      <div class="form-group">
+        <label for="project_height">Height / length (inches)</label>
+        <input id="project_height" type="number" value="9" min="1" step="1" />
+        <span class="field-hint" id="height-hint">Hat typical: 7-10 in</span>
+      </div>
+      <div class="form-group">
+        <label for="stitch_gauge">Stitch gauge (sts/inch)</label>
+        <input id="stitch_gauge" type="number" value="5" min="0.5" step="0.5" />
+      </div>
+      <div class="form-group">
+        <label for="row_gauge">Row gauge (rows/inch)</label>
+        <input id="row_gauge" type="number" value="7" min="0.5" step="0.5" />
+      </div>
+    </div>
+
+    <h2>Yarn</h2>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="yarn_per_ball_yards">Yards per ball</label>
+        <input id="yarn_per_ball_yards" type="number" value="230" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="yarn_per_ball_grams">Grams per ball</label>
+        <input id="yarn_per_ball_grams" type="number" value="50" min="1" step="1" />
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button id="run" class="btn-primary">Estimate Project</button>
+      <button id="export-pattern" class="btn-secondary">Export Pattern</button>
+    </div>
+    <div id="demo-error" class="error-message" style="display: none;"></div>
+    <div id="demo-output"></div>
+  </section>
+
+  <details class="card advanced">
+    <summary>Advanced: per-stitch inputs</summary>
+    <p class="field-hint" style="margin-bottom:0.7rem">Override the automatic estimate with direct per-stitch values. Requires a gauge swatch and yarn-per-stitch measurements.</p>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="project_stitches">Total stitches (direct count)</label>
+        <input id="project_stitches" type="number" value="12000" min="1" step="100" />
+      </div>
+      <div class="form-group">
+        <label for="seconds_per_stitch">Seconds per stitch</label>
+        <input id="seconds_per_stitch" type="number" value="2.5" min="0.1" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="yards_per_stitch">Yarn length per stitch (yards)</label>
+        <input id="yards_per_stitch" type="number" value="0.02" min="0.0001" step="0.001" />
+      </div>
+      <div class="form-group">
+        <label for="grams_per_stitch">Yarn weight per stitch (grams)</label>
+        <input id="grams_per_stitch" type="number" value="0.15" min="0.001" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label for="ball_yardage">Yards per ball (advanced)</label>
+        <input id="ball_yardage" type="number" value="230" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="ball_weight">Grams per ball (advanced)</label>
+        <input id="ball_weight" type="number" value="50" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="stitch_count">Stitches in swatch</label>
+        <input id="stitch_count" type="number" value="24" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="stitch_measure">Swatch width (same units)</label>
+        <input id="stitch_measure" type="number" value="4" min="0.1" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="row_count">Rows in swatch</label>
+        <input id="row_count" type="number" value="18" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="row_measure">Swatch height (same units)</label>
+        <input id="row_measure" type="number" value="3.25" min="0.1" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="units">Units</label>
+        <select id="units">
+          <option value="in" selected>Inches</option>
+          <option value="cm">Centimeters</option>
+        </select>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="run-advanced" class="btn-primary">Estimate (advanced)</button>
+    </div>
+  </details>
+
+  <section class="card">
+    <h2>Load from planner</h2>
+    <p class="field-hint" style="margin-bottom:0.7rem">
+      Completed a hat, shawl, or sweater plan? Send its stitch count here for a quick estimate.
+    </p>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="hat_stitches">Hat crown stitches</label>
+        <input id="hat_stitches" type="number" placeholder="e.g. 80" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="shawl_stitches">Shawl total stitches</label>
+        <input id="shawl_stitches" type="number" placeholder="e.g. 400" min="1" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="sweater_stitches">Sweater total stitches</label>
+        <input id="sweater_stitches" type="number" placeholder="e.g. 50000" min="1" step="100" />
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="load-planner" class="btn-secondary">Load into estimator</button>
+    </div>
+  </section>
+
+  <footer>
+    <p>Powered by <code>pyknit.GaugeSwatch</code> and <code>pyknit.estimate</code>.</p>
+  </footer>
+
+<script type="py">
+    from pyknit.pyscript._assets import shared
+    from pyknit.pyscript._demos import yarn_estimator as _yarn_estimator
+    DEMO = _yarn_estimator.DEMO
+
+    # Wire up the main friendly-mode estimate button
+    def run_friendly(event=None):
+        try:
+            inputs = shared.collect_inputs(DEMO["DEFAULT_INPUTS"])
+            inputs["advanced_mode"] = "false"
+            inputs["knitting_pace"] = _get_pace()
+            result = DEMO["compute"](inputs)
+            shared.hide_error("demo-error")
+            shared.set_html("demo-output", DEMO["to_html"](result))
+            shared.set_status("ready", "Estimate updated", "Adjust inputs and run again.")
+        except Exception as exc:
+            shared.show_error("demo-error", str(exc))
+            shared.set_status("ready", "Please check your inputs", str(exc))
+
+    def run_advanced(event=None):
+        try:
+            inputs = shared.collect_inputs(DEMO["DEFAULT_INPUTS"])
+            inputs["advanced_mode"] = "true"
+            inputs["knitting_pace"] = _get_pace()
+            result = DEMO["compute"](inputs)
+            shared.hide_error("demo-error")
+            shared.set_html("demo-output", DEMO["to_html"](result))
+            shared.set_status("ready", "Estimate updated", "Adjust inputs and run again.")
+        except Exception as exc:
+            shared.show_error("demo-error", str(exc))
+            shared.set_status("ready", "Please check your inputs", str(exc))
+
+    def _get_pace():
+        pace_el = shared._get("input[name='knitting_pace']:checked")
+        if pace_el is not None:
+            return pace_el.value
+        return "medium"
+
+    # Planner data loader: reads stitch count inputs and applies to estimator
+    def load_planner(event=None):
+        try:
+            hat = shared.value("hat_stitches").strip()
+            shawl = shared.value("shawl_stitches").strip()
+            sweater = shared.value("sweater_stitches").strip()
+
+            stitch_count = None
+            project_type = "custom"
+            if hat:
+                stitch_count = int(float(hat))
+                project_type = "hat"
+            elif shawl:
+                stitch_count = int(float(shawl))
+                project_type = "shawl_triangle"
+            elif sweater:
+                stitch_count = int(float(sweater))
+                project_type = "sweater"
+
+            if stitch_count and stitch_count > 0:
+                shared.set_value("project_stitches", stitch_count)
+                shared.set_value("project_type", project_type)
+                shared.set_status("ready", f"Loaded {stitch_count:,} stitches from planner",
+                                  "Click 'Estimate (advanced)' to calculate.")
+            else:
+                shared.set_status("ready", "No stitch count entered",
+                                  "Enter a stitch count in one of the fields above.")
+        except Exception as exc:
+            shared.show_error("demo-error", str(exc))
+
+    # Check sessionStorage for prefill data from other planners
+    def _check_prefill():
+        applied = False
+        count = None
+        try:
+            from js import sessionStorage
+            raw = sessionStorage.getItem("estimator_prefill")
+            if raw:
+                import json
+                data = json.loads(raw)
+                if "stitch_count" in data:
+                    shared.set_value("project_stitches", data["stitch_count"])
+                    count = int(data["stitch_count"])
+                if "project_type" in data:
+                    shared.set_value("project_type", data["project_type"])
+                sessionStorage.removeItem("estimator_prefill")
+                applied = True
+        except Exception:
+            pass
+        return applied, count
+
+    shared.bind_click("run", run_friendly)
+    shared.bind_click("run-advanced", run_advanced)
+    shared.bind_click("load-planner", load_planner)
+    shared.bind_export_pattern(
+        "export-pattern",
+        lambda: DEMO["compute"]({**shared.collect_inputs(DEMO["DEFAULT_INPUTS"]), "advanced_mode": "false"}),
+        filename_prefix="yarn-estimate",
+    )
+
+    shared.set_status("ready", "pyknit loaded", "Edit inputs, then click 'Estimate Project'.")
+    applied, stitch_count = _check_prefill()
+    if stitch_count:
+        # A planner sent a stitch workload, which only the advanced mode uses.
+        run_advanced()
+        shared.set_status(
+            "ready",
+            f"Loaded {stitch_count:,} stitches from planner",
+            "Estimate calculated from planner data (advanced mode).",
+        )
+    else:
+        run_friendly()
+        if applied:
+            shared.set_status(
+                "ready",
+                "Loaded project type from planner",
+                "Estimate calculated from planner data (friendly mode).",
+            )
+</script>
+</body>
+</html>
