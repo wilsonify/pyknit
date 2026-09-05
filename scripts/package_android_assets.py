@@ -24,8 +24,12 @@ import pathlib
 import shutil
 import subprocess
 import sys
-import tomllib
 import urllib.request
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full"
 PYSCRIPT_URL = "https://pyscript.net/releases/2024.10.1"
