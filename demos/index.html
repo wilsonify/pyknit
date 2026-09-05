@@ -328,35 +328,87 @@
     <!-- Sock Calculator -->
     <a href="sock-calculator/demo.html" class="featured-card" aria-label="Open Sock Calculator">
       <div class="card-visual">
-        <svg viewBox="0 0 220 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sock diagram showing cuff, leg, heel, and toe sections">
+        <svg viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sock diagram showing cuff, leg, heel, foot, and toe sections">
           <defs>
-            <linearGradient id="sockFill" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#eef0fa"/>
-              <stop offset="1" stop-color="#c9d3ec"/>
+            <linearGradient id="sockMain" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#e8d8f8"/>
+              <stop offset="100%" stop-color="#c4aedc"/>
+            </linearGradient>
+            <linearGradient id="sockAccent" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#d8c4ec"/>
+              <stop offset="100%" stop-color="#c4a8e0"/>
             </linearGradient>
           </defs>
-          <!-- sock body -->
-          <path d="M50 15 h30 a8 8 0 0 1 8 8 v25 a12 12 0 0 0 12 12 h8 a12 12 0 0 1 12 12 v8 a25 25 0 0 1-50 0 v-8 a8 8 0 0 0-8-8 h-12" fill="url(#sockFill)" stroke="#7b3fa0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- cuff, heel and toe section tints -->
-          <rect x="50" y="15" width="38" height="9" rx="2.5" fill="#e6d7f0"/>
-          <rect x="94" y="60" width="30" height="14" rx="5" fill="#d9cceb" opacity="0.9"/>
-          <circle cx="120" cy="78" r="7" fill="#c9b4e0" opacity="0.9"/>
-          <!-- cuff ribbing lines -->
-          <line x1="55" y1="22" x2="75" y2="22" stroke="#b38fd4" stroke-width="1.5"/>
-          <line x1="55" y1="26" x2="75" y2="26" stroke="#b38fd4" stroke-width="1.5"/>
-          <line x1="55" y1="30" x2="75" y2="30" stroke="#b38fd4" stroke-width="1.5"/>
-          <!-- labels -->
-          <text x="60" y="10" font-size="9" fill="#6b6572" text-anchor="middle">cuff</text>
-          <text x="60" y="46" font-size="9" fill="#6b6572" text-anchor="middle">leg</text>
-          <text x="90" y="55" font-size="9" fill="#6b6572" text-anchor="middle">heel</text>
-          <text x="65" y="82" font-size="9" fill="#6b6572" text-anchor="middle">toe</text>
+          
+          <!-- CUFF: thick distinct band at top with strong ribbing -->
+          <rect x="35" y="8" width="44" height="22" rx="4" fill="#d8c4ec" stroke="#6b3fa0" stroke-width="3"/>
+          <!-- cuff ribbing: bold vertical lines -->
+          <g stroke="#6b3fa0" stroke-width="2" opacity="0.6">
+            <line x1="39" y1="10" x2="39" y2="28"/>
+            <line x1="44" y1="10" x2="44" y2="28"/>
+            <line x1="49" y1="10" x2="49" y2="28"/>
+            <line x1="54" y1="10" x2="54" y2="28"/>
+            <line x1="59" y1="10" x2="59" y2="28"/>
+            <line x1="64" y1="10" x2="64" y2="28"/>
+            <line x1="69" y1="10" x2="69" y2="28"/>
+            <line x1="74" y1="10" x2="74" y2="28"/>
+          </g>
+          
+          <!-- LEG: tall tube going down from cuff -->
+          <rect x="35" y="30" width="44" height="58" fill="url(#sockMain)" stroke="#6b3fa0" stroke-width="2.5"/>
+          <!-- leg knit rows: horizontal lines -->
+          <g stroke="#9a7fc0" stroke-width="0.8" opacity="0.5">
+            <line x1="37" y1="38" x2="77" y2="38"/>
+            <line x1="37" y1="45" x2="77" y2="45"/>
+            <line x1="37" y1="52" x2="77" y2="52"/>
+            <line x1="37" y1="59" x2="77" y2="59"/>
+            <line x1="37" y1="66" x2="77" y2="66"/>
+            <line x1="37" y1="73" x2="77" y2="73"/>
+            <line x1="37" y1="80" x2="77" y2="80"/>
+          </g>
+          
+          <!-- HEEL: bump on bottom-left where leg meets foot (the back of the ankle) -->
+          <path d="M 35 88 C 35 100 45 108 55 108 L 45 88 L 35 88 Z" 
+                fill="url(#sockAccent)" stroke="#6b3fa0" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- heel curve detail -->
+          <path d="M 35 88 C 35 100 45 108 55 108" 
+                fill="none" stroke="#5a2a75" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.5"/>
+          
+          <!-- FOOT: extends right from bottom of leg -->
+          <path d="M 45 88 L 120 88 L 120 118 L 55 118 L 45 108 Z" 
+                fill="url(#sockMain)" stroke="#6b3fa0" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- foot knit rows -->
+          <g stroke="#9a7fc0" stroke-width="0.8" opacity="0.5">
+            <line x1="47" y1="94" x2="118" y2="94"/>
+            <line x1="47" y1="100" x2="118" y2="100"/>
+            <line x1="47" y1="106" x2="118" y2="106"/>
+            <line x1="47" y1="112" x2="118" y2="112"/>
+          </g>
+          
+          <!-- TOE: rounded end of foot -->
+          <rect x="120" y="88" width="18" height="30" rx="9" fill="#d8c4ec" stroke="#6b3fa0" stroke-width="2.5"/>
+          
+          <!-- Seam line down center of leg -->
+          <line x1="57" y1="30" x2="57" y2="88" stroke="#5a2a75" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.4"/>
+          
+          <!-- Transition line from leg to foot -->
+          <line x1="45" y1="88" x2="79" y2="88" stroke="#6b3fa0" stroke-width="2.5"/>
+          
+          <!-- LABELS -->
+          <text x="57" y="6" font-size="11" fill="#5a2a75" text-anchor="middle" font-weight="700">cuff</text>
+          <text x="30" y="62" font-size="11" fill="#5a2a75" font-weight="700">leg</text>
+          <text x="22" y="102" font-size="11" fill="#5a2a75" font-weight="700">heel</text>
+          <text x="82" y="130" font-size="11" fill="#5a2a75" font-weight="700">foot</text>
+          <text x="130" y="92" font-size="11" fill="#5a2a75" font-weight="700">toe</text>
+          
           <!-- stitch count pills -->
-          <rect x="110" y="14" rx="4" width="60" height="18" fill="#ffffff" stroke="#e3d5f2"/>
-          <text x="140" y="27" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">54 sts cast-on</text>
-          <rect x="110" y="38" rx="4" width="60" height="18" fill="#ffffff" stroke="#e3d5f2"/>
-          <text x="140" y="51" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">27 sts toe</text>
-          <rect x="110" y="62" rx="4" width="60" height="18" fill="#e8f5e9" stroke="#bfe3c6"/>
-          <text x="140" y="75" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">step-by-step</text>
+          <rect x="128" y="10" rx="5" width="80" height="18" fill="#ffffff" stroke="#d4c9f0"/>
+          <text x="168" y="23" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">54 sts cast-on</text>
+          <rect x="128" y="32" rx="5" width="80" height="18" fill="#ffffff" stroke="#d4c9f0"/>
+          <text x="168" y="45" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">27 sts toe</text>
+          <rect x="128" y="54" rx="5" width="80" height="36" fill="#f3ecf7" stroke="#d4c9f0"/>
+          <text x="168" y="70" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">step-by-step</text>
+          <text x="168" y="84" font-size="8.5" fill="#6b6572" text-anchor="middle">heel flap &amp; gusset</text>
         </svg>
       </div>
       <div class="card-body">
@@ -378,37 +430,111 @@
     <!-- Raglan Sweater -->
     <a href="raglan-sweater/demo.html" class="featured-card" aria-label="Open Raglan Sweater Planner">
       <div class="card-visual">
-        <svg viewBox="0 0 220 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raglan sweater diagram showing body and sleeve sections">
-          <!-- body -->
-          <path d="M70 30 h60 a12 12 0 0 1 12 12 v50 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-20 h-20 v20 a8 8 0 0 1-8 8 h-8 a8 8 0 0 1-8-8 v-50 a12 12 0 0 1 12-12z" fill="#d5f5e3" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- left sleeve -->
-          <path d="M72 58 h-20 a6 6 0 0 0-6 6 v18 a4 4 0 0 0 4 4 h18" fill="#c8e6f5" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- right sleeve -->
-          <path d="M148 58 h20 a6 6 0 0 1 6 6 v18 a4 4 0 0 1-4 4 h-18" fill="#c8e6f5" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- neck -->
-          <path d="M80 30 h40" fill="none" stroke="#7f8c8d" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- raglan seams -->
-          <line x1="82" y1="30" x2="72" y2="58" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4 3"/>
-          <line x1="138" y1="30" x2="148" y2="58" stroke="#e74c3c" stroke-width="2" stroke-dasharray="4 3"/>
-          <!-- cuff ribbing -->
-          <line x1="50" y1="80" x2="66" y2="80" stroke="#2980b9" stroke-width="1.5"/>
-          <line x1="50" y1="84" x2="66" y2="84" stroke="#2980b9" stroke-width="1.5"/>
-          <line x1="154" y1="80" x2="170" y2="80" stroke="#2980b9" stroke-width="1.5"/>
-          <line x1="154" y1="84" x2="170" y2="84" stroke="#2980b9" stroke-width="1.5"/>
-          <!-- marker dots -->
-          <circle cx="82" cy="38" r="3" fill="#e74c3c"/>
-          <circle cx="138" cy="38" r="3" fill="#e74c3c"/>
-          <!-- labels -->
-          <text x="100" y="18" font-size="9" fill="#6b6572" text-anchor="middle">neck cast-on</text>
-          <text x="65" y="50" font-size="8" fill="#6b6572" text-anchor="middle">raglan</text>
-          <text x="45" y="78" font-size="9" fill="#6b6572" text-anchor="middle">sleeve</text>
-          <text x="175" y="78" font-size="9" fill="#6b6572" text-anchor="middle">sleeve</text>
-          <text x="100" y="80" font-size="9" fill="#6b6572" text-anchor="middle">body</text>
-          <!-- stitch counts -->
-          <rect x="8" y="6" rx="4" width="65" height="18" fill="#ffffff" stroke="#e3d5f2"/>
-          <text x="40" y="19" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="600">80 sts neck</text>
-          <rect x="148" y="6" rx="4" width="65" height="18" fill="#e8f5e9" stroke="#bfe3c6"/>
-          <text x="180" y="19" font-size="9" fill="#2e7d32" text-anchor="middle" font-weight="600">full plan</text>
+        <svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raglan sweater diagram showing body, neckline, sleeves, and cuffs">
+          <defs>
+            <linearGradient id="sweaterGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c8e6f5"/>
+              <stop offset="100%" stop-color="#a8d4ec"/>
+            </linearGradient>
+            <linearGradient id="sleeveGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#b8d8ee"/>
+              <stop offset="100%" stop-color="#9cc5e0"/>
+            </linearGradient>
+          </defs>
+          
+          <!-- SWEATER BODY: torso rectangle -->
+          <rect x="70" y="50" width="90" height="80" rx="4" 
+                fill="url(#sweaterGrad)" stroke="#2d7fa3" stroke-width="3"/>
+          
+          <!-- NECKLINE: crew neck cutout at top -->
+          <path d="M 82 50 Q 115 28 148 50" 
+                fill="#f3ecf7" stroke="#5a2a75" stroke-width="3" stroke-linecap="round"/>
+          <!-- neckline ribbing -->
+          <path d="M 82 50 Q 115 28 148 50" 
+                fill="none" stroke="#1f5a7a" stroke-width="1.5" stroke-dasharray="3 2" stroke-linecap="round"/>
+          
+          <!-- LEFT SLEEVE: extends left from YOKE (shoulder/neckline area) -->
+          <path d="M 70 50 L 22 42 L 16 90 L 64 96 Z" 
+                fill="url(#sleeveGrad)" stroke="#2d7fa3" stroke-width="3" stroke-linejoin="round"/>
+          <!-- Left sleeve cuff: rounded end attached to sleeve -->
+          <path d="M 16 78 Q 8 78 8 90 Q 8 102 16 102" 
+                fill="#a3d1e8" stroke="#2d7fa3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- left cuff ribbing lines -->
+          <g stroke="#1f5a7a" stroke-width="1.5">
+            <line x1="10" y1="84" x2="14" y2="84"/>
+            <line x1="9" y1="89" x2="13" y2="89"/>
+            <line x1="9" y1="94" x2="13" y2="94"/>
+            <line x1="10" y1="99" x2="14" y2="99"/>
+          </g>
+          
+          <!-- RIGHT SLEEVE: extends right from YOKE (shoulder/neckline area) -->
+          <path d="M 160 50 L 218 42 L 224 90 L 166 96 Z" 
+                fill="url(#sleeveGrad)" stroke="#2d7fa3" stroke-width="3" stroke-linejoin="round"/>
+          <!-- Right sleeve cuff: rounded end attached to sleeve -->
+          <path d="M 224 78 Q 232 78 232 90 Q 232 102 224 102" 
+                fill="#a3d1e8" stroke="#2d7fa3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- right cuff ribbing lines -->
+          <g stroke="#1f5a7a" stroke-width="1.5">
+            <line x1="226" y1="84" x2="30" y2="84"/>
+            <line x1="227" y1="89" x2="29" y2="89"/>
+            <line x1="227" y1="94" x2="29" y2="94"/>
+            <line x1="226" y1="99" x2="30" y2="99"/>
+          </g>
+          
+          <!-- RAGLAN SEAMS: diagonal lines from neck to underarm (yoke to sleeve junction) -->
+          <line x1="88" y1="50" x2="70" y2="68" stroke="#5a2a75" stroke-width="2" stroke-dasharray="5 3" opacity="0.5"/>
+          <line x1="142" y1="50" x2="160" y2="68" stroke="#5a2a75" stroke-width="2" stroke-dasharray="5 3" opacity="0.5"/>
+          
+          <!-- BODY KNIT TEXTURE: horizontal lines -->
+          <g stroke="#7bb8d0" stroke-width="0.8" opacity="0.5">
+            <line x1="72" y1="56" x2="158" y2="56"/>
+            <line x1="72" y1="62" x2="158" y2="62"/>
+            <line x1="72" y1="68" x2="158" y2="68"/>
+            <line x1="72" y1="74" x2="158" y2="74"/>
+            <line x1="72" y1="80" x2="158" y2="80"/>
+            <line x1="72" y1="86" x2="158" y2="86"/>
+            <line x1="72" y1="92" x2="158" y2="92"/>
+            <line x1="72" y1="98" x2="158" y2="98"/>
+            <line x1="72" y1="104" x2="158" y2="104"/>
+            <line x1="72" y1="110" x2="158" y2="110"/>
+            <line x1="72" y1="116" x2="158" y2="116"/>
+            <line x1="72" y1="122" x2="158" y2="122"/>
+          </g>
+          
+          <!-- SLEEVE KNIT TEXTURE: angled lines -->
+          <g stroke="#7bb8d0" stroke-width="0.8" opacity="0.5">
+            <line x1="28" y1="48" x2="64" y2="54"/>
+            <line x1="24" y1="56" x2="62" y2="62"/>
+            <line x1="20" y1="64" x2="60" y2="70"/>
+            <line x1="170" y1="54" x2="212" y2="48"/>
+            <line x1="172" y1="62" x2="216" y2="56"/>
+            <line x1="174" y1="70" x2="218" y2="64"/>
+          </g>
+          
+          <!-- BODY HEM: ribbing band at bottom -->
+          <rect x="70" y="116" width="90" height="14" rx="2" 
+                fill="#a3d1e8" stroke="#2d7fa3" stroke-width="2.5"/>
+          <!-- hem ribbing lines -->
+          <g stroke="#1f5a7a" stroke-width="1.5">
+            <line x1="72" y1="120" x2="158" y2="120"/>
+            <line x1="72" y1="124" x2="158" y2="124"/>
+            <line x1="72" y1="128" x2="158" y2="128"/>
+          </g>
+          
+          <!-- LABELS -->
+          <text x="115" y="16" font-size="11" fill="#5a2a75" text-anchor="middle" font-weight="700">neck</text>
+          <text x="115" y="132" font-size="11" fill="#5a2a75" text-anchor="middle" font-weight="700">body</text>
+          <text x="12" y="68" font-size="10" fill="#5a2a75" font-weight="700">left sleeve</text>
+          <text x="248" y="68" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">right sleeve</text>
+          <text x="10" y="108" font-size="9" fill="#5a2a75" font-weight="700">cuff</text>
+          <text x="250" y="108" font-size="9" fill="#5a2a75" text-anchor="middle" font-weight="700">cuff</text>
+          <text x="115" y="54" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">raglan</text>
+          
+          <!-- stitch count pills -->
+          <rect x="10" y="8" rx="5" width="72" height="18" fill="#ffffff" stroke="#d4c9f0"/>
+          <text x="46" y="21" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">80 sts neck</text>
+          <rect x="198" y="8" rx="5" width="72" height="18" fill="#f3ecf7" stroke="#d4c9f0"/>
+          <text x="234" y="21" font-size="10" fill="#5a2a75" text-anchor="middle" font-weight="700">full plan</text>
         </svg>
       </div>
       <div class="card-body">
