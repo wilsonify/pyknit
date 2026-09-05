@@ -56,11 +56,17 @@ Get-ChildItem $Dist -Recurse -Filter *.html | ForEach-Object {
   $t = $t -replace 'href="/', 'href="../'
   Set-Content $_.FullName $t -NoNewline
 }
-# Fix py-config interpreter/packages lines that still point at /_assets or /_wheel
-Get-ChildItem $Dist -Recurse -Filter *.html | ForEach-Object {
-  $t = Get-Content $_.FullName -Raw
-  $t = $t -replace 'interpreter = "../pyodide/pyodide.mjs"', 'interpreter = "../pyodide/pyodide.mjs"'
-  Set-Content $_.FullName $t -NoNewline
+# Root index.html lives at dist/ (not dist/<tool>/), so ../ would escape dist.
+# Rewrite its refs from ../ to ./ after the blanket pass above.
+$RootIndex = Join-Path $Dist 'index.html'
+if (Test-Path $RootIndex) {
+  $t = Get-Content $RootIndex -Raw
+  $t = $t -replace '\.\./pyscript/', './pyscript/'
+  $t = $t -replace '\.\./pyodide/', './pyodide/'
+  $t = $t -replace '\.\./wheels/', './wheels/'
+  $t = $t -replace '\.\./wheel/', './wheel/'
+  $t = $t -replace '\.\./common.css', './common.css'
+  Set-Content $RootIndex $t -NoNewline
 }
 $mb = [math]::Round(((Get-ChildItem $Dist -Recurse -File | Measure-Object Length -Sum).Sum / 1MB), 1)
 Write-Host ("Staged " + @(Get-ChildItem $Dist -Recurse -File).Count + " files, " + $mb + " MB into " + $Dist)
