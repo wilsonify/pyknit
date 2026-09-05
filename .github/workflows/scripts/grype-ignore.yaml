@@ -24,7 +24,8 @@
 #      - ImageMath.eval          (CVE-2023-50447)
 #      - ImageCms / CMS features (CVE-2024-28219, CVE-2024-28226)
 #      - ImageFilter.RankFilter  (CVE-2026-59197)
-#      - FITS, PSD, PDF, TIFF decoding
+#      - FITS, PSD, PDF, TIFF, McIdas AREA, JPEG2000 decoding
+#      - BdfFontFile, PcfFontFile font loading
 #
 # 5. ImageFont.truetype() loads only system fonts (Times.ttf, Inkfree.ttf),
 #    never user-provided or untrusted font files.
@@ -76,3 +77,48 @@ ignore:
   # pyknit uses only standard system fonts with single-character labels,
   # so no oversized glyph can be supplied by an attacker.
   - CVE-2023-50449
+
+  # CVE-2026-59197 – Heap out-of-bounds write in ImageFilter.RankFilter (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires calling ImageFilter.RankFilter with a crafted image to
+  # trigger an integer overflow in ImagingExpand.  pyknit never imports
+  # ImageFilter and never applies rank-filter operations to any image.
+  - CVE-2026-59197
+
+  # CVE-2026-54058 – McIdas AREA image out-of-bounds read (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires loading an uncompressed McIdas AREA image through the mmap
+  # raw codec path, where attacker-controlled header words set a row
+  # stride smaller than the natural row width.  pyknit never opens
+  # McIdas AREA files; all Image.open() calls target bundled PNG assets.
+  - CVE-2026-54058
+
+  # CVE-2026-54059 – PcfFontFile decompression bomb bypass (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires loading a PCF font via PcfFontFile._load_bitmaps(), which
+  # calls Image.frombytes() without a decompression-bomb check.  pyknit
+  # only loads TrueType fonts via ImageFont.truetype(); PCF font loading
+  # code is never executed.
+  - CVE-2026-54059
+
+  # CVE-2026-55379 – BdfFontFile decompression bomb bypass (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires loading a BDF font via BdfFontFile, which calls Image.new()
+  # without a decompression-bomb check.  pyknit only loads TrueType
+  # fonts via ImageFont.truetype(); BDF font loading code is never
+  # executed.
+  - CVE-2026-55379
+
+  # CVE-2026-59200 – PdfParser decompression bomb DoS (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires opening a PDF with a crafted FlateDecode stream whose
+  # decompressed size exhausts memory.  pyknit never opens or parses
+  # PDF files; Image.open() is only called on bundled PNG assets.
+  - CVE-2026-59200
+
+  # CVE-2026-59204 – JPEG2000 tiled decode memory exhaustion (fixed in 12.3.0)
+  # ---------------------------------------------------------------
+  # Requires decoding a JPEG2000 image with many tiles, each retaining
+  # a growing scratch buffer.  pyknit never opens JPEG2000 images; all
+  # images are bundled PNG symbol files.
+  - CVE-2026-59204
