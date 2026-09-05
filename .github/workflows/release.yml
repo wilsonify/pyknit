@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
   pages: write
   id-token: write
 
@@ -58,6 +59,9 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           path: artifacts/
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Python wheel
         run: .github/workflows/scripts/build-python-wheel.sh
@@ -98,6 +102,9 @@ jobs:
         with:
           name: pyscript-dist
           path: site/
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5
