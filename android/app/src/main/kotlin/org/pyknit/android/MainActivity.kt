@@ -40,17 +40,17 @@ import java.util.Locale
  * back navigation, export downloads, external links and diagnostics.
  */
 class MainActivity : ComponentActivity() {
-
     private lateinit var webView: WebView
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val assetLoader = WebViewAssetLoader.Builder()
-            .setDomain(ASSET_DOMAIN)
-            .addPathHandler("/", DistPathHandler(this))
-            .build()
+        val assetLoader =
+            WebViewAssetLoader.Builder()
+                .setDomain(ASSET_DOMAIN)
+                .addPathHandler("/", DistPathHandler(this))
+                .build()
 
         webView = WebView(this)
         setContentView(webView)
@@ -70,82 +70,97 @@ class MainActivity : ComponentActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
         }
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun shouldInterceptRequest(
-                view: WebView,
-                request: WebResourceRequest,
-            ): WebResourceResponse? {
-                if (!isOurOrigin(request.url)) {
-                    return super.shouldInterceptRequest(view, request)
+        webView.webViewClient =
+            object : WebViewClient() {
+                override fun shouldInterceptRequest(
+                    view: WebView,
+                    request: WebResourceRequest,
+                ): WebResourceResponse? {
+                    if (!isOurOrigin(request.url)) {
+                        return super.shouldInterceptRequest(view, request)
+                    }
+                    val served = assetLoader.shouldInterceptRequest(request.url)
+                    if (served != null) {
+                        return served
+                    }
+                    Log.w(TAG, "ASSET-MISS url=${request.url}")
+                    return notFound()
                 }
-                val served = assetLoader.shouldInterceptRequest(request.url)
-                if (served != null) {
-                    return served
+
+                @Suppress("DEPRECATION")
+                override fun shouldInterceptRequest(
+                    view: WebView,
+                    url: String,
+                ): WebResourceResponse? {
+                    val uri = Uri.parse(url)
+                    if (!isOurOrigin(uri)) {
+                        return super.shouldInterceptRequest(view, url)
+                    }
+                    return assetLoader.shouldInterceptRequest(uri) ?: notFound()
                 }
-                Log.w(TAG, "ASSET-MISS url=${request.url}")
-                return notFound()
-            }
 
-            @Suppress("DEPRECATION")
-            override fun shouldInterceptRequest(view: WebView, url: String): WebResourceResponse? {
-                val uri = Uri.parse(url)
-                if (!isOurOrigin(uri)) {
-                    return super.shouldInterceptRequest(view, url)
+                override fun shouldOverrideUrlLoading(
+                    view: WebView,
+                    request: WebResourceRequest,
+                ): Boolean {
+                    return handleNavigation(request.url)
                 }
-                return assetLoader.shouldInterceptRequest(uri) ?: notFound()
-            }
 
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                return handleNavigation(request.url)
-            }
+                @Suppress("DEPRECATION")
+                override fun shouldOverrideUrlLoading(
+                    view: WebView,
+                    url: String,
+                ): Boolean {
+                    return handleNavigation(Uri.parse(url))
+                }
 
-            @Suppress("DEPRECATION")
-            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                return handleNavigation(Uri.parse(url))
-            }
+                override fun onReceivedHttpError(
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    errorResponse: WebResourceResponse?,
+                ) {
+                    Log.e(
+                        TAG,
+                        "HTTP-ERROR url=${request?.url} " +
+                            "code=${errorResponse?.statusCode} mime=${errorResponse?.mimeType}",
+                    )
+                    super.onReceivedHttpError(view, request, errorResponse)
+                }
 
-            override fun onReceivedHttpError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                errorResponse: WebResourceResponse?,
-            ) {
-                Log.e(
-                    TAG,
-                    "HTTP-ERROR url=${request?.url} " +
-                        "code=${errorResponse?.statusCode} mime=${errorResponse?.mimeType}",
-                )
-                super.onReceivedHttpError(view, request, errorResponse)
-            }
+                override fun onReceivedError(
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    error: android.webkit.WebResourceError?,
+                ) {
+                    Log.e(TAG, "LOAD-ERROR url=${request?.url} err=${error?.description}")
+                    super.onReceivedError(view, request, error)
+                }
 
-            override fun onReceivedError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                error: android.webkit.WebResourceError?,
-            ) {
-                Log.e(TAG, "LOAD-ERROR url=${request?.url} err=${error?.description}")
-                super.onReceivedError(view, request, error)
-            }
-
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                if (Uri.parse(url)?.host == ASSET_DOMAIN) {
-                    view.evaluateJavascript(EXPORT_SHIM, null)
+                override fun onPageFinished(
+                    view: WebView,
+                    url: String,
+                ) {
+                    super.onPageFinished(view, url)
+                    if (Uri.parse(url)?.host == ASSET_DOMAIN) {
+                        view.evaluateJavascript(EXPORT_SHIM, null)
+                    }
                 }
             }
-        }
 
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
-                val line = "CONSOLE[${msg.messageLevel()}] ${msg.message()} " +
-                    "@ ${msg.sourceId()}:${msg.lineNumber()}"
-                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
-                    Log.e(TAG, line)
-                } else {
-                    Log.i(TAG, line)
+        webView.webChromeClient =
+            object : WebChromeClient() {
+                override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
+                    val line =
+                        "CONSOLE[${msg.messageLevel()}] ${msg.message()} " +
+                            "@ ${msg.sourceId()}:${msg.lineNumber()}"
+                    if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                        Log.e(TAG, line)
+                    } else {
+                        Log.i(TAG, line)
+                    }
+                    return super.onConsoleMessage(msg)
                 }
-                return super.onConsoleMessage(msg)
             }
-        }
 
         webView.addJavascriptInterface(DiagnosticsBridge(), JAVASCRIPT_LOG)
         webView.addJavascriptInterface(ExportBridge(), JAVASCRIPT_EXPORT)
@@ -202,14 +217,16 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private fun notFound(): WebResourceResponse =
-        WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), null)
+    private fun notFound(): WebResourceResponse = WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), null)
 
     // ------------------------------------------------------------------
     // Exports (pattern .txt downloads produced by the demos)
     // ------------------------------------------------------------------
 
-    private fun handleDownload(url: String, suggestedName: String?) {
+    private fun handleDownload(
+        url: String,
+        suggestedName: String?,
+    ) {
         if (url.startsWith("data:text/plain")) {
             val payload = url.substringAfter(",", "")
             val text = decodeDataText(payload)
@@ -220,7 +237,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveExport(fileName: String, text: String) {
+    private fun saveExport(
+        fileName: String,
+        text: String,
+    ) {
         val safeName = sanitizeFileName(fileName)
         val bytes = text.toByteArray(Charsets.UTF_8)
         val location = writeTextFile(safeName, bytes)
@@ -233,22 +253,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun writeTextFile(fileName: String, bytes: ByteArray): String? {
+    private fun writeTextFile(
+        fileName: String,
+        bytes: ByteArray,
+    ): String? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val values = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
-                }
-                val uri = contentResolver.insert(MediaStore.Files.getContentUri("external"), values)
-                    ?: return null
+                val values =
+                    ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
+                    }
+                val uri =
+                    contentResolver.insert(MediaStore.Files.getContentUri("external"), values)
+                        ?: return null
                 contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
                 uri.toString()
             } else {
                 @Suppress("DEPRECATION")
-                val dir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
-                    ?: filesDir
+                val dir =
+                    getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+                        ?: filesDir
                 if (!dir.isDirectory && !dir.mkdirs()) {
                     return null
                 }
@@ -276,7 +302,10 @@ class MainActivity : ComponentActivity() {
     private inner class ExportBridge {
         /** Called by the injected shim with the exact demo filename. */
         @JavascriptInterface
-        fun save(fileName: String, dataUrl: String) {
+        fun save(
+            fileName: String,
+            dataUrl: String,
+        ) {
             handleDownload(dataUrl, fileName.ifBlank { null })
         }
     }

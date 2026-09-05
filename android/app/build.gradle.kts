@@ -23,6 +23,13 @@ android {
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
     }
 
+    // The offline web runtime lives in underscore-prefixed asset dirs
+    // (_assets/, _shared/, _wheel/), which AAPT ignores by default
+    // (<dir>_*). Keep every other default ignore rule, drop only that one.
+    aaptOptions {
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -51,6 +58,13 @@ val webPython: String = (project.findProperty("webPython") as String?)
 tasks.register<Exec>("stageWebAssets") {
     description = "Stage offline web assets for the WebView APK."
     group = "build"
+    inputs.dir(rootDir.resolve("../demos"))
+    inputs.dir(rootDir.resolve("../scripts"))
+    inputs.dir(rootDir.resolve("../build/pyodide"))
+    inputs.dir(rootDir.resolve("../build/pyscript"))
+    inputs.dir(rootDir.resolve("../build/wheels"))
+    inputs.dir(rootDir.resolve("../build/wheel"))
+    outputs.dir(layout.projectDirectory.dir("src/main/assets/dist"))
     commandLine(
         webPython,
         rootDir.resolve("../scripts/package_android_assets.py").absolutePath,
@@ -72,5 +86,12 @@ tasks.register<Exec>("auditWebAssets") {
 }
 
 tasks.named("preBuild") {
+    dependsOn("stageWebAssets")
+}
+
+// merge*Assets must not race stageWebAssets: preBuild alone does not order
+// them (this bit us with org.gradle.parallel=true — the APK shipped a
+// half-staged dist/). Depend on staging explicitly for every variant.
+tasks.matching { it.name.matches(Regex("merge.*Assets")) }.configureEach {
     dependsOn("stageWebAssets")
 }

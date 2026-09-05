@@ -115,39 +115,50 @@ class TestSanitizeLogic:
 
     def test_t1(s):
         c, s2 = s._r([_g()])
-        assert len(c) == 1 and s2["k"] == 1
+        assert len(c) == 1
+        assert s2["k"] == 1
 
     def test_t2(s):
         c, s2 = s._r([_nl()])
-        assert len(c) == 0 and s2["nl"] == 1
+        assert len(c) == 0
+        assert s2["nl"] == 1
 
     def test_t3(s):
         c, s2 = s._r([_el()])
-        assert len(c) == 0 and s2["nl"] == 1
+        assert len(c) == 0
+        assert s2["nl"] == 1
 
     def test_t4(s):
         c, s2 = s._r([_np()])
-        assert len(c) == 0 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["ur"] == 1
 
     def test_t5(s):
         c, s2 = s._r([_na()])
-        assert len(c) == 0 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["ur"] == 1
 
     def test_t6(s):
         c, s2 = s._r([_ea()])
-        assert len(c) == 0 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["ur"] == 1
 
     def test_t7(s):
         c, s2 = s._r([_nu()])
-        assert len(c) == 0 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["ur"] == 1
 
     def test_t8(s):
         c, s2 = s._r([_ix()])
-        assert len(c) == 1 and s2["k"] == 1
+        assert len(c) == 1
+        assert s2["k"] == 1
 
     def test_t9(s):
         c, s2 = s._r([_g("C1", "a.py"), _nl(), _g("C2", "b.py"), _na(), _ea()])
-        assert len(c) == 2 and s2["k"] == 2 and s2["nl"] == 1 and s2["ur"] == 2
+        assert len(c) == 2
+        assert s2["k"] == 2
+        assert s2["nl"] == 1
+        assert s2["ur"] == 2
 
     def test_t10(s):
         r = _g("C1", "a.py")
@@ -169,11 +180,14 @@ class TestSanitizeLogic:
 
     def test_t12(s):
         c, s2 = s._r([])
-        assert len(c) == 0 and s2["t"] == 0
+        assert len(c) == 0
+        assert s2["t"] == 0
 
     def test_t13(s):
         c, s2 = s._r([_nl(), _el(), _np()])
-        assert len(c) == 0 and s2["nl"] == 2 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["nl"] == 2
+        assert s2["ur"] == 1
 
     def test_t14(s):
         r = {
@@ -182,7 +196,8 @@ class TestSanitizeLogic:
             "locations": [{"physicalLocation": {"artifactLocation": {"uri": "   "}, "region": {"startLine": 1}}}],
         }
         c, s2 = s._r([r])
-        assert len(c) == 0 and s2["ur"] == 1
+        assert len(c) == 0
+        assert s2["ur"] == 1
 
 
 @pytest.mark.skipif(os.name == "nt", reason="bash scripts require Unix")
@@ -215,7 +230,8 @@ class TestSanitizeE2E:
         os.makedirs(os.path.join(tmp_path, "sarif"), exist_ok=True)
         subprocess.run(["bash", SANITIZE], cwd=str(tmp_path), check=True, capture_output=True, text=True)
         r = s._rd(tmp_path, "source")
-        assert r["version"] == "2.1.0" and r["runs"][0]["results"] == []
+        assert r["version"] == "2.1.0"
+        assert r["runs"][0]["results"] == []
 
     def test_t5(s, tmp_path):
         # Write empty SARIF then corrupt it; sanitize should handle gracefully
