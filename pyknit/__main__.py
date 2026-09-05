@@ -60,7 +60,7 @@ def main():
     logger = logging.getLogger(__package__)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    print(f"{VERSION}")
+    print(VERSION)
     desc = """
     This package is intended for use as a library inside jupyter notebook,
     but has some basic gauge calculations available on the command line.
