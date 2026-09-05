@@ -500,28 +500,28 @@ jobs:
         run: bash .github/workflows/scripts/validate-sarif.sh
 
       - name: Upload SARIF (source)
-        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        if: ${{ !cancelled() }}
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/source.sarif
           category: grype-source
 
       - name: Upload SARIF (Python wheel)
-        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        if: ${{ !cancelled() }}
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/wheel.sarif
           category: grype-wheel
 
       - name: Upload SARIF (Android APK)
-        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        if: ${{ !cancelled() }}
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/android.sarif
           category: grype-android
 
       - name: Upload SARIF (PyScript dist)
-        if: steps.sanitize.outcome == 'success' && steps.validate.outcome == 'success'
+        if: ${{ !cancelled() }}
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4
         with:
           sarif_file: sarif/pyscript.sarif
