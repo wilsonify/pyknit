@@ -152,7 +152,8 @@ jobs:
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.sources=pyknit/
             -Dsonar.tests=test/
-            -Dsonar.exclusions=**/*.png,**/*.jpg,**/*.jpeg,**/*.gif,**/*.ico,**/*.svg,**/*.woff,**/*.woff2,**/*.ttf,**/*.eot
+            -Dsonar.exclusions=**/*.png,**/*.jpg,**/*.jpeg,**/*.gif,
+              **/*.ico,**/*.svg,**/*.woff,**/*.woff2,**/*.ttf,**/*.eot
 
   # ── Stage 4: clean Python package build (parallel with tests) ───────
   python-build:
@@ -376,13 +377,17 @@ jobs:
       - name: Determine version
         id: ver
         run: |
-          .github/workflows/scripts/android-determine-version.sh "${{ needs.version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          .github/workflows/scripts/android-determine-version.sh \
+            "${{ needs.version.outputs.version }}" >> "$GITHUB_OUTPUT"
 
       - name: Write local.properties
         run: .github/workflows/scripts/android-write-local-properties.sh
 
       - name: Build APK
-        run: .github/workflows/scripts/android-build-apk.sh "${{ steps.ver.outputs.version_name }}" "${{ steps.ver.outputs.version_code }}"
+        run: |
+          .github/workflows/scripts/android-build-apk.sh \
+            "${{ steps.ver.outputs.version_name }}" \
+            "${{ steps.ver.outputs.version_code }}"
 
       - name: Upload Android APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
@@ -471,7 +476,11 @@ jobs:
       - name: Generate SBOMs (parallel)
         run: |
           mkdir -p sboms
-          syft dir:. --select-catalogers python --exclude "./.venv/**" --exclude "./android/app/build/**" --exclude "./sarif/**" -o spdx-json=sboms/source.spdx.json &
+          syft dir:. --select-catalogers python \
+            --exclude "./.venv/**" \
+            --exclude "./android/app/build/**" \
+            --exclude "./sarif/**" \
+            -o spdx-json=sboms/source.spdx.json &
           syft artifacts/python/*.whl -o spdx-json=sboms/wheel.spdx.json &
           syft artifacts/android/app-debug.apk -o spdx-json=sboms/android.spdx.json &
           syft dir:artifacts/pyscript/ -o spdx-json=sboms/pyscript.spdx.json &
