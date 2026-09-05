@@ -1,8 +1,6 @@
 # Copyright (C) 2021 Terri Oda
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-import logging
-
 import pytest
 import pyknit
 
@@ -97,7 +95,6 @@ def test_increase_evenly(starting_count, increase_number, in_the_round, expected
     ],
 )
 def test_increase_evenly_error(starting_count, increase_number, in_the_round, expected):
-    logging.info("this should raise a valueError")
     with pytest.raises(expected):
         pyknit.increase_evenly(starting_count, increase_number, in_the_round)
 
@@ -139,6 +136,5 @@ def test_decrease_evenly(starting_count, decrease_number, in_the_round, expected
     ],
 )
 def test_decrease_evenly_error(starting_count, decrease_number, in_the_round, expected):
-    logging.info("this should raise a valueError")
     with pytest.raises(expected):
         pyknit.decrease_evenly(starting_count, decrease_number, in_the_round)

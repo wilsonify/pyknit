@@ -7,11 +7,12 @@
 </head>
 <body>
   <h1>pyKnit WebView smoke test</h1>
-  <p id="status">Booting Pyodide (real bundled runtime, no CDN)...</p>
+  <p id="status">Booting Pyodide (bundled runtime, no network)...</p>
   <pre id="log"></pre>
   <script type="module">
     // Isolates WebView<->Pyodide compatibility BEFORE loading the full app.
-    // Uses the same files the demos use: ../pyodide/pyodide.mjs + stdlib.
+    // Uses the same files the demos use: /_assets/pyodide/pyodide.mjs + stdlib,
+    // served by the wrapper from https://appassets.androidplatform.net/.
     window.__pyknitSmoke = { ok: false };
     window.__pyknitBridge = { ready: false };
     const log = (m) => {
@@ -21,10 +22,10 @@
     };
     window.addEventListener("error", (e) => log("WINDOW-ERROR: " + e.message));
     try {
-      const { loadPyodide } = await import("../pyodide/pyodide.mjs");
+      const { loadPyodide } = await import("/_assets/pyodide/pyodide.mjs");
       log("pyodide.mjs imported, calling loadPyodide()...");
       const t0 = performance.now();
-      const py = await loadPyodide({ indexURL: "../pyodide/" });
+      const py = await loadPyodide({ indexURL: "/_assets/pyodide/" });
       const ms = Math.round(performance.now() - t0);
       const result = py.runPython("1+1");
       log("loadPyodide OK in " + ms + "ms, 1+1=" + result);

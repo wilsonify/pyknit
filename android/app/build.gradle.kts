@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.chaquo.python")
     id("com.diffplug.spotless")
 }
 
@@ -20,11 +19,8 @@ android {
         applicationId = "org.pyknit.android"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
-        ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
-        }
+        versionCode = ((project.findProperty("versionCode") as String?)?.toIntOrNull()) ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
     }
 
     compileOptions {
@@ -34,35 +30,47 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
 }
 
 dependencies {
-    implementation("com.google.android.material:material:1.11.0")
+    // Local-asset WebView hosting (WebViewAssetLoader) + back-press dispatcher.
+    implementation("androidx.webkit:webkit:1.10.0")
+    implementation("androidx.activity:activity:1.9.3")
 }
 
-chaquopy {
-    sourceSets {
-        getByName("main") {
-            // Use the canonical repository package; algorithms are not copied.
-            // This source root contains pyknit/chaquopy/mobile_api.py as the adapter.
-            srcDir("../../")
-            include("pyknit/**/*.py")
-        }
-    }
-    defaultConfig {
-        version = "3.11"
-        // Machine-specific build Python must not be hard-coded (it broke CI).
-        // Default to Chaquopy's PATH discovery (python3.11/python3/python), and
-        // allow an explicit override via -Pchaquopy.python=... or
-        // $CHAQUOPY_PYTHON for local builds.
-        val buildPy: String? = project.findProperty("chaquopy.python") as String?
-            ?: System.getenv("CHAQUOPY_PYTHON")
-        if (buildPy != null) {
-            buildPython(buildPy)
-        }
-        pip {
-            install("-r", "../requirements-android.txt")
-        }
-    }
+// Stage the demos/ web app + offline PyScript/Pyodide runtime into
+// src/main/assets/dist before merging assets, so every APK build is
+// reproducible and fully offline. Override the interpreter with
+// -PwebPython=... or $ANDROID_WEB_PYTHON (default: python3, or python
+// on Windows where the python3 alias usually does not exist).
+val defaultWebPython = if (System.getProperty("os.name").startsWith("Windows")) "python" else "python3"
+val webPython: String = (project.findProperty("webPython") as String?)
+    ?: System.getenv("ANDROID_WEB_PYTHON")
+    ?: defaultWebPython
+
+tasks.register<Exec>("stageWebAssets") {
+    description = "Stage offline web assets for the WebView APK."
+    group = "build"
+    commandLine(
+        webPython,
+        rootDir.resolve("../scripts/package_android_assets.py").absolutePath,
+        "--root",
+        rootDir.resolve("..").absolutePath,
+    )
+}
+
+tasks.register<Exec>("auditWebAssets") {
+    description = "Audit staged web assets for completeness/offline use."
+    group = "verification"
+    dependsOn("stageWebAssets")
+    commandLine(
+        webPython,
+        rootDir.resolve("../scripts/audit_android_assets.py").absolutePath,
+        "--root",
+        rootDir.resolve("..").absolutePath,
+    )
+}
+
+tasks.named("preBuild") {
+    dependsOn("stageWebAssets")
 }

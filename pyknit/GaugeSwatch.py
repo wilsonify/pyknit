@@ -8,7 +8,7 @@ patterns and more
 pyKnit.GaugeSwatch: Tools for measurement and gauge swatching
 """
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, PositiveFloat, PositiveInt
 
@@ -39,8 +39,8 @@ class GaugeSwatch(BaseModel):
     units: Literal["cm", "in"]
     # Yarn use per stitch (per design, estimate spec 08). Optional fields used
     # by estimate_yardage() and estimate_weight().
-    yardage_per_unit: Optional[PositiveFloat] = None
-    weight_per_unit: Optional[PositiveFloat] = None
+    yardage_per_unit: PositiveFloat | None = None
+    weight_per_unit: PositiveFloat | None = None
 
     def row_gauge(self) -> float:
         """return rows per unit (e.g. cm, inch) number

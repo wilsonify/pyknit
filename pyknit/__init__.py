@@ -190,14 +190,14 @@ def _handle_even_times(times: float, k_string: str, higher_times: float, k_highe
     """Handle case where times is even."""
     times = times / 2
     times_string = k_string if times == 1 else f"[{k_string}] * {times:.0f} times"
-    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times:.0f} times"
+    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times} times"
     return f"{times_string}, {higher_times_string}, {times_string}"
 
 
 def _handle_even_higher_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
     """Handle case where higher_times is even."""
     higher_times = higher_times / 2
-    times_string = k_string if times == 1 else f"[{k_string}] * {times:.0f} times"
+    times_string = k_string if times == 1 else f"[{k_string}] * {times} times"
     higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times:.0f} times"
     return f"{higher_times_string}, {times_string}, {higher_times_string}"
 
@@ -205,13 +205,10 @@ def _handle_even_higher_times(times: float, k_string: str, higher_times: float, 
 def _handle_odd_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
     """Handle case where both times and higher_times are odd."""
     higher_times = math.ceil(higher_times / 2)
-    times_string = k_string if times == 1 else f"[{k_string}] {times:.0f} times"
-    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] {higher_times:.0f} times"
+    times_string = k_string if times == 1 else f"[{k_string}] {times} times"
+    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] {higher_times} times"
 
     decrease_pattern = f"{higher_times_string}, {times_string}"
-    higher_times -= 1
-    if higher_times != 0:
-        decrease_pattern += ""
 
     return decrease_pattern
 

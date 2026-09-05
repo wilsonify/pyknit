@@ -368,13 +368,8 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Chaquopy needs a build Python matching the app's version (3.11) on
-      # PATH; ubuntu-latest only provides 3.12 by default. Install it so the
-      # Gradle build can find python3.11.
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
-        with:
-          python-version: "3.11"
-
+      # The WebView wrapper stages its offline assets with the runner's
+      # stock python3 (no version pin needed — packaging is plain stdlib).
       - name: Setup Android SDK
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407  # v4
 

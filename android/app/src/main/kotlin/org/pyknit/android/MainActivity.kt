@@ -1,309 +1,371 @@
 package org.pyknit.android
 
+import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.Menu
-import android.view.View
-import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.LinearLayout
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.DownloadListener
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import com.chaquo.python.PyObject
-import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import org.json.JSONObject
-import org.pyknit.android.ui.HomeView
-import org.pyknit.android.ui.PlannerSpecs
-import org.pyknit.android.ui.PlannerView
-import org.pyknit.android.ui.SimulatorView
-import org.pyknit.android.ui.attrColor
-import org.pyknit.android.ui.hairline
-import com.google.android.material.R as MR
+import androidx.activity.ComponentActivity
+import androidx.webkit.WebViewAssetLoader
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * Native shell around the existing pyKnit Python calculations.
+ * Thin Android shell around the existing pyKnit web application.
  *
- * Python remains the source of truth for all knitting math; this activity
- * only navigates and presents. Planner and simulator results are produced
- * by `pyknit/chaquopy/mobile_api.py` and rendered here.
+ * The full app (HTML/CSS/JS + PyScript + Pyodide + Python) is bundled in the
+ * APK under assets/dist/ and served through [WebViewAssetLoader] on a local
+ * https:// origin, so ES modules, fetch() and WebAssembly behave exactly like
+ * they do over HTTP. No Chaquopy, no Python rewrite, no network required.
+ *
+ * Kotlin owns only Android concerns: asset serving with correct MIME types,
+ * back navigation, export downloads, external links and diagnostics.
  */
-class MainActivity : AppCompatActivity() {
-    private lateinit var api: PyObject
-    private val handler = Handler(Looper.getMainLooper())
+class MainActivity : ComponentActivity() {
 
-    private lateinit var toolbar: MaterialToolbar
-    private lateinit var contentHost: FrameLayout
-    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var webView: WebView
 
-    private enum class Screen { TOOLS, PLANNER, SIMULATOR }
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    private var currentScreen = Screen.TOOLS
-    private var simulatorFromPlanner = false
+        val assetLoader = WebViewAssetLoader.Builder()
+            .setDomain(ASSET_DOMAIN)
+            .addPathHandler("/", DistPathHandler(this))
+            .build()
 
-    private val plannerDrafts = mutableMapOf<String, MutableMap<String, String>>()
+        webView = WebView(this)
+        setContentView(webView)
 
-    // Simulator state, owned here so it survives tab switches.
-    var simulation: JSONObject? = null
-    var simulationIndex = 0
-    var playing = false
-    var canonicalPlan = ""
-    var draftInstructions = "co 10\nk2 p2 across\nk2 p2 across\nk all"
+        with(webView.settings) {
+            javaScriptEnabled = true
+            // Planner -> simulator handoff uses sessionStorage.
+            domStorageEnabled = true
+            databaseEnabled = true
+            mediaPlaybackRequiresUserGesture = false
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            builtInZoomControls = false
+            // Assets arrive over the https:// origin above, never file://.
+            allowFileAccess = false
+            allowContentAccess = false
+            cacheMode = WebSettings.LOAD_DEFAULT
+        }
 
-    /** Speed multiplier: 0.5 = slow (800ms), 1.0 = normal (400ms), 2.0 = fast (200ms). */
-    var speedMultiplier = 1.0f
-    var plannerLabel: String? = null
-
-    private val simulatorView = SimulatorView(this)
-
-    private companion object {
-        const val ID_TOOLS = 1
-        const val ID_SIMULATOR = 2
-    }
-
-    override fun onCreate(state: Bundle?) {
-        super.onCreate(state)
-        if (!Python.isStarted()) Python.start(AndroidPlatform(this))
-        api = Python.getInstance().getModule("pyknit.chaquopy.mobile_api")
-        buildShell()
-        showTools()
-    }
-
-    // ---------- shell ----------
-
-    private fun buildShell() {
-        val frame = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-
-        toolbar =
-            MaterialToolbar(this).apply {
-                setTitleTextColor(attrColor(MR.attr.colorOnSurface))
-                setBackgroundColor(attrColor(MR.attr.colorSurface))
-                setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-                setNavigationContentDescription(getString(R.string.back))
-                setNavigationOnClickListener { onBackPressed() }
-                navigationIcon = null
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest,
+            ): WebResourceResponse? {
+                if (!isOurOrigin(request.url)) {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                val served = assetLoader.shouldInterceptRequest(request.url)
+                if (served != null) {
+                    return served
+                }
+                Log.w(TAG, "ASSET-MISS url=${request.url}")
+                return notFound()
             }
-        frame.addView(toolbar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
-        val divider = hairline()
-        frame.addView(divider, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1))
+            @Suppress("DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView, url: String): WebResourceResponse? {
+                val uri = Uri.parse(url)
+                if (!isOurOrigin(uri)) {
+                    return super.shouldInterceptRequest(view, url)
+                }
+                return assetLoader.shouldInterceptRequest(uri) ?: notFound()
+            }
 
-        contentHost = FrameLayout(this)
-        frame.addView(contentHost, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                return handleNavigation(request.url)
+            }
 
-        bottomNav =
-            BottomNavigationView(this, null, MR.attr.bottomNavigationStyle).apply {
-                setBackgroundColor(attrColor(MR.attr.colorSurface))
-                labelVisibilityMode = BottomNavigationView.LABEL_VISIBILITY_LABELED
-                menu.add(Menu.NONE, ID_TOOLS, 0, getString(R.string.nav_tools)).setIcon(R.drawable.ic_tools)
-                menu.add(Menu.NONE, ID_SIMULATOR, 1, getString(R.string.nav_simulator)).setIcon(R.drawable.ic_simulator)
-                setOnItemSelectedListener { item ->
-                    when (item.itemId) {
-                        ID_TOOLS -> {
-                            if (currentScreen != Screen.TOOLS) showTools()
-                            true
-                        }
-                        ID_SIMULATOR -> {
-                            if (currentScreen != Screen.SIMULATOR) showSimulator()
-                            true
-                        }
-                        else -> false
+            @Suppress("DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                return handleNavigation(Uri.parse(url))
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                errorResponse: WebResourceResponse?,
+            ) {
+                Log.e(
+                    TAG,
+                    "HTTP-ERROR url=${request?.url} " +
+                        "code=${errorResponse?.statusCode} mime=${errorResponse?.mimeType}",
+                )
+                super.onReceivedHttpError(view, request, errorResponse)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: android.webkit.WebResourceError?,
+            ) {
+                Log.e(TAG, "LOAD-ERROR url=${request?.url} err=${error?.description}")
+                super.onReceivedError(view, request, error)
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                if (Uri.parse(url)?.host == ASSET_DOMAIN) {
+                    view.evaluateJavascript(EXPORT_SHIM, null)
+                }
+            }
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
+                val line = "CONSOLE[${msg.messageLevel()}] ${msg.message()} " +
+                    "@ ${msg.sourceId()}:${msg.lineNumber()}"
+                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                    Log.e(TAG, line)
+                } else {
+                    Log.i(TAG, line)
+                }
+                return super.onConsoleMessage(msg)
+            }
+        }
+
+        webView.addJavascriptInterface(DiagnosticsBridge(), JAVASCRIPT_LOG)
+        webView.addJavascriptInterface(ExportBridge(), JAVASCRIPT_EXPORT)
+
+        webView.setDownloadListener(
+            DownloadListener { url, _, _, _, _ ->
+                handleDownload(url, suggestedName = null)
+            },
+        )
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (::webView.isInitialized && webView.canGoBack()) {
+                        webView.goBack()
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
                     }
                 }
-            }
-        frame.addView(bottomNav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            },
+        )
 
-        setContentView(frame)
+        val startUrl = intent.getStringExtra(EXTRA_START_URL) ?: (ORIGIN + START_PAGE)
+        Log.i(TAG, "Loading $startUrl")
+        webView.loadUrl(startUrl)
     }
 
-    private fun setScreen(
-        title: String,
-        back: Boolean,
-        body: View,
-    ) {
-        toolbar.title = title
-        toolbar.navigationIcon =
-            if (back) {
-                androidx.appcompat.content.res.AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+    override fun onDestroy() {
+        if (::webView.isInitialized) {
+            webView.destroy()
+        }
+        super.onDestroy()
+    }
+
+    private fun isOurOrigin(uri: Uri?): Boolean = uri?.host == ASSET_DOMAIN
+
+    /** Returns true when the URL was consumed (external link opened). */
+    private fun handleNavigation(uri: Uri?): Boolean {
+        if (uri == null || isOurOrigin(uri)) {
+            return false
+        }
+        if (uri.scheme == "http" || uri.scheme == "https") {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+            } catch (e: ActivityNotFoundException) {
+                Log.w(TAG, "No browser for $uri", e)
+                toast("No app available to open this link")
+            }
+        } else {
+            Log.w(TAG, "Ignoring non-http(s) navigation: $uri")
+        }
+        return true
+    }
+
+    private fun notFound(): WebResourceResponse =
+        WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), null)
+
+    // ------------------------------------------------------------------
+    // Exports (pattern .txt downloads produced by the demos)
+    // ------------------------------------------------------------------
+
+    private fun handleDownload(url: String, suggestedName: String?) {
+        if (url.startsWith("data:text/plain")) {
+            val payload = url.substringAfter(",", "")
+            val text = decodeDataText(payload)
+            saveExport(suggestedName ?: timestampedName(), text)
+        } else {
+            Log.w(TAG, "Unsupported download (only data:text/plain exports): $url")
+            toast("This download type is not supported offline")
+        }
+    }
+
+    private fun saveExport(fileName: String, text: String) {
+        val safeName = sanitizeFileName(fileName)
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val location = writeTextFile(safeName, bytes)
+        if (location != null) {
+            Log.i(TAG, "Exported $safeName to $location")
+            toast("Exported $safeName")
+        } else {
+            Log.e(TAG, "Export failed for $safeName")
+            toast("Export failed")
+        }
+    }
+
+    private fun writeTextFile(fileName: String, bytes: ByteArray): String? {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
+                }
+                val uri = contentResolver.insert(MediaStore.Files.getContentUri("external"), values)
+                    ?: return null
+                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                uri.toString()
             } else {
-                null
-            }
-        contentHost.removeAllViews()
-        contentHost.addView(body, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-    }
-
-    override fun onBackPressed() {
-        when (currentScreen) {
-            Screen.PLANNER -> showTools()
-            Screen.SIMULATOR -> if (simulatorFromPlanner) showTools() else super.onBackPressed()
-            Screen.TOOLS -> super.onBackPressed()
-        }
-    }
-
-    // ---------- screens ----------
-
-    private fun showTools() {
-        playing = false
-        currentScreen = Screen.TOOLS
-        setScreen(getString(R.string.tools_title), back = false, body = HomeView.build(this) { openTool(it) })
-        selectNav(ID_TOOLS)
-    }
-
-    private fun openTool(id: String) {
-        if (id == "sim") showSimulator() else showPlanner(id)
-    }
-
-    private fun showPlanner(name: String) {
-        playing = false
-        currentScreen = Screen.PLANNER
-        val spec = PlannerSpecs.forName(name)
-        val drafts = plannerDrafts.getOrPut(name) { mutableMapOf() }
-        val body =
-            PlannerView.build(
-                activity = this,
-                spec = spec,
-                drafts = drafts,
-                calculate = { json, onResult, onError -> callPlanner(name, json, onResult, onError) },
-                onOpenSimulator = { valuesJson -> openPlannerSimulator(name, valuesJson) },
-            )
-        setScreen(spec.title, back = true, body)
-        selectNav(ID_TOOLS)
-    }
-
-    private fun showSimulator() {
-        simulatorFromPlanner = false
-        currentScreen = Screen.SIMULATOR
-        setScreen(getString(R.string.sim_title), back = false, body = simulatorView.build())
-        selectNav(ID_SIMULATOR)
-    }
-
-    /** Select a bottom-nav item without re-triggering the selection listener. */
-    private fun selectNav(itemId: Int) {
-        if (bottomNav.selectedItemId != itemId) bottomNav.selectedItemId = itemId
-    }
-
-    // ---------- Python bridge ----------
-
-    private fun callPlanner(
-        name: String,
-        json: String,
-        onResult: (JSONObject) -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        Thread {
-            try {
-                val result =
-                    JSONObject(
-                        api.callAttr("planner_result", name, json).toJava(String::class.java),
-                    )
-                handler.post { onResult(result) }
-            } catch (e: Exception) {
-                handler.post { onError(cleanError(e)) }
-            }
-        }.start()
-    }
-
-    private fun openPlannerSimulator(
-        name: String,
-        valuesJson: String,
-    ) {
-        val spec = PlannerSpecs.forName(name)
-        Thread {
-            try {
-                val result =
-                    JSONObject(
-                        api.callAttr("planner_to_simulator", name, valuesJson).toJava(String::class.java),
-                    )
-                handler.post {
-                    canonicalPlan = result.getJSONObject("sim_plan").toString()
-                    draftInstructions = result.getString("instructions")
-                    simulation = result.getJSONObject("simulation")
-                    simulationIndex = 0
-                    playing = false
-                    simulatorFromPlanner = true
-                    plannerLabel = spec.title
-                    showSimulator()
-                    simulatorView.bringStatusIntoView()
+                @Suppress("DEPRECATION")
+                val dir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+                    ?: filesDir
+                if (!dir.isDirectory && !dir.mkdirs()) {
+                    return null
                 }
-            } catch (e: Exception) {
-                handler.post { toast("Could not open simulator: ${cleanError(e)}") }
+                val file = File(dir, fileName)
+                file.writeBytes(bytes)
+                file.absolutePath
             }
-        }.start()
-    }
-
-    fun buildSimulation(instructions: String) {
-        Thread {
-            try {
-                val wrapper =
-                    JSONObject(
-                        api.callAttr("build_simulation", instructions, canonicalPlan).toJava(String::class.java),
-                    )
-                handler.post {
-                    simulation = wrapper.getJSONObject("simulation")
-                    simulationIndex = 0
-                    playing = false
-                    simulatorView.refresh()
-                    simulatorView.bringStatusIntoView()
-                }
-            } catch (e: Exception) {
-                handler.post { simulatorView.showError(cleanError(e)) }
-            }
-        }.start()
-    }
-
-    // ---------- simulator controls ----------
-
-    fun move(delta: Int) {
-        val sim = simulation ?: return
-        playing = false
-        simulationIndex = (simulationIndex + delta).coerceIn(0, sim.getJSONArray("steps").length() - 1)
-        simulatorView.refresh()
-    }
-
-    fun moveTo(index: Int) {
-        val sim = simulation ?: return
-        playing = false
-        simulationIndex = index.coerceIn(0, sim.getJSONArray("steps").length() - 1)
-        simulatorView.refresh()
-    }
-
-    fun resetSimulation() = moveTo(0)
-
-    fun togglePlay() {
-        if (simulation == null) {
-            buildSimulation(draftInstructions)
-            return
+        } catch (e: Exception) {
+            Log.e(TAG, "writeTextFile failed", e)
+            null
         }
-        playing = !playing
-        simulatorView.refresh()
-        if (playing) schedulePlay()
     }
 
-    private fun schedulePlay() {
-        if (!playing) return
-        val sim = simulation ?: return
-        val total = sim.getJSONArray("steps").length()
-        if (simulationIndex >= total - 1) {
-            playing = false
-            simulatorView.refresh()
-            return
+    private fun toast(message: String) {
+        runOnUiThread { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
+    }
+
+    private inner class DiagnosticsBridge {
+        @JavascriptInterface
+        fun log(message: String) {
+            Log.i(TAG, "PAGE $message")
         }
-        val baseSpeed = sim.optInt("speed_ms", 400)
-        val speed = (baseSpeed / speedMultiplier.coerceAtLeast(0.25f)).toLong()
-        handler.postDelayed({
-            if (!playing) return@postDelayed
-            simulationIndex++
-            simulatorView.refresh()
-            schedulePlay()
-        }, speed.toLong())
     }
 
-    // ---------- helpers ----------
+    private inner class ExportBridge {
+        /** Called by the injected shim with the exact demo filename. */
+        @JavascriptInterface
+        fun save(fileName: String, dataUrl: String) {
+            handleDownload(dataUrl, fileName.ifBlank { null })
+        }
+    }
 
-    private fun cleanError(e: Exception): String = e.message?.substringAfterLast(": ") ?: "unknown error"
+    companion object {
+        const val TAG = "PyknitWebView"
+        const val ASSET_DOMAIN = "appassets.androidplatform.net"
+        const val ORIGIN = "https://appassets.androidplatform.net"
+        const val START_PAGE = "/index.html"
+        const val EXTRA_START_URL = "start_url"
+        private const val JAVASCRIPT_LOG = "__pyknitLog"
+        private const val JAVASCRIPT_EXPORT = "__pyknitExport"
 
-    private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        /**
+         * Click shim installed on every local page. Forwards the exact
+         * `<a download>` filename + data URL to native code and suppresses
+         * the stock download path (whose DownloadListener never sees the
+         * filename). Only activates when the native bridge exists.
+         */
+        private const val EXPORT_SHIM =
+            "(function(){if(!window.__pyknitExport||window.__pyknitExportShim)return;" +
+                "window.__pyknitExportShim=true;" +
+                "document.addEventListener('click',function(e){" +
+                "var t=e.target&&e.target.closest?e.target.closest('a[download]'):null;" +
+                "if(!t||!t.href||t.href.indexOf('data:text/plain')!==0)return;" +
+                "e.preventDefault();e.stopPropagation();" +
+                "window.__pyknitExport.save(t.download||'pyknit-export.txt',t.href);" +
+                "},true);})();"
+
+        fun sanitizeFileName(name: String): String {
+            val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "_").take(100).trim('_', '.', ' ')
+            return safe.ifEmpty { "pyknit-export.txt" }
+        }
+
+        fun timestampedName(): String {
+            val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+            return "pyknit-export-$stamp.txt"
+        }
+
+        /**
+         * Reverse of shared._download_text_file encoding (%, newline,
+         * carriage return, space — in that order), so %25 decodes last.
+         */
+        fun decodeDataText(payload: String): String =
+            payload
+                .replace("%20", " ")
+                .replace("%0D", "\r")
+                .replace("%0A", "\n")
+                .replace("%25", "%")
+    }
+}
+
+/**
+ * Serves assets/dist/ from the site root of the local https:// origin with
+ * explicit MIME types (mirrors demos/nginx.conf, including
+ * application/wasm and application/octet-stream for wheels).
+ */
+private class DistPathHandler(context: Context) : WebViewAssetLoader.PathHandler {
+    private val assets = context.assets
+
+    override fun handle(path: String): WebResourceResponse? {
+        val clean = path.trimStart('/').split('/').filter { it.isNotEmpty() }
+        if (clean.isEmpty() || ".." in clean) {
+            return null
+        }
+        val assetPath = "dist/" + clean.joinToString("/")
+        val mime = mimeFor(assetPath.substringAfterLast('.', ""))
+        return try {
+            val stream = assets.open(assetPath)
+            val encoding = if (mime.startsWith("text/") || mime == "application/json") "utf-8" else null
+            WebResourceResponse(mime, encoding, stream)
+        } catch (e: Exception) {
+            Log.w(MainActivity.TAG, "ASSET-MISS dist path=$assetPath")
+            null
+        }
+    }
+
+    private fun mimeFor(extension: String): String =
+        when (extension.lowercase(Locale.US)) {
+            "html" -> "text/html"
+            "css" -> "text/css"
+            "js", "mjs" -> "text/javascript"
+            "json", "map" -> "application/json"
+            "wasm" -> "application/wasm"
+            "zip", "whl" -> "application/octet-stream"
+            "png" -> "image/png"
+            "svg" -> "image/svg+xml"
+            "ico" -> "image/x-icon"
+            "txt", "py" -> "text/plain"
+            else -> "application/octet-stream"
+        }
 }
