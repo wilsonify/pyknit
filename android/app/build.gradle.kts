@@ -6,7 +6,9 @@ plugins {
 
 spotless {
     kotlin {
-        target("src/**/*.kt")
+        // Lint Kotlin sources only: src/main/assets/dist is a task output
+        // (see stageWebAssets) and must not fall under a lint input.
+        target("src/main/kotlin/**/*.kt")
         ktlint("1.1.1")
     }
 }
@@ -26,7 +28,7 @@ android {
     // The offline web runtime lives in underscore-prefixed asset dirs
     // (_assets/, _shared/, _wheel/), which AAPT ignores by default
     // (<dir>_*). Keep every other default ignore rule, drop only that one.
-    aaptOptions {
+    androidResources {
         ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 
@@ -60,10 +62,13 @@ tasks.register<Exec>("stageWebAssets") {
     group = "build"
     inputs.dir(rootDir.resolve("../demos"))
     inputs.dir(rootDir.resolve("../scripts"))
-    inputs.dir(rootDir.resolve("../build/pyodide"))
-    inputs.dir(rootDir.resolve("../build/pyscript"))
-    inputs.dir(rootDir.resolve("../build/wheels"))
-    inputs.dir(rootDir.resolve("../build/wheel"))
+    inputs.file(rootDir.resolve("../pyproject.toml"))
+    inputs.file(rootDir.resolve("../android/smoke/pyodide-smoke.html"))
+    // NOTE: build/{pyodide,pyscript,wheels,wheel} is deliberately NOT an
+    // input. It may not exist on a clean checkout (the packaging script
+    // downloads it), and declaring it fails task input validation before
+    // the script ever runs. The pinned runtime only changes with the
+    // script/pyproject inputs above, which do trigger a restage.
     outputs.dir(layout.projectDirectory.dir("src/main/assets/dist"))
     commandLine(
         webPython,

@@ -77,10 +77,26 @@ def tool_pages(root: pathlib.Path) -> list[str]:
     return sorted(p.name for p in demos.iterdir() if p.is_dir() and (p / "demo.html").is_file())
 
 
-def _download(url: str, dest: pathlib.Path) -> None:
+# urllib's default UA is rejected (403) by some CDNs/proxies; identify the
+# fetch as this project's offline-packaging step instead.
+USER_AGENT = "pyknit-android-packaging/1.0 (+https://github.com/pyknit)"
+
+
+def _download(url: str, dest: pathlib.Path, attempts: int = 3) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(url, timeout=120) as resp, open(dest, "wb") as out:
-        shutil.copyfileobj(resp, out)
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(request, timeout=120) as resp, open(dest, "wb") as out:
+                shutil.copyfileobj(resp, out)
+            return
+        except Exception as exc:  # noqa: BLE001 - retry transient failures, report the last
+            last_error = exc
+            print(f"  download attempt {attempt}/{attempts} failed for {url}: {exc}")
+            if dest.exists():
+                dest.unlink()
+    raise SystemExit(f"failed to download {url}: {last_error}")
 
 
 def project_version(root: pathlib.Path) -> str:
