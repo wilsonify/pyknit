@@ -108,7 +108,11 @@ def main() -> int:
     args = parser.parse_args()
 
     root = repo_root(args.root)
-    dist = pathlib.Path(args.dist).resolve() if args.dist else root / "android" / "app" / "src" / "main" / "assets" / "dist"
+    dist = (
+        pathlib.Path(args.dist).resolve()
+        if args.dist
+        else root / "android" / "app" / "src" / "main" / "assets" / "dist"
+    )
     errors = audit(root, dist)
     files = [p for p in dist.rglob("*") if p.is_file()] if dist.is_dir() else []
     size_mb = sum(p.stat().st_size for p in files) / 1e6 if files else 0.0
