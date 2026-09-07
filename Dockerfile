@@ -1,6 +1,6 @@
 FROM python:3.12-alpine AS build
 
-RUN apk add --no-cache curl ca-certificates
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
@@ -10,50 +10,31 @@ RUN pip wheel --no-deps --no-cache-dir --wheel-dir /wheel .
 WORKDIR /site
 COPY demos ./
 COPY build/ /tmp/build/
-RUN rm -rf README.md Makefile favicon.ico && \
-    mkdir -p wheels pyscript pyodide && \
-    cp /wheel/pyknit-*.whl wheels/ && \
+RUN set -eux; \
+    rm -rf README.md Makefile favicon.ico; \
+    mkdir -p wheels pyscript pyodide; \
+    test -s /tmp/build/pyscript/core.js; \
+    test -s /tmp/build/pyscript/core.css; \
+    test -s /tmp/build/pyodide/pyodide.mjs; \
+    test -s /tmp/build/pyodide/pyodide.asm.js; \
+    test -s /tmp/build/pyodide/pyodide.asm.wasm; \
+    test -s /tmp/build/pyodide/pyodide-lock.json; \
+    test -s /tmp/build/pyodide/python_stdlib.zip; \
+    test -s /tmp/build/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; \
+    test -s /tmp/build/wheels/pydantic-1.10.7-py3-none-any.whl; \
+    test -s /tmp/build/wheels/typing_extensions-4.7.1-py3-none-any.whl; \
+    find /tmp/build/wheels -maxdepth 1 -type f -name 'pyknit-*.whl' -size +0c | grep -q .; \
+    cp /wheel/pyknit-*.whl wheels/; \
+    cp -a /tmp/build/pyscript/. pyscript/; \
+    cp -a /tmp/build/pyodide/. pyodide/; \
+    cp -a /tmp/build/wheels/. wheels/; \
+    if [ -d _wheel ]; then cp -a _wheel/. wheels/; fi; \
     printf '%s\n' '"""Gauge conversion demo bootstrap (generated in image)."""' \
         'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401  # auto-bootstraps' \
-        > gauge-conversion.py && \
-    if [ -d /tmp/build/pyscript ]; then cp -a /tmp/build/pyscript/. pyscript/; fi && \
-    if [ -d /tmp/build/pyodide ]; then cp -a /tmp/build/pyodide/. pyodide/; fi && \
-    if [ -d /tmp/build/wheels ]; then cp -a /tmp/build/wheels/. wheels/; fi && \
-    if [ -d _wheel ]; then cp -a _wheel/. wheels/ 2>/dev/null || true; fi && \
-    PYODIDE=https://cdn.jsdelivr.net/pyodide/v0.24.1/full && \
-    PYSCRIPT=https://pyscript.net/releases/2024.10.1 && \
-    for f in core.css core.js core.js.map core-DHft4mQJ.js \
-             core-DHft4mQJ.js.map \
-             toml-CvAfdf9_.js toml-DiUM0_qs.js \
-             zip-Bf48tRr5.js \
-             deprecations-manager-BDRw2fed.js \
-             donkey-c355Wa24.js \
-             error-CdZsd8BO.js \
-             py-editor-BRZBRs2T.js \
-             py-terminal-D_z3jMz-.js; do \
-        if [ ! -f "pyscript/$f" ]; then \
-            curl -fsSL -o "pyscript/$f" "$PYSCRIPT/$f"; \
-        fi; \
-    done && \
-    for f in pyodide.mjs pyodide.asm.js pyodide.asm.wasm pyodide-lock.json \
-             python_stdlib.zip micropip-0.5.0-py3-none-any.whl \
-             packaging-23.1-py3-none-any.whl; do \
-        if [ ! -f "pyodide/$f" ]; then \
-            curl -fsSL -o "pyodide/$f" "$PYODIDE/$f"; \
-        fi; \
-    done && \
-    for f in typing_extensions-4.7.1-py3-none-any.whl \
-             pydantic-1.10.7-py3-none-any.whl \
-             Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl; do \
-        if [ ! -f "wheels/$f" ]; then \
-            curl -fsSL -o "wheels/$f" "$PYODIDE/$f"; \
-        fi; \
-    done && \
-    # Copy committed static assets from _assets/ to root before flattening
-    cp _assets/common.css . && \
-    cp _assets/sock.jpg . && \
-    cp _assets/sweater.jpg . && \
-    # Flatten _assets/ references in HTML to the clean layout
+        > gauge-conversion.py; \
+    cp _assets/common.css .; \
+    cp _assets/sock.jpg .; \
+    cp _assets/sweater.jpg .; \
     find . -name '*.html' -exec sed -i \
         -e 's|/_assets/pyodide/|/pyodide/|g' \
         -e 's|/_assets/pyscript/|/pyscript/|g' \
@@ -63,8 +44,7 @@ RUN rm -rf README.md Makefile favicon.ico && \
         -e 's|/_assets/gauge-conversion\.py|/gauge-conversion.py|g' \
         -e 's|_assets/sock\.jpg|sock.jpg|g' \
         -e 's|_assets/sweater\.jpg|sweater.jpg|g' \
-        {} + && \
-    # Clean up leftover nested directories
+        {} +; \
     rm -rf _assets _wheel
 
 FROM nginxinc/nginx-unprivileged:alpine-slim AS runtime
