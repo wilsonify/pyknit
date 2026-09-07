@@ -23,21 +23,21 @@ DEMOS = [
 ]
 
 REQUIRED_ASSETS = [
-    "_assets/common.css",
-    "_assets/gauge-conversion.py",
-    "_assets/pyscript/core.js",
-    "_assets/pyscript/core.css",
-    "_assets/pyodide/pyodide.mjs",
-    "_assets/pyodide/pyodide.asm.js",
-    "_assets/pyodide/pyodide.asm.wasm",
-    "_assets/pyodide/pyodide-lock.json",
-    "_assets/pyodide/python_stdlib.zip",
-    "_assets/pyodide/micropip-0.5.0-py3-none-any.whl",
-    "_assets/pyodide/packaging-23.1-py3-none-any.whl",
-    "_assets/wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl",
-    "_assets/wheels/pydantic-1.10.7-py3-none-any.whl",
-    "_assets/wheels/typing_extensions-4.7.1-py3-none-any.whl",
-    "_wheel/pyknit-0.1.4-py3-none-any.whl",
+    "common.css",
+    "gauge-conversion.py",
+    "pyscript/core.js",
+    "pyscript/core.css",
+    "pyodide/pyodide.mjs",
+    "pyodide/pyodide.asm.js",
+    "pyodide/pyodide.asm.wasm",
+    "pyodide/pyodide-lock.json",
+    "pyodide/python_stdlib.zip",
+    "pyodide/micropip-0.5.0-py3-none-any.whl",
+    "pyodide/packaging-23.1-py3-none-any.whl",
+    "wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl",
+    "wheels/pydantic-1.10.7-py3-none-any.whl",
+    "wheels/typing_extensions-4.7.1-py3-none-any.whl",
+    "wheels/pyknit-0.1.4-py3-none-any.whl",
 ]
 
 OUTPUT_SELECTORS = {
@@ -83,19 +83,32 @@ def test_runtime_assets_serve_200(demo_url):
 
 
 def test_wasm_and_mjs_served_with_javascript_compatible_types(demo_url):
-    _, headers, _ = _get(demo_url, "_assets/pyodide/pyodide.asm.wasm")
+    _, headers, _ = _get(demo_url, "pyodide/pyodide.asm.wasm")
     assert headers["Content-Type"].startswith("application/wasm")
-    _, headers, _ = _get(demo_url, "_assets/pyodide/pyodide.mjs")
+    _, headers, _ = _get(demo_url, "pyodide/pyodide.mjs")
     assert headers["Content-Type"].startswith("text/javascript")
 
 
 def test_wasm_served_gzip_encoded(demo_url):
     req = urllib.request.Request(
-        demo_url + "/_assets/pyodide/pyodide.asm.wasm",
+        demo_url + "/pyodide/pyodide.asm.wasm",
         headers={"Accept-Encoding": "gzip"},
     )
     with urllib.request.urlopen(req, timeout=10) as r:
         assert r.headers.get("Content-Encoding") == "gzip"
+
+
+def _rewrite_source_path(ref):
+    """Map a source-tree path to the flattened Docker-image path."""
+    ref = ref.replace("/_assets/pyodide/", "/pyodide/")
+    ref = ref.replace("/_assets/pyscript/", "/pyscript/")
+    ref = ref.replace("/_assets/wheels/", "/wheels/")
+    ref = ref.replace("/_wheel/", "/wheels/")
+    ref = ref.replace("/_assets/common.css", "/common.css")
+    ref = ref.replace("/_assets/gauge-conversion.py", "/gauge-conversion.py")
+    ref = ref.replace("/_assets/sock.jpg", "/sock.jpg")
+    ref = ref.replace("/_assets/sweater.jpg", "/sweater.jpg")
+    return ref
 
 
 def test_every_asset_referenced_by_pages_resolves(demo_url):
@@ -104,7 +117,7 @@ def test_every_asset_referenced_by_pages_resolves(demo_url):
     for page in pages:
         html = page.read_text(encoding="utf-8")
         for ref in re.findall(r'(?:src|href)="(/[^"]+)"', html):
-            refs.add(ref)
+            refs.add(_rewrite_source_path(ref))
     assert refs, "no local references found to check"
     for ref in sorted(refs):
         status, _, _ = _get(demo_url, ref.lstrip("/"))

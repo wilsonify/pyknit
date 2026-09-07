@@ -106,6 +106,13 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set deployment base path
+        run: |
+          # The build artifact ships <base href="/"> which works when served
+          # from root. GitHub Pages serves this project site under /pyknit/,
+          # so rewrite the base to the correct prefix.
+          find site/ -name '*.html' -exec sed -i 's|<base href="/"|<base href="/pyknit/"|g' {} +
+
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5
 
