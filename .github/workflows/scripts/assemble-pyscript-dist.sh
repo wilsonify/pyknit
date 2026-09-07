@@ -16,8 +16,10 @@ set -euo pipefail
 #     sweater.jpg       (was _assets/sweater.jpg)
 #     gauge-conversion.py (was _assets/gauge-conversion.py)
 #
-# Every asset URL in the built HTML is root-relative (e.g. /pyodide/pyodide.mjs).
-# The deployment target sets <base href> so they resolve under the correct prefix.
+# Every asset URL in the built HTML is root-relative (e.g. /pyodide/pyodide.mjs),
+# which is correct when served from the domain root (Docker/nginx, local dev).
+# The GitHub Pages deployment rewrites these to absolute URLs under the public
+# SITE_URL (see scripts/prepare_pages_site.py) so they survive the /pyknit/ prefix.
 
 DIST="dist/pyscript"
 rm -rf "$DIST"
@@ -60,7 +62,14 @@ if ls build/wheel/*.whl 1>/dev/null 2>&1; then
     cp build/wheel/*.whl "$DIST/wheels/" 2>/dev/null || true
 fi
 
-# Copy static assets from _assets/ to root
+# Copy static assets from _assets/ to root. The gauge bootstrap is generated
+# here as well as in the clean-build path so local and CI assemblies agree.
+if [ ! -f "$DIST/_assets/gauge-conversion.py" ]; then
+    printf '%s\n' \
+        '"""Gauge conversion demo bootstrap (generated)."""' \
+        'from pyknit.pyscript._demos import gauge_conversion_page  # noqa: F401  # auto-bootstraps' \
+        > "$DIST/_assets/gauge-conversion.py"
+fi
 for f in common.css sock.jpg sweater.jpg gauge-conversion.py; do
     if [ -f "$DIST/_assets/$f" ]; then
         cp "$DIST/_assets/$f" "$DIST/$f"
@@ -92,7 +101,46 @@ find "$DIST" -name '*.html' -exec sed -i \
     -e 's|_assets/sweater\.jpg|sweater.jpg|g' \
     {} +
 
-# 5. Summary
+# 5. Validate the published artifact before uploading it. This keeps a
+# missing runtime file or source-tree path from reaching Docker or Pages.
+required_files=(
+    common.css
+    sock.jpg
+    sweater.jpg
+    gauge-conversion.py
+    pyscript/core.js
+    pyscript/core.css
+    pyodide/pyodide.mjs
+    pyodide/pyodide.asm.js
+    pyodide/pyodide.asm.wasm
+    pyodide/pyodide-lock.json
+    pyodide/python_stdlib.zip
+    pyodide/micropip-0.5.0-py3-none-any.whl
+    pyodide/packaging-23.1-py3-none-any.whl
+    wheels/Pillow-10.0.0-cp311-cp311-emscripten_3_1_45_wasm32.whl
+    wheels/pydantic-1.10.7-py3-none-any.whl
+    wheels/typing_extensions-4.7.1-py3-none-any.whl
+    wheels/pyknit-*.whl
+)
+for pattern in "${required_files[@]}"; do
+    if ! compgen -G "$DIST/$pattern" | grep -q .; then
+        echo "ERROR: missing or empty published asset: $DIST/$pattern" >&2
+        exit 1
+    fi
+    while IFS= read -r file; do
+        if [ ! -s "$file" ]; then
+            echo "ERROR: empty published asset: $file" >&2
+            exit 1
+        fi
+    done < <(compgen -G "$DIST/$pattern")
+done
+
+if grep -RInE '\.\./|_assets/|_wheel/' "$DIST" --include='*.html'; then
+    echo "ERROR: generated HTML contains a source-tree or traversal asset path" >&2
+    exit 1
+fi
+
+# 6. Summary
 echo "=== Assembled PyScript distribution ==="
 echo "Files:"
 find "$DIST" -type f | head -40 | sed 's|^|  |'
