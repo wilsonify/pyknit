@@ -111,7 +111,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rewrite runtime URLs for GitHub Pages and validate artifact
-        run: .github/workflows/scripts/prepare-pages-site.sh site/
+        run: bash .github/workflows/scripts/prepare-pages-site.sh site/
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5

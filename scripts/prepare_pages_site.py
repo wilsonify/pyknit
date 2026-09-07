@@ -27,9 +27,7 @@ import re
 import sys
 from pathlib import Path
 
-ATTR_RE = re.compile(
-    r"(?P<attr>(?:src|href|action|poster)\s*=\s*)(?P<q>[\"'])/(?P<path>[^\"']*)[\"']"
-)
+ATTR_RE = re.compile(r"(?P<attr>(?:src|href|action|poster)\s*=\s*)(?P<q>[\"'])/(?P<path>[^\"']*)[\"']")
 PY_CONFIG_RE = re.compile(r"<py-config\b[^>]*>(.*?)</py-config>", re.S | re.I)
 INTERPRETER_RE = re.compile(r'interpreter\s*=\s*"([^"]+)"')
 PACKAGES_RE = re.compile(r"packages\s*=\s*\[(.*?)\]", re.S)
@@ -62,12 +60,15 @@ def _rewrite_html(text: str, site_url: str) -> str:
         flags=re.I,
     )
     # 2. Root-relative src/href/action/poster attributes become absolute.
+
     def _abs_attr(m: re.Match) -> str:
         return f'{m.group("attr")}{m.group("q")}{site_url}{m.group("path")}{m.group("q")}'
 
     text = ATTR_RE.sub(_abs_attr, text)
+
     # 3. PyScript configuration strings (interpreter, packages, paths, ...)
     #    become absolute URLs as well.
+
     def _abs_config(m: re.Match) -> str:
         block = m.group(0)
 
@@ -103,11 +104,9 @@ def _check_url(problems, rel, kind, url, site_url, site_dir):
         problems.append(f"{rel}: {kind} URL contains '..': {url}")
         return
     if not url.startswith(site_url):
-        problems.append(
-            f"{rel}: {kind} URL {url!r} does not point at the deployed site {site_url!r}"
-        )
+        problems.append(f"{rel}: {kind} URL {url!r} does not point at the deployed site {site_url!r}")
         return
-    rel_path = url[len(site_url):].split("#", 1)[0].split("?", 1)[0].lstrip("/")
+    rel_path = url[len(site_url) :].split("#", 1)[0].split("?", 1)[0].lstrip("/")
     if not rel_path:
         return
     target = site_dir / rel_path
@@ -124,13 +123,9 @@ def _validate(site_dir: Path, site_url: str, html_files, js_files) -> None:
         rel = path.relative_to(site_dir)
 
         for m in ROOT_REL_ATTR_RE.finditer(text):
-            problems.append(
-                f"{rel}: root-relative attribute {m.group(0)!r} must be absolute under {site_url}"
-            )
+            problems.append(f"{rel}: root-relative attribute {m.group(0)!r} must be absolute under {site_url}")
         for m in DOMAIN_ROOT_RE.finditer(text):
-            problems.append(
-                f"{rel}: domain-root runtime path {m.group(0)!r} would escape the deployed site"
-            )
+            problems.append(f"{rel}: domain-root runtime path {m.group(0)!r} would escape the deployed site")
         for m in ATTR_VALUE_RE.finditer(text):
             if ".." in m.group(1):
                 problems.append(f"{rel}: generated URL contains '..': {m.group(1)!r}")
@@ -140,7 +135,7 @@ def _validate(site_dir: Path, site_url: str, html_files, js_files) -> None:
             flags=re.I,
         ):
             url = m.group(1)
-            rel_path = url[len(site_url):].split("#", 1)[0].split("?", 1)[0].lstrip("/")
+            rel_path = url[len(site_url) :].split("#", 1)[0].split("?", 1)[0].lstrip("/")
             if not rel_path:
                 continue
             target = site_dir / rel_path
@@ -157,17 +152,13 @@ def _validate(site_dir: Path, site_url: str, html_files, js_files) -> None:
             if not interp:
                 problems.append(f"{rel}: <py-config> is missing an interpreter URL")
             else:
-                _check_url(
-                    problems, rel, "interpreter", interp.group(1), site_url, site_dir
-                )
+                _check_url(problems, rel, "interpreter", interp.group(1), site_url, site_dir)
             pkgs = PACKAGES_RE.search(block)
             if pkgs:
                 for pkg in re.findall(r'"([^"]+)"', pkgs.group(1)):
                     _check_url(problems, rel, "packages", pkg, site_url, site_dir)
             for m in ROOT_REL_QUOTED_RE.finditer(block):
-                problems.append(
-                    f"{rel}: <py-config> contains a non-absolute URL {m.group(0)!r}"
-                )
+                problems.append(f"{rel}: <py-config> contains a non-absolute URL {m.group(0)!r}")
 
     if py_config_count == 0:
         problems.append("no <py-config> block found anywhere in the site")
@@ -180,9 +171,7 @@ def _validate(site_dir: Path, site_url: str, html_files, js_files) -> None:
             if p.startswith("//"):
                 continue
             if (site_dir / p.lstrip("/")).is_file():
-                problems.append(
-                    f"{rel}: root-relative site URL {m.group(0)!r} still present in JS"
-                )
+                problems.append(f"{rel}: root-relative site URL {m.group(0)!r} still present in JS")
 
     if problems:
         for p in problems:
