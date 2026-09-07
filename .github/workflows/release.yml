@@ -96,6 +96,10 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # Canonical public base URL of the deployed site. All PyScript runtime
+      # URLs (interpreter, packages, assets) are built from this single value.
+      SITE_URL: https://wilsonify.github.io/pyknit/
     steps:
       - name: Download PyScript distribution
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -106,12 +110,8 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set deployment base path
-        run: |
-          # The build artifact ships <base href="/"> which works when served
-          # from root. GitHub Pages serves this project site under /pyknit/,
-          # so rewrite the base to the correct prefix.
-          find site/ -name '*.html' -exec sed -i 's|<base href="/"|<base href="/pyknit/"|g' {} +
+      - name: Rewrite runtime URLs for GitHub Pages and validate artifact
+        run: .github/workflows/scripts/prepare-pages-site.sh site/
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5
