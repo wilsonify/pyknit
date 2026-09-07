@@ -342,10 +342,14 @@ jobs:
           name: pyscript-dist
           path: site/
 
-      - name: Populate build/ from site/ for Docker build
+      - name: Prepare generated site for Docker build
         run: |
+          rm -rf build
           mkdir -p build
-          cp -a site/* build/ 2>/dev/null || true
+          cp -a site/. build/
+          test -s build/pyscript/core.js
+          test -s build/pyodide/pyodide.mjs
+          test -s build/wheels/pyknit-0.1.4-py3-none-any.whl
 
       - name: Install test dependencies
         run: .github/workflows/scripts/install-pyscript-test-deps.sh
