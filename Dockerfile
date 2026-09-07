@@ -49,6 +49,10 @@ RUN rm -rf README.md Makefile favicon.ico && \
             curl -fsSL -o "wheels/$f" "$PYODIDE/$f"; \
         fi; \
     done && \
+    # Copy committed static assets from _assets/ to root before flattening
+    cp _assets/common.css . && \
+    cp _assets/sock.jpg . && \
+    cp _assets/sweater.jpg . && \
     # Flatten _assets/ references in HTML to the clean layout
     find . -name '*.html' -exec sed -i \
         -e 's|/_assets/pyodide/|/pyodide/|g' \
