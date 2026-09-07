@@ -342,6 +342,11 @@ jobs:
           name: pyscript-dist
           path: site/
 
+      - name: Populate build/ from site/ for Docker build
+        run: |
+          mkdir -p build
+          cp -a site/* build/ 2>/dev/null || true
+
       - name: Install test dependencies
         run: .github/workflows/scripts/install-pyscript-test-deps.sh
 
