@@ -40,6 +40,13 @@ mkdir -p "$DIST/wheels"
 if [ -d "$DIST/_assets/wheels" ]; then
     cp -a "$DIST/_assets/wheels/." "$DIST/wheels/"
 fi
+# Copy runtime assets from build cache (may not exist in all build paths)
+if [ -d build/pyscript ]; then
+    cp -a build/pyscript/. "$DIST/pyscript/" 2>/dev/null || true
+fi
+if [ -d build/pyodide ]; then
+    cp -a build/pyodide/. "$DIST/pyodide/" 2>/dev/null || true
+fi
 # Copy dependency wheels from build cache (may not exist in all build paths)
 if [ -d build/wheels ]; then
     cp -a build/wheels/. "$DIST/wheels/" 2>/dev/null || true
