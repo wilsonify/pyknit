@@ -12,4 +12,14 @@ set -euo pipefail
 SITE_URL="${SITE_URL:?SITE_URL must be set (e.g. https://wilsonify.github.io/pyknit/)}"
 SITE_DIR="${1:-site}"
 
-python scripts/prepare_pages_site.py "$SITE_DIR"
+PYTHON_BIN="python"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+	PYTHON_BIN="python3"
+fi
+
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+	echo "python or python3 is required" >&2
+	exit 127
+fi
+
+"$PYTHON_BIN" scripts/prepare_pages_site.py "$SITE_DIR"

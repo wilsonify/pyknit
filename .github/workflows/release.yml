@@ -101,6 +101,12 @@ jobs:
       # URLs (interpreter, packages, assets) are built from this single value.
       SITE_URL: https://wilsonify.github.io/pyknit/
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
+        with:
+          python-version: "3.12"
+
       - name: Download PyScript distribution
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
