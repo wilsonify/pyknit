@@ -28,12 +28,25 @@ def _reverse_legend(legend: Legend) -> List:
     return [(stitch, code) for code, stitch in legend.items()]
 
 
+def _reverse_legend_index(legend: Legend) -> dict:
+    """Map legend codes to Stitches for O(1) import lookups."""
+    return dict(legend)
+
+
 def _find_code(stitch: Stitch, reverse: List) -> Optional[str]:
     """Look up the code for a Stitch by comparing against legend values."""
     for legend_stitch, code in reverse:
         if stitch == legend_stitch:
             return code
     return None
+
+
+def _lookup_code(code: str, index: dict, row_no: int, col_no: int) -> Stitch:
+    """Resolve a serialized stitch code, naming its position on failure."""
+    try:
+        return index[code]
+    except KeyError:
+        raise KeyError(f"Unknown stitch code {code!r} at row {row_no}, column {col_no}") from None
 
 
 def _fallback_code(stitch: Stitch) -> str:
@@ -78,9 +91,14 @@ def csv_to_pattern(csv_string: str, legend: Optional[Legend] = None) -> Pattern:
     """
     if legend is None:
         legend = stitch_legend
+    if not csv_string.strip():
+        return []
+    index = _reverse_legend_index(legend)
     pattern = []
-    for row in csv.reader(StringIO(csv_string)):
-        pattern.append([legend[cell.strip()] for cell in row])
+    for row_no, row in enumerate(csv.reader(StringIO(csv_string)), start=1):
+        if not row or all(cell.strip() == "" for cell in row):
+            continue
+        pattern.append([_lookup_code(cell.strip(), index, row_no, col_no) for col_no, cell in enumerate(row, start=1)])
     return pattern
 
 
@@ -133,7 +151,19 @@ def json_to_pattern(json_string: str, legend: Optional[Legend] = None) -> Patter
     version = data["schema_version"]
     if version != 1:
         raise ValueError(f"Unsupported schema_version {version}; expected schema_version 1")
-    pattern = [[legend[cell] for cell in row] for row in data["rows"]]
+    if not isinstance(data.get("rows"), list):
+        raise ValueError("Pattern JSON must contain a 'rows' list")
+    index = _reverse_legend_index(legend)
+    pattern = []
+    for row_no, row in enumerate(data["rows"], start=1):
+        if not isinstance(row, list):
+            raise ValueError(f"Pattern JSON row {row_no} must be a list of stitch codes")
+        resolved = []
+        for col_no, cell in enumerate(row, start=1):
+            if not isinstance(cell, str):
+                raise ValueError(f"Pattern JSON row {row_no}, column {col_no} must be a stitch code string")
+            resolved.append(_lookup_code(cell, index, row_no, col_no))
+        pattern.append(resolved)
     return pattern
 
 
