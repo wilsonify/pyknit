@@ -170,12 +170,64 @@ class GarmentModel:
         return -1
 
 
+_REQUIRED_RAGLAN_KEYS = (
+    "neck",
+    "arm",
+    "bust",
+    "armpit",
+    "raglan_total_rounds",
+    "inc",
+    "seg",
+    "freq",
+    "working",
+    "body_stock_rounds",
+    "hem_rounds",
+    "sleeve_final",
+    "wrist",
+    "cuff_rounds",
+)
+
+
+def _require_raglan_meta(meta):
+    """Validate planner metadata, raising a useful error for missing keys."""
+    missing = [key for key in _REQUIRED_RAGLAN_KEYS if key not in meta]
+    if missing:
+        raise ValueError(f"Raglan planner metadata is missing required keys: {', '.join(missing)}")
+
+
+def _sleeve_operations(meta):
+    """Shared pick-up + shaping operations for both sleeves."""
+    ops = [
+        KnitOp(
+            OpType.PICKUP,
+            count=meta["sleeve_final"],
+            from_holder=True,
+            underarm_cast_on=meta["armpit"],
+            description="Pick up %d held stitches + %d underarm" % (meta["sleeve_final"], meta["armpit"]),
+        ),
+    ]
+    if meta.get("sleeve_shaping_rounds", 0) > 0:
+        ops.append(
+            KnitOp(
+                OpType.DECREASE,
+                rounds=meta["sleeve_shaping_rounds"],
+                per_round=2,
+                description="%d rounds with decreases at underarm markers" % meta["sleeve_shaping_rounds"],
+            )
+        )
+    return ops
+
+
 def build_raglan_model(meta):
     """Build a GarmentModel from the planner's computed metadata.
 
     This function translates the planner's internal representation into the
     shared garment model that both planner and simulator use.
+
+    Raises:
+        ValueError: If required metadata keys are missing.
     """
+    _require_raglan_meta(meta)
     stages = []
 
     # Stage 1: Neckline
@@ -302,24 +354,7 @@ def build_raglan_model(meta):
     )
 
     # Stage 6: Left Sleeve
-    sleeve_ops = [
-        KnitOp(
-            OpType.PICKUP,
-            count=meta["sleeve_final"],
-            from_holder=True,
-            underarm_cast_on=meta["armpit"],
-            description="Pick up %d held stitches + %d underarm" % (meta["sleeve_final"], meta["armpit"]),
-        ),
-    ]
-    if meta.get("sleeve_shaping_rounds", 0) > 0:
-        sleeve_ops.append(
-            KnitOp(
-                OpType.DECREASE,
-                rounds=meta["sleeve_shaping_rounds"],
-                per_round=2,
-                description="%d rounds with decreases at underarm markers" % meta["sleeve_shaping_rounds"],
-            )
-        )
+    sleeve_ops = _sleeve_operations(meta)
     stages.append(
         GarmentStage(
             stage_type=StageType.LEFT_SLEEVE,
@@ -362,27 +397,7 @@ def build_raglan_model(meta):
             description="Pick up held stitches and knit sleeve",
             start_stitch_count=meta["arm"],
             end_stitch_count=meta["wrist"],
-            operations=[
-                KnitOp(
-                    OpType.PICKUP,
-                    count=meta["sleeve_final"],
-                    from_holder=True,
-                    underarm_cast_on=meta["armpit"],
-                    description="Pick up %d held stitches + %d underarm" % (meta["sleeve_final"], meta["armpit"]),
-                ),
-            ]
-            + (
-                [
-                    KnitOp(
-                        OpType.DECREASE,
-                        rounds=meta["sleeve_shaping_rounds"],
-                        per_round=2,
-                        description="%d rounds with decreases at underarm markers" % meta["sleeve_shaping_rounds"],
-                    )
-                ]
-                if meta.get("sleeve_shaping_rounds", 0) > 0
-                else []
-            ),
+            operations=_sleeve_operations(meta),
             pickup_from_holder=True,
             underarm_cast_on=meta["armpit"],
         )
