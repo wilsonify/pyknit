@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import pytest
+
 from pyknit.Hat import Hat
 from pyknit.Sock import Sock
 
@@ -39,9 +41,11 @@ def test_hat_crown_remainder_deterministic():
     assert result == Hat().crown_decreases(8, 26)
 
 
-def test_hat_crown_invalid_params_still_returns_string():
-    assert Hat().crown_decreases(0, 10) == "Invalid starting parameters"
-    assert Hat().crown_decreases(8, 0) == "Invalid starting parameters"
+def test_hat_crown_invalid_params_raise_value_error():
+    with pytest.raises(ValueError, match="Invalid starting parameters"):
+        Hat().crown_decreases(0, 10)
+    with pytest.raises(ValueError, match="Invalid starting parameters"):
+        Hat().crown_decreases(8, 0)
 
 
 def test_hat_crown_stops_and_binds_off():
