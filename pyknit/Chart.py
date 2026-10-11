@@ -21,6 +21,10 @@ from PIL import Image, ImageDraw, ImageFont
 class Stitch:
     """
     A class to represent a stitch. Optionally, a preferred legend can be passed in.
+
+    Legend entries and parsed rows share ``Stitch`` instances (parsing does
+    not copy); treat them as immutable value objects and do not mutate
+    cells in place.
     """
 
     def __init__(
@@ -484,12 +488,29 @@ stitch_legend_japanese = {  # Legend for Japanese Symbols. Only a portion of ava
 # Chart and pattern parsing functions
 
 
+# Upper bound for a single token repetition (e.g. ``k100``) and for the total
+# number of stitches expanded from one row.  These prevent malformed input
+# such as ``k1000000000`` from exhausting memory.
+MAX_STITCH_REPEAT = 10000
+MAX_ROW_STITCHES = 10000
+
+
 def parse_row(row: str, legend: Dict[str, Stitch] = stitch_legend) -> List[Stitch]:
     # legend=None allows a mutable parameter here - important for japanese legend option
     # I don't think a set is the right return type, order is important here
     """Parse a written set of knitting instructions and print an array of
     stitches using a legend.  This is a stand in for eventually printing a
     chart.
+
+    Tokens are split on any whitespace, so repeated spaces, tabs, and
+    leading/trailing whitespace are all accepted.  An empty or
+    whitespace-only row returns an empty list.
+
+    Raises:
+        ValueError: For malformed tokens, zero repetitions, repetitions
+            above ``MAX_STITCH_REPEAT``, rows expanding past
+            ``MAX_ROW_STITCHES`` stitches, or stitch codes missing from
+            the legend (the message names the offending token).
 
     >>> parse_row("k4 p4")
     [' ', ' ', ' ', ' ', '.', '.', '.', '.']
@@ -499,21 +520,27 @@ def parse_row(row: str, legend: Dict[str, Stitch] = stitch_legend) -> List[Stitc
         legend = stitch_legend
 
     stitch_array = []
-    for section in row.split(" "):
-        stitch_info = _match_stitch_pattern(section)
-        if stitch_info:
-            stitch, number = stitch_info
-            for _ in range(number):
-                stitch_array.append(legend[stitch])
+    for position, section in enumerate(row.split()):
+        stitch, number = _match_stitch_pattern(section, position)
+        if stitch not in legend:
+            raise ValueError(f"Unknown stitch code {section!r} (token {position + 1} of row {row!r})")
+        stitch_array.extend([legend[stitch]] * number)
+        if len(stitch_array) > MAX_ROW_STITCHES:
+            raise ValueError(f"Row expands to more than {MAX_ROW_STITCHES} stitches; " "check repetition counts")
 
     return stitch_array
 
 
-def _match_stitch_pattern(section: str) -> Optional[Tuple[str, int]]:
-    """Match a stitch pattern and return (stitch_name, count) or None.
+def _match_stitch_pattern(section: str, position: int = 0) -> Tuple[str, int]:
+    """Match a stitch token and return (stitch_name, count).
 
     Tries patterns in order: cables, multi-letter stitches, simple stitches.
     Only matches one pattern per section to avoid ambiguity (e.g., k2tog as k2).
+    The whole token must match; trailing punctuation or signs are rejected.
+
+    Raises:
+        ValueError: If the token is malformed or the repetition count is
+            zero or exceeds ``MAX_STITCH_REPEAT``.
     """
     patterns = [
         r"(C\d-\dP?[FBLR])([0-9]*)",  # cables
@@ -522,13 +549,22 @@ def _match_stitch_pattern(section: str) -> Optional[Tuple[str, int]]:
     ]
 
     for pat in patterns:
-        result = re.match(pat, section)
+        result = re.fullmatch(pat, section)
         if result:
             stitch = result.group(1)
             number = int(result.group(2)) if result.group(2) else 1
+            if number < 1:
+                raise ValueError(
+                    f"Invalid repetition count in token {section!r} "
+                    f"(token {position + 1}): repetition counts start at 1"
+                )
+            if number > MAX_STITCH_REPEAT:
+                raise ValueError(
+                    f"Repetition count {number} in token {section!r} exceeds " f"the limit of {MAX_STITCH_REPEAT}"
+                )
             return (stitch, number)
 
-    return None
+    raise ValueError(f"Malformed stitch token {section!r} (token {position + 1})")
 
 
 def parse_chart(chart_instructions: str, legend=None) -> Pattern:
@@ -544,8 +580,34 @@ def parse_chart(chart_instructions: str, legend=None) -> Pattern:
     return [parse_row(row, legend) for row in chart_instructions.split("\n")]
 
 
+def _load_chart_font(size: int):
+    """Load a chart label font, falling back to portable options.
+
+    The historical fonts (``Inkfree.ttf``/``Times.ttf``) are not shipped
+    with the package and may be missing on minimal installs, so try them
+    first for backwards-compatible rendering, then common bundled fonts,
+    then Pillow's built-in bitmap font which is always available.
+
+    Raises:
+        OSError: Only if no usable font can be loaded at all.
+    """
+    candidates = ("Inkfree.ttf", "Times.ttf", "DejaVuSans.ttf", "Arial.ttf")
+    errors = []
+    for name in candidates:
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError as exc:
+            errors.append(f"{name}: {exc}")
+    try:
+        return ImageFont.load_default()
+    except OSError as exc:
+        raise OSError(f"No usable chart font found (tried {', '.join(errors)})") from exc
+
+
 def print_row(stitch_array: PatternRow) -> Image:
     "Print a chart from a stitch array"
+    if not stitch_array:
+        raise ValueError("There must be at least one stitch in the row")
     # Set up the image
     chart_image = Image.new(
         "RGB",
@@ -557,7 +619,7 @@ def print_row(stitch_array: PatternRow) -> Image:
     draw = ImageDraw.Draw(chart_image)
 
     # draw symbol for each cell
-    fnt = ImageFont.truetype("Times.ttf", 40)
+    fnt = _load_chart_font(40)
     position = 0
     for i, stitch in enumerate(stitch_array):
         position = sum(st.width for st in stitch_array[: i + 1]) * (cell_width + 1)
@@ -590,11 +652,17 @@ def instruction_to_plot_order(
 def plot_chart(stitch_array: Pattern, lr_direction: str = "lr", tb_direction: str = "tb") -> Image:
     "Print a chart from a stitch array"
 
-    num_rows = len(stitch_array) if isinstance(stitch_array[0], list) else 1
-    if num_rows <= 0:
+    if not stitch_array:
         raise ValueError("There must be at least one row in the pattern")
-    elif num_rows == 1:
-        stitch_array = [stitch_array]
+    if isinstance(stitch_array[0], list):
+        rows = stitch_array
+    else:
+        # a single row arrives as a flat list of Stitches
+        rows = [stitch_array]
+    if any(len(row) == 0 for row in rows):
+        raise ValueError("Chart rows must contain at least one stitch")
+    stitch_array = rows
+    num_rows = len(rows)
 
     longest_row_len = max(sum(st.width for st in row) for row in stitch_array)
 
@@ -612,7 +680,7 @@ def plot_chart(stitch_array: Pattern, lr_direction: str = "lr", tb_direction: st
     draw = ImageDraw.Draw(chart_image)
 
     # draw symbol for each cell
-    fnt = ImageFont.truetype("Inkfree.ttf", 35)
+    fnt = _load_chart_font(35)
     color_st_pattern = r"#[0-9a-fA-F]{6}"
 
     _draw_stitches(
@@ -698,8 +766,14 @@ def _draw_single_stitch(
     stitch_graphic = stitch.symbol.endswith(".png")
 
     if stitch_graphic:
-        with Image.open(stitch.symbol) as sym:
-            chart_image.paste(sym, (cur_x, cur_y))
+        # Symbol paths are trusted local resources (built-in legends or
+        # caller-supplied custom symbols).  A dangling path falls back to a
+        # text label instead of crashing the whole chart.
+        try:
+            with Image.open(stitch.symbol) as sym:
+                chart_image.paste(sym, (cur_x, cur_y))
+        except (OSError, ValueError):
+            _draw_label_cell(draw, stitch, os.path.basename(stitch.symbol), cur_x, cur_y, cell_width, cell_height, fnt)
     else:
         stitch_color = stitch.symbol if stitch_coloured else "white"
         draw.rectangle(
@@ -722,6 +796,29 @@ def _draw_single_stitch(
                 align="center",
                 anchor="mm",
             )
+
+
+def _draw_label_cell(draw, stitch, label, cur_x, cur_y, cell_width, cell_height, fnt):
+    "Draw a text fallback cell for a stitch whose image file is unreadable."
+    draw.rectangle(
+        (
+            (cur_x, cur_y),
+            (cur_x + stitch.width * cell_width, cur_y + cell_height),
+        ),
+        fill="white",
+        outline="black",
+    )
+    draw.text(
+        (
+            cur_x + (stitch.width * cell_width) / 2,
+            cur_y + cell_height / 2,
+        ),
+        label,
+        font=fnt,
+        fill=_stitch_label_fill(stitch),
+        align="center",
+        anchor="mm",
+    )
 
 
 def _draw_row_numbers(
@@ -815,6 +912,8 @@ def render_chart_svg(stitch_array: Pattern, lr_direction: str = "lr", tb_directi
     num_rows = len(stitch_array)
     if num_rows <= 0:
         raise ValueError("There must be at least one row in the pattern")
+    if any(len(row) == 0 for row in stitch_array if isinstance(row, list)):
+        raise ValueError("Chart rows must contain at least one stitch")
     if isinstance(stitch_array[0], Stitch):
         # a single row arrives as a flat list of Stitches; wrap it so the
         # 2D loop below always iterates over rows
