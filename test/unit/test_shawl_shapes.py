@@ -49,6 +49,9 @@ def test_square_uses_width_measurement_for_stitches_and_rows():
 
 
 def test_triangle_increase_rows_grow_the_stitch_budget():
+    import math
+    import re
+
     gauge = make_swatch()
     instructions = generate_shawl("triangle", width=20, length=30, gauge=gauge)
     text = "\n".join(instructions)
@@ -57,8 +60,19 @@ def test_triangle_increase_rows_grow_the_stitch_budget():
     assert increase_lines, "triangle should contain at least one increase row"
     for line in increase_lines:
         assert line.count("m1") >= 1
-    total_increases = sum(line.count("m1") for line in increase_lines)
-    assert f"Bind off all {3 + total_increases} stitches" in text
+
+    def effective_increases(line):
+        total = 0
+        for match in re.finditer(r"\[(.*?)\] \* (\d+) times", line):
+            total += match.group(1).count("m1") * int(match.group(2))
+        total += re.sub(r"\[.*?\] \* \d+ times", "", line).count("m1")
+        return total
+
+    # Every triangle row works exactly TRIANGLE_INCREASE_PER_ROW increases.
+    assert all(effective_increases(line) == 2 for line in increase_lines)
+    target = gauge.measurement_to_stitches(20)
+    max_rows = gauge.measurement_to_rows(30)
+    assert f"Bind off all {3 + 2 * min(max_rows, math.ceil((target - 3) / 2))} stitches" in text
 
 
 def test_crescent_increases_at_both_ends():
