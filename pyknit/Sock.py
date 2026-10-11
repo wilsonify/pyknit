@@ -192,6 +192,11 @@ class Sock:
         """Return ``count`` distinct positions spread evenly across 1..plain."""
         from pyknit import _calculate_spacing
 
+        if count > plain:
+            raise ValueError(
+                f"Cannot spread {count} decrease rounds across only {plain} plain rounds; "
+                "each round would need more than one decrease."
+            )
         plan = _calculate_spacing(plain, count, padding_mode="after")
         positions = []
         cursor = 0
