@@ -12,6 +12,8 @@ fallback (Pillow -> SVG -> plain text).  Pillow and Chart are imported lazily
 degrades at call time rather than import time.
 """
 
+import logging
+
 from typing import Any, List, Tuple
 
 Stitch = Any
@@ -52,11 +54,14 @@ def render_pattern(pattern: Pattern, _legend: Any = None, **kwargs: Any) -> Tupl
     for backend in backends:
         try:
             content = _render_with_backend(backend, pattern)
-        except Exception:
-            # This backend failed; try the next one.
+        except Exception as exc:
+            # This backend failed; log which one so the fallback is
+            # observable, then try the next one.
+            logging.warning("Chart backend %r failed (%s); trying next backend", backend, exc)
             continue
         return (output_format[backend], content)
     # Every available backend failed: degrade to a text grid, never crash.
+    # The warnings above record which backends failed and why.
     return ("text", pattern_to_text(pattern))
 
 
