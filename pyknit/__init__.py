@@ -71,10 +71,9 @@ def increase_evenly(
     """
 
     if increase_number > starting_count:
-        logging.error(
-            f"Error: Increase number ({increase_number}) is bigger than the starting count ({starting_count})"
-        )
-        raise ValueError
+        msg = f"Error: Increase number ({increase_number}) is bigger than the starting count ({starting_count})"
+        logging.error(msg)
+        raise ValueError(msg)
 
     # Calculate the spacing based on whether we're knitting in the round
     increase_spacing = increase_number if in_the_round else increase_number + 1
@@ -82,9 +81,17 @@ def increase_evenly(
     interval = math.floor(starting_count / increase_spacing)
     remainder = starting_count % increase_spacing
 
+    if not in_the_round and remainder == 0:
+        # Flat with no remainder: the closing selvage consumes `interval`
+        # stitches, so only `increase_number` repeats fit (not the full
+        # `increase_spacing`, which would work one increase too many).
+        first_repeats = increase_number
+    else:
+        first_repeats = increase_spacing - remainder
+
     # Build the instruction string
-    if increase_spacing - remainder > 1:
-        instruction_string = f"[k{interval}, m1] * {increase_spacing - remainder} times"
+    if first_repeats > 1:
+        instruction_string = f"[k{interval}, m1] * {first_repeats} times"
     else:
         instruction_string = f"k{interval}, m1"
 
@@ -110,8 +117,13 @@ def _build_remainder_instruction(interval: int, remainder: int, in_the_round: bo
         # Flat knitting: more complex remainder handling
         if remainder - 1 > 1:
             return f", [k{interval + 1}, m1] * {remainder - 1} times, k{interval + 1}"
-        else:
+        elif remainder == 2:
             return f", k{interval + 1}, m1, k{interval + 1}"
+        else:
+            # remainder == 1: the repeat block already holds every increase;
+            # only the closing selvage remains.  Emitting another m1 here
+            # would work one increase too many.
+            return f", k{interval + 1}"
 
 
 def _calculate_spacing(total: int, count: int, padding_mode: str = "after") -> List[Tuple[int, int]]:
@@ -154,7 +166,7 @@ def decrease_evenly_round(starting_count: PositiveInt, decrease_number: Positive
         return _format_multi_plan(plan)
 
 
-def _format_single_plan(plan_entry: Tuple[int, float]) -> str:
+def _format_single_plan(plan_entry: Tuple[int, int]) -> str:
     """Format a single spacing plan entry as a decrease pattern."""
     interval, times = plan_entry
     k = interval - 2
@@ -169,7 +181,7 @@ def _format_single_plan(plan_entry: Tuple[int, float]) -> str:
     return decrease_pattern
 
 
-def _format_multi_plan(plan: List[Tuple[int, float]]) -> str:
+def _format_multi_plan(plan: List[Tuple[int, int]]) -> str:
     """Format a multi-part spacing plan as a decrease pattern."""
     (small_interval, times), (large_interval, higher_times) = sorted(plan)
     k = small_interval - 2
@@ -186,27 +198,27 @@ def _format_multi_plan(plan: List[Tuple[int, float]]) -> str:
         return _handle_odd_times(times, k_string, higher_times, k_higher_string)
 
 
-def _handle_even_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+def _handle_even_times(times: int, k_string: str, higher_times: int, k_higher_string: str) -> str:
     """Handle case where times is even."""
-    times = times / 2
+    times = times // 2
     times_string = k_string if times == 1 else f"[{k_string}] * {times:.0f} times"
     higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times} times"
     return f"{times_string}, {higher_times_string}, {times_string}"
 
 
-def _handle_even_higher_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+def _handle_even_higher_times(times: int, k_string: str, higher_times: int, k_higher_string: str) -> str:
     """Handle case where higher_times is even."""
-    higher_times = higher_times / 2
+    higher_times = higher_times // 2
     times_string = k_string if times == 1 else f"[{k_string}] * {times} times"
     higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times:.0f} times"
     return f"{higher_times_string}, {times_string}, {higher_times_string}"
 
 
-def _handle_odd_times(times: float, k_string: str, higher_times: float, k_higher_string: str) -> str:
+def _handle_odd_times(times: int, k_string: str, higher_times: int, k_higher_string: str) -> str:
     """Handle case where both times and higher_times are odd."""
     higher_times = math.ceil(higher_times / 2)
-    times_string = k_string if times == 1 else f"[{k_string}] {times} times"
-    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] {higher_times} times"
+    times_string = k_string if times == 1 else f"[{k_string}] * {times} times"
+    higher_times_string = k_higher_string if higher_times == 1 else f"[{k_higher_string}] * {higher_times} times"
 
     decrease_pattern = f"{higher_times_string}, {times_string}"
 
@@ -228,7 +240,7 @@ def decrease_evenly_flat(starting_count: PositiveInt, decrease_number: PositiveI
         return _format_flat_multi_plan(plan)
 
 
-def _format_flat_single_plan(plan_entry: Tuple[int, float]) -> str:
+def _format_flat_single_plan(plan_entry: Tuple[int, int]) -> str:
     """Format a single spacing plan entry for flat knitting decreases."""
     interval, times = plan_entry
     k = interval - 2
@@ -254,7 +266,7 @@ def _format_flat_single_plan(plan_entry: Tuple[int, float]) -> str:
     return decrease_pattern
 
 
-def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
+def _format_flat_multi_plan(plan: List[Tuple[int, int]]) -> str:
     """Format a multi-part spacing plan for flat knitting decreases."""
     (small_interval, times), (large_interval, higher_times) = sorted(plan)
     k = small_interval - 2
@@ -272,14 +284,14 @@ def _format_flat_multi_plan(plan: List[Tuple[int, float]]) -> str:
 
 
 def _handle_flat_even_times(
-    times: float,
+    times: int,
     k_string: str,
-    higher_times: float,
+    higher_times: int,
     k_higher: int,
     k_higher_string: str,
 ) -> str:
     """Handle flat knitting with even times."""
-    times = times / 2
+    times = times // 2
     higher_times = higher_times - 1
     higher_times_string = ""
     if higher_times > 0:
@@ -294,11 +306,9 @@ def _handle_flat_even_times(
     return f"{balanced_str_first}{times_string}{higher_times_string}{times_string}{balanced_str_last}"
 
 
-def _handle_flat_even_higher_times(
-    times: float, k: int, k_string: str, higher_times: float, k_higher_string: str
-) -> str:
+def _handle_flat_even_higher_times(times: int, k: int, k_string: str, higher_times: int, k_higher_string: str) -> str:
     """Handle flat knitting with even higher_times."""
-    higher_times = higher_times / 2
+    higher_times = higher_times // 2
     times = times - 1
     times_string = ""
     if times > 0:
@@ -310,9 +320,9 @@ def _handle_flat_even_higher_times(
 
 
 def _handle_flat_odd_times(
-    times: float,
+    times: int,
     k_string: str,
-    higher_times: float,
+    higher_times: int,
     k_higher: int,
     k_higher_string: str,
 ) -> str:
@@ -371,14 +381,14 @@ def _validate_decrease_parameters(starting_count: int, decrease_number: int) -> 
         logging.error(msg)
         raise ValueError(msg)
 
-    if decrease_number > starting_count / 2:
-        msg = f"""the amount of decrease needs to be less than half of starting_count;
-        decrease_number={decrease_number} > starting_count/2={starting_count / 2}"""
+    if decrease_number > starting_count:
+        msg = f"Error: Decrease number ({decrease_number}) is bigger than the starting count ({starting_count})"
         logging.error(msg)
         raise ValueError(msg)
 
-    if decrease_number > starting_count:
-        msg = f"Error: Decrease number ({decrease_number}) is bigger than the starting count ({starting_count})"
+    if decrease_number > starting_count / 2:
+        msg = f"""the amount of decrease needs to be less than half of starting_count;
+        decrease_number={decrease_number} > starting_count/2={starting_count / 2}"""
         logging.error(msg)
         raise ValueError(msg)
 
