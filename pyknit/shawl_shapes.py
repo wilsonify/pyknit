@@ -58,6 +58,8 @@ def generate_shawl(shape: str, width: float, length: float, gauge: GaugeSwatch) 
     Raises:
         ValueError: If ``shape`` is not one of the supported shapes.
     """
+    if width <= 0 or length <= 0:
+        raise ValueError(f"Shawl width and length must be positive; got width={width!r}, length={length!r}")
     if shape == "square":
         return _square_shape(width, gauge)
     if shape == "rectangle":
@@ -106,13 +108,21 @@ def _triangle_shape(width: float, length: float, gauge: GaugeSwatch) -> List[str
     """
     target_stitches = gauge.measurement_to_stitches(width)
     max_rows = gauge.measurement_to_rows(length)
+    if target_stitches <= TRIANGLE_START_STITCHES:
+        raise ValueError(
+            f"Desired width yields only {target_stitches} stitches, "
+            f"which cannot grow a triangle starting from {TRIANGLE_START_STITCHES}; "
+            "use a wider shawl or a finer gauge."
+        )
+    if max_rows < 1:
+        raise ValueError("Desired length is too short for even one triangle row; use a longer shawl.")
     current_stitches = TRIANGLE_START_STITCHES
     instructions = [f"Cast on {TRIANGLE_START_STITCHES} stitches at the point of the triangle."]
     row = 1
     while current_stitches < target_stitches and row <= max_rows:
         spacing = increase_evenly(current_stitches, TRIANGLE_INCREASE_PER_ROW)
         instructions.append(f"Row {row}: {spacing}")
-        current_stitches += spacing.count("m1")
+        current_stitches += TRIANGLE_INCREASE_PER_ROW
         row += 1
     instructions.append(f"Bind off all {current_stitches} stitches.")
     return instructions
