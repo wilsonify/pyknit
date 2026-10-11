@@ -11,8 +11,16 @@ pyKnit.Hat: Functions for creating a hat
 
 class Hat:
     def crown_decreases(self, repeats: int, stitches: int):
+        """Return step-by-step crown decrease instructions.
+
+        Raises:
+            ValueError: If ``repeats`` or ``stitches`` is not a positive integer.
+        """
         if repeats <= 0 or stitches <= 0:
-            return "Invalid starting parameters"
+            raise ValueError(
+                f"Invalid starting parameters: repeats={repeats!r} and stitches={stitches!r} "
+                "must both be positive integers"
+            )
 
         remainder = stitches % repeats
         count_per_repeat = stitches // repeats
