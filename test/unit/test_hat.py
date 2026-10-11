@@ -19,15 +19,10 @@ class TestCrownDecreases:
             "Cut yarn leaving 4 inch tail, thread through remaining " "stitches and pull closed",
         ]
 
-    @pytest.mark.parametrize(
-        ("repeats", "stitches", "expected"),
-        [
-            (0, 10, "Invalid starting parameters"),
-            (4, 0, "Invalid starting parameters"),
-        ],
-    )
-    def test_invalid_params(self, repeats, stitches, expected):
-        assert Hat().crown_decreases(repeats, stitches) == expected
+    @pytest.mark.parametrize(("repeats", "stitches"), [(0, 10), (4, 0), (-1, 10), (4, -2)])
+    def test_invalid_params(self, repeats, stitches):
+        with pytest.raises(ValueError, match="Invalid starting parameters"):
+            Hat().crown_decreases(repeats, stitches)
 
     def test_remainder_schedules_extra_decreases(self):
         instructions = Hat().crown_decreases(4, 10)
