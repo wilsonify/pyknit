@@ -38,7 +38,9 @@ class GaugeSwatch(BaseModel):
     stitch_measure: PositiveFloat
     units: Literal["cm", "in"]
     # Yarn use per stitch (per design, estimate spec 08). Optional fields used
-    # by estimate_yardage() and estimate_weight().
+    # by estimate_yardage() and estimate_weight().  Despite the names, these
+    # are per-stitch rates (e.g. metres of yarn per stitch), not per unit of
+    # length; see estimate_yardage()/estimate_weight().
     yardage_per_unit: PositiveFloat | None = None
     weight_per_unit: PositiveFloat | None = None
 
@@ -289,6 +291,15 @@ def convert_stitch_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, n
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
 
+    The input ``measurement`` is expressed in ``old_gauge.units`` and the
+    return value is expressed in ``new_gauge.units``.  When both gauges
+    share the same units the result is directly comparable to the input.
+
+    Stitch counts are discrete, so the measurement is rounded once to the
+    nearest whole stitch in the original gauge
+    (via :meth:`GaugeSwatch.measurement_to_stitches`); the back-conversion
+    to a measurement is continuous.
+
     >>> pattern_gauge = GaugeSwatch(
     ...     row_count=22, row_measure=3.75, stitch_count=18,
     ...     stitch_measure=4, units="in",
@@ -311,6 +322,15 @@ def convert_row_measure(measurement: PositiveFloat, old_gauge: GaugeSwatch, new_
     Given a measurement in the original gauge, find out what it would
     be in the new gauge.  e.g. if the sweater was going to be 40 inches
     in pattern gauge, how much would it be in my gauge?
+
+    The input ``measurement`` is expressed in ``old_gauge.units`` and the
+    return value is expressed in ``new_gauge.units``.  When both gauges
+    share the same units the result is directly comparable to the input.
+
+    Row counts are discrete, so the measurement is rounded once to the
+    nearest whole row in the original gauge
+    (via :meth:`GaugeSwatch.measurement_to_rows`); the back-conversion
+    to a measurement is continuous.
 
     >>> pattern_gauge = GaugeSwatch(
     ...     row_count=22, row_measure=3.75, stitch_count=18,
